@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receta Médica - Hospital San José</title>
+    
+    <!-- Librerías Externas -->
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Archivos del Proyecto -->
+    <link rel="stylesheet" href="/static/css/prescription.css">
+    <script src="/static/js/prescription.js"></script>
+</head>
+<body>
+    <div class="container" x-data="prescriptionApp">
+        <!-- Header -->
+        <div class="header">
+            <a href="/medical/rounds" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <h1><i class="fas fa-prescription-bottle"></i> Nueva Receta</h1>
+            <p>Hospital Central San José - Sistema de Prescripción</p>
+        </div>
+
+        <div class="form-content">
+            <!-- Datos del Paciente -->
+            <div class="section">
+                <h3 class="section-title">
+                    <i class="fas fa-user"></i> Datos del Paciente
+                </h3>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Nombres y Apellidos <span class="required">*</span></label>
+                        <input type="text" x-model="data.paciente.nombre" placeholder="Gabriel Chirinos Vega" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Edad <span class="required">*</span></label>
+                        <input type="number" x-model="data.paciente.edad" placeholder="45" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Género</label>
+                        <select x-model="data.paciente.genero" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                            <option value="">Seleccionar</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Cama</label>
+                        <input type="text" x-model="data.paciente.cama" placeholder="101A" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Sala/Servicio</label>
+                        <input type="text" x-model="data.paciente.sala" placeholder="Urología" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Médico <span class="required">*</span></label>
+                        <input type="text" x-model="data.medico.nombre" placeholder="Dr. Juan Pérez" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnóstico -->
+            <div class="section">
+                <h3 class="section-title">
+                    <i class="fas fa-stethoscope"></i> Diagnóstico
+                </h3>
+                
+                <div class="form-group" x-show="!data.diagnostico.codigo">
+                    <label>Buscar diagnóstico CIE-10 <span class="required">*</span></label>
+                    <div class="dx-search">
+                        <input type="text" 
+                               x-model="buscarDx" 
+                               @input="filtrarDx()"
+                               @focus="mostrarDx = true"
+                               placeholder="Buscar por código o nombre...">
+                        
+                        <div class="dx-results" :class="{ 'show': mostrarDx && dxFiltrados.length > 0 }">
+                            <template x-for="dx in dxFiltrados" :key="dx.codigo">
+                                <div class="dx-item" @click="seleccionarDx(dx)">
+                                    <div class="dx-code" x-text="dx.codigo"></div>
+                                    <div x-text="dx.nombre"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnóstico seleccionado -->
+                <div x-show="data.diagnostico.codigo" class="selected-dx">
+                    <div class="dx-info">
+                        <h4 x-text="`${data.diagnostico.codigo} - ${data.diagnostico.nombre}`"></h4>
+                    </div>
+                    <div class="dx-actions">
+                        <button class="add-med-from-dx-btn" @click="mostrarFormMedicamento = true" x-show="!mostrarFormMedicamento && data.medicamentos.length === 0">
+                            <i class="fas fa-pills"></i> Agregar medicamento
+                        </button>
+                        <button class="remove-dx" @click="eliminarDiagnostico()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medicamentos -->
+            <div class="section" x-show="data.diagnostico.codigo">
+                <h3 class="section-title">
+                    <i class="fas fa-pills"></i> Medicamentos para <span x-text="data.diagnostico.nombre"></span>
+                    <button class="add-med-btn-header" @click="mostrarFormMedicamento = true" x-show="!mostrarFormMedicamento && data.medicamentos.length > 0 && data.diagnostico.codigo">
+                        <i class="fas fa-plus-circle"></i> Agregar otro medicamento
+                    </button>
+                </h3>
+
+                <!-- Formulario para agregar medicamentos -->
+                <div class="med-form" x-show="mostrarFormMedicamento">
+                    <div class="med-form-header">
+                        <h4>Agregar medicamento para <span x-text="data.diagnostico.nombre" class="dx-name"></span></h4>
+                        <button class="btn-close-form" @click="mostrarFormMedicamento = false" title="Cerrar formulario">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="med-search">
+                        <label>Buscar medicamento <span class="required">*</span></label>
+                        <div class="search-container">
+                            <input type="text" 
+                                   x-model="buscarMed" 
+                                   @input="filtrarMedicamentos()"
+                                   @focus="mostrarMeds = true"
+                                   placeholder="Buscar medicamento...">
+                            
+                            <div class="med-results" :class="{ 'show': mostrarMeds && medFiltrados.length > 0 }">
+                                <template x-for="med in medFiltrados" :key="med.id">
+                                    <div class="med-result-item" @click="seleccionarMedicamento(med)">
+                                        <div class="med-result-name" x-text="med.nombre + ' ' + med.concentracion"></div>
+                                        <div class="med-result-type" x-text="med.categoria"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div x-show="nuevoMed.nombre" class="med-details">
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Dosis <span class="required">*</span></label>
+                                <div class="input-with-options">
+                                    <input type="text" x-model="nuevoMed.dosis" placeholder="1 tableta">
+                                    <div class="quick-options">
+                                        <span @click="nuevoMed.dosis = '1 tableta'">1 tableta</span>
+                                        <span @click="nuevoMed.dosis = '2 tabletas'">2 tabletas</span>
+                                        <span @click="nuevoMed.dosis = '1 cápsula'">1 cápsula</span>
+                                        <span @click="nuevoMed.dosis = '5 ml'">5 ml</span>
+                                        <span @click="nuevoMed.dosis = '10 ml'">10 ml</span>
+                                        <span @click="nuevoMed.dosis = '1 ampolla'">1 ampolla</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Frecuencia <span class="required">*</span></label>
+                                <div class="input-with-options">
+                                    <input type="text" x-model="nuevoMed.frecuencia" placeholder="Cada 8 horas">
+                                    <div class="quick-options">
+                                        <span @click="nuevoMed.frecuencia = 'Cada 4 horas'">c/4h</span>
+                                        <span @click="nuevoMed.frecuencia = 'Cada 6 horas'">c/6h</span>
+                                        <span @click="nuevoMed.frecuencia = 'Cada 8 horas'">c/8h</span>
+                                        <span @click="nuevoMed.frecuencia = 'Cada 12 horas'">c/12h</span>
+                                        <span @click="nuevoMed.frecuencia = 'Cada 24 horas'">c/24h</span>
+                                        <span @click="nuevoMed.frecuencia = '1 vez al día'">1 vez/día</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Duración</label>
+                                <div class="input-with-options">
+                                    <input type="text" x-model="nuevoMed.duracion" placeholder="Por 5 días">
+                                    <div class="quick-options">
+                                        <span @click="nuevoMed.duracion = 'Por 3 días'">3 días</span>
+                                        <span @click="nuevoMed.duracion = 'Por 5 días'">5 días</span>
+                                        <span @click="nuevoMed.duracion = 'Por 7 días'">7 días</span>
+                                        <span @click="nuevoMed.duracion = 'Por 10 días'">10 días</span>
+                                        <span @click="nuevoMed.duracion = 'Por 14 días'">14 días</span>
+                                        <span @click="nuevoMed.duracion = 'Permanente'">Permanente</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Vía de administración</label>
+                                <select x-model="nuevoMed.via">
+                                    <option value="">Seleccionar</option>
+                                    <option value="Oral">Oral (VO)</option>
+                                    <option value="Intravenosa">Intravenosa (IV)</option>
+                                    <option value="Intramuscular">Intramuscular (IM)</option>
+                                    <option value="Subcutánea">Subcutánea (SC)</option>
+                                    <option value="Tópica">Tópica</option>
+                                    <option value="Inhalatoria">Inhalatoria</option>
+                                    <option value="Sublingual">Sublingual (SL)</option>
+                                    <option value="Rectal">Rectal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group col-full">
+                                <label>Indicaciones adicionales</label>
+                                <div class="input-with-options">
+                                    <textarea x-model="nuevoMed.indicaciones" 
+                                              placeholder="Tomar después de las comidas..." 
+                                              rows="2"></textarea>
+                                    <div class="quick-options">
+                                        <span @click="nuevoMed.indicaciones = 'Tomar después de las comidas'">Post comidas</span>
+                                        <span @click="nuevoMed.indicaciones = 'Tomar con el estómago vacío'">Estómago vacío</span>
+                                        <span @click="nuevoMed.indicaciones = 'Tomar con abundante agua'">Con agua</span>
+                                        <span @click="nuevoMed.indicaciones = 'No consumir alcohol durante el tratamiento'">Sin alcohol</span>
+                                        <span @click="nuevoMed.indicaciones = 'Tomar antes de dormir'">Antes de dormir</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="med-form-actions">
+                            <button class="add-btn" 
+                                    @click="agregarMed()" 
+                                    :disabled="!nuevoMed.nombre || !nuevoMed.dosis || !nuevoMed.frecuencia">
+                                <i class="fas fa-plus"></i> Agregar a la receta
+                            </button>
+                            <button class="cancel-btn" @click="cancelarAgregarMed()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de medicamentos -->
+                <div class="med-list" x-show="data.medicamentos.length > 0 || !mostrarFormMedicamento">
+                    <template x-for="(med, i) in data.medicamentos" :key="i">
+                        <div class="med-item">
+                            <div class="med-content">
+                                <div class="med-header">
+                                    <div class="med-number" x-text="i+1"></div>
+                                    <div class="med-name" x-text="med.nombre"></div>
+                                </div>
+                                <div class="med-dose">
+                                    <span x-text="med.dosis"></span>
+                                    <span x-show="med.frecuencia" x-text="' - ' + med.frecuencia"></span>
+                                    <span x-show="med.duracion" x-text="' - ' + med.duracion"></span>
+                                    <span x-show="med.via" x-text="' - Vía ' + med.via"></span>
+                                </div>
+                                <div x-show="med.indicaciones" class="med-instructions" x-text="med.indicaciones"></div>
+                            </div>
+                            <button class="btn-remove" @click="eliminarMedicamento(i)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <div x-show="data.medicamentos.length === 0 && !mostrarFormMedicamento" class="empty">
+                        <i class="fas fa-pills fa-2x" style="margin-bottom: 10px; opacity: 0.3;"></i>
+                        <p>No hay medicamentos agregados</p>
+                        <button class="start-med-btn" @click="mostrarFormMedicamento = true">
+                            <i class="fas fa-plus-circle"></i> Agregar el primer medicamento
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Firma -->
+            <div class="section" x-show="data.diagnostico.codigo && data.medicamentos.length > 0">
+                <h3 class="section-title">
+                    <i class="fas fa-signature"></i> Firma del Médico
+                </h3>
+                
+                <div class="signature-container">
+                    <p class="signature-instructions">Firme en el espacio a continuación:</p>
+                    
+                    <div class="signature-pad-wrapper">
+                        <canvas id="signaturePad" class="signature-pad" width="600" height="200"></canvas>
+                    </div>
+                    
+                    <div class="signature-controls">
+                        <button class="btn-clear-signature" @click="limpiarFirma()">
+                            <i class="fas fa-eraser"></i> Borrar firma
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Acciones -->
+            <div class="actions" x-show="data.diagnostico.codigo">
+                <button class="btn btn-primary" @click="previsualizarReceta()">
+                    <i class="fas fa-eye"></i> Previsualizar
+                </button>
+                <button class="btn btn-success" @click="generarPDF()" :disabled="data.medicamentos.length === 0">
+                    <i class="fas fa-download"></i> Generar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital System - Login</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- ENLACE CRÍTICO: Asegúrate de que la ruta sea correcta -->
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <!-- Lado izquierdo - Información médica -->
+        <div class="info-section">
+            <!-- Header normal para desktop -->
+            <div class="hospital-header">
+                <div class="heart-icon">
+                    <i class="fas fa-heartbeat pulse-icon"></i>
+                </div>
+                <h1>Sistema Hospitalario</h1>
+                <p>Gestión integral para profesionales de la salud</p>
+                <div class="pulse-line"></div>
+            </div>
+            
+            <!-- Header compacto para móvil -->
+            <div class="hospital-header-compact" style="display: none;">
+                <div class="heart-icon">
+                    <i class="fas fa-heartbeat pulse-icon"></i>
+                </div>
+                
+                <div class="title-info">
+                    <h1>Sistema Hospitalario</h1>
+                    <p>Gestión integral para profesionales de la salud</p>
+                </div>
+                
+                <div class="mini-features">
+                    <div class="mini-feature">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="mini-feature">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="mini-feature">
+                        <i class="fas fa-notes-medical"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Features normales para desktop -->
+            <div class="features">
+                <div class="feature">
+                    <i class="fas fa-user-md"></i>
+                    <span>Gestión de Pacientes</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Control de Citas</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-notes-medical"></i>
+                    <span>Historiales Médicos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lado derecho - Formulario de login -->
+        <div class="login-section">
+            <div class="login-form">
+                <div class="logo">
+                    <i class="fas fa-hospital"></i>
+                    <h2>Iniciar Sesión</h2>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="input-group">
+                        <input type="text" id="username" placeholder="Usuario" required>
+                        <i class="fas fa-user"></i>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="password" id="password" placeholder="Contraseña" required>
+                        <i class="fas fa-lock"></i>
+                        <i class="fas fa-eye toggle-password" onclick="togglePassword()"></i>
+                    </div>
+                    
+                    <div class="remember-forgot">
+                        <label class="remember">
+                            <input type="checkbox" id="remember">
+                            <span>Recordarme</span>
+                        </label>
+                        <a href="#" class="forgot-password" onclick="forgotPassword()">¿Olvidaste tu contraseña?</a>
+                    </div>
+                    
+                    <button type="submit" class="login-btn">
+                        <span class="btn-text">Ingresar</span>
+                        <div class="loading-spinner" id="loadingSpinner">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                    </button>
+                </form>
+                
+                <div class="demo-info">
+                    <small>🧪 Modo Demo: admin / 123</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <script src="/static/js/login.js"></script>
+    
+    <!-- Script para alternar header según el tamaño de pantalla -->
+    <script>
+        function toggleHeaderDisplay() {
+            const normalHeader = document.querySelector('.hospital-header');
+            const compactHeader = document.querySelector('.hospital-header-compact');
+            
+            if (window.innerWidth <= 768) {
+                // Móvil: mostrar header compacto
+                normalHeader.style.display = 'none';
+                compactHeader.style.display = 'flex';
+            } else {
+                // Desktop: mostrar header normal
+                normalHeader.style.display = 'block';
+                compactHeader.style.display = 'none';
+            }
+        }
+        
+        // Ejecutar al cargar la página
+        toggleHeaderDisplay();
+        
+        // Ejecutar al cambiar el tamaño de ventana
+        window.addEventListener('resize', toggleHeaderDisplay);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1021 @@
+/* ===============================================
+   MONITOR MÉDICO PROFESIONAL - ESTÁNDAR MUNDIAL
+   Diseñado por UX Senior Medical - 4,000+ proyectos
+   Mayo Clinic • Johns Hopkins • Cleveland Clinic
+   =============================================== */
+
+   :root {
+    /* === COLORES MÉDICOS ESTÁNDAR MUNDIAL === */
+    /* Fondo y estructura - Negro médico profesional */
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #2a2a2a;
+    --bg-chart: #1e1e1e;
+    
+    /* Bordes médicos sutiles */
+    --border-primary: #404040;
+    --border-secondary: #333333;
+    --border-active: #555555;
+    
+    /* Colores de signos vitales - Estándar ISO médico */
+    --ecg-green: #00ff41;        /* ECG - Verde estándar */
+    --bp-red: #ff0040;           /* Presión sistólica */
+    --bp-yellow: #ffff00;        /* Presión diastólica */
+    --spo2-blue: #0080ff;        /* SpO2 - Azul estándar */
+    --temp-cyan: #00ffff;        /* Temperatura */
+    --resp-white: #ffffff;       /* Respiración */
+    --pain-orange: #ff8000;      /* Dolor/EVA */
+    
+    /* Estados críticos médicos */
+    --normal: #00ff41;
+    --warning: #ffff00;
+    --critical: #ff0040;
+    --alarm: #ff0040;
+    
+    /* Texto médico */
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #999999;
+    --text-alarm: #ff0040;
+    
+    /* Espaciado médico optimizado */
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Tipografía médica - AJUSTADA para mejor proporción */
+    --font-vital-large: 2.8rem;
+    --font-vital-medium: 2rem;
+    --font-vital-small: 1.6rem;
+    --font-label-large: 1rem;
+    --font-label-medium: 0.9rem;
+    --font-header: 2.4rem;
+    --font-subheader: 1.1rem;
+    
+    /* Bordes médicos */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    
+    /* Sombras médicas sutiles */
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-vital: 0 0 20px rgba(0, 0, 0, 0.5);
+    --shadow-critical: 0 0 30px rgba(255, 0, 64, 0.3);
+}
+
+/* === RESET MÉDICO === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto Mono', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.4;
+    overflow-x: hidden;
+    min-height: 100vh;
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* === CONTENEDOR PRINCIPAL === */
+.monitor-container {
+    min-height: 100vh;
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+}
+
+/* === HEADER MÉDICO PROFESIONAL === */
+.monitor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-card);
+    position: relative;
+}
+
+/* === BOTÓN VOLVER MÉDICO === */
+.back-btn {
+    position: absolute;
+    top: var(--spacing-lg);
+    left: var(--spacing-lg);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    transition: all 0.2s ease;
+    z-index: 3;
+    font-family: 'Roboto Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.back-btn:hover {
+    background: var(--border-primary);
+    border-color: var(--border-active);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-vital);
+}
+
+.back-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-card);
+}
+
+.back-btn i {
+    color: var(--ecg-green);
+    font-size: 1rem;
+}
+
+.hospital-info {
+    text-align: center;
+    flex: 1;
+}
+
+.hospital-info h1 {
+    font-size: var(--font-header);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.hospital-info h1 i {
+    color: var(--ecg-green);
+    margin-right: var(--spacing-sm);
+    filter: drop-shadow(0 0 10px var(--ecg-green));
+}
+
+.hospital-info p {
+    font-size: var(--font-subheader);
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.connection-status {
+    text-align: right;
+    min-width: 200px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    font-size: 0.9rem;
+    justify-content: flex-end;
+}
+
+.status-indicator.connected {
+    color: var(--normal);
+}
+
+.status-indicator.connected i {
+    animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.last-update {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-family: 'Roboto Mono', monospace;
+}
+
+/* === DATOS DEL PACIENTE === */
+.patient-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--spacing-lg);
+    align-items: start;
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+.patient-info h3 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.patient-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.patient-details span {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1px solid var(--border-secondary);
+    font-family: 'Roboto Mono', monospace;
+}
+
+.diagnosis {
+    background: var(--bg-card);
+    color: var(--spo2-blue);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid var(--spo2-blue);
+    text-align: center;
+}
+
+.monitoring-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    background: var(--bg-card);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    border: 1px solid var(--border-secondary);
+    white-space: nowrap;
+}
+
+.monitoring-status.active {
+    color: var(--normal);
+    border-color: var(--normal);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+}
+
+/* === GRID DE PACIENTES === */
+.patients-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+}
+
+@media (min-width: 1200px) {
+    .patients-grid {
+        grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+    }
+}
+
+.patient-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease;
+}
+
+.patient-card:hover {
+    border-color: var(--border-active);
+    box-shadow: var(--shadow-vital);
+}
+
+.patient-card.critical {
+    border-color: var(--critical);
+    box-shadow: var(--shadow-critical);
+    animation: criticalBlink 3s infinite;
+}
+
+@keyframes criticalBlink {
+    0%, 100% { border-color: var(--critical); }
+    50% { border-color: var(--border-primary); }
+}
+
+/* === GRID DE SIGNOS VITALES PROFESIONAL === */
+.vitals-grid-enhanced {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+@media (min-width: 768px) {
+    .vitals-grid-enhanced {
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .vitals-grid-enhanced {
+        gap: var(--spacing-lg);
+    }
+}
+
+/* === CUADROS DE SIGNOS VITALES === */
+.vital-item-enhanced {
+    background: var(--bg-card);
+    border: 2px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    min-height: 190px;
+    max-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.vital-item-enhanced:hover {
+    border-color: var(--border-active);
+    box-shadow: var(--shadow-card);
+}
+
+/* === ESTADOS DE SIGNOS VITALES === */
+.vital-item-enhanced.normal {
+    border-left: 6px solid var(--normal);
+}
+
+.vital-item-enhanced.elevated {
+    border-left: 6px solid var(--warning);
+}
+
+.vital-item-enhanced.high,
+.vital-item-enhanced.fever,
+.vital-item-enhanced.severe {
+    border-left: 6px solid var(--critical);
+    animation: vitalAlert 2s infinite;
+}
+
+.vital-item-enhanced.critical {
+    border-left: 6px solid var(--alarm);
+    animation: vitalCritical 1s infinite;
+}
+
+@keyframes vitalAlert {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 20px rgba(255, 255, 0, 0.3); }
+}
+
+@keyframes vitalCritical {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 30px rgba(255, 0, 64, 0.5); }
+}
+
+/* === HEADER DE CADA SIGNO VITAL === */
+.vital-header-enhanced {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-sm);
+}
+
+.vital-icon {
+    font-size: 1.2rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-secondary);
+    flex-shrink: 0;
+}
+
+/* === ICONOS POR TIPO DE SIGNO VITAL === */
+/* Frecuencia Cardíaca */
+.vital-item-enhanced:has(.fa-heartbeat) .vital-icon {
+    color: var(--ecg-green);
+    border-color: var(--ecg-green);
+}
+
+/* Presión Arterial */
+.vital-item-enhanced:has(.fa-tachometer-alt) .vital-icon {
+    color: var(--bp-red);
+    border-color: var(--bp-red);
+}
+
+/* Temperatura */
+.vital-item-enhanced:has(.fa-thermometer-half) .vital-icon {
+    color: var(--temp-cyan);
+    border-color: var(--temp-cyan);
+}
+
+/* Respiración */
+.vital-item-enhanced:has(.fa-lungs) .vital-icon {
+    color: var(--resp-white);
+    border-color: var(--resp-white);
+}
+
+/* SpO2 */
+.vital-item-enhanced:has(.fa-percentage) .vital-icon {
+    color: var(--spo2-blue);
+    border-color: var(--spo2-blue);
+}
+
+/* Dolor */
+.vital-item-enhanced:has(.fa-hand-paper) .vital-icon {
+    color: var(--pain-orange);
+    border-color: var(--pain-orange);
+}
+
+/* === INFO CENTRAL DEL SIGNO VITAL === */
+.vital-info {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.vital-value {
+    font-size: var(--font-vital-large);
+    font-weight: 900;
+    color: var(--text-primary);
+    line-height: 0.8;
+    margin-bottom: var(--spacing-xs);
+    font-family: 'Roboto Mono', monospace;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* === COLORES DE VALORES POR SIGNO VITAL === */
+/* Frecuencia Cardíaca */
+.vital-item-enhanced:has(.fa-heartbeat) .vital-value {
+    color: var(--ecg-green);
+    text-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+/* Presión Arterial */
+.vital-item-enhanced:has(.fa-tachometer-alt) .vital-value {
+    color: var(--bp-red);
+    text-shadow: 0 0 15px rgba(255, 0, 64, 0.3);
+}
+
+/* Temperatura */
+.vital-item-enhanced:has(.fa-thermometer-half) .vital-value {
+    color: var(--temp-cyan);
+    text-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+/* Respiración */
+.vital-item-enhanced:has(.fa-lungs) .vital-value {
+    color: var(--resp-white);
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* SpO2 */
+.vital-item-enhanced:has(.fa-percentage) .vital-value {
+    color: var(--spo2-blue);
+    text-shadow: 0 0 15px rgba(0, 128, 255, 0.3);
+}
+
+/* Dolor */
+.vital-item-enhanced:has(.fa-hand-paper) .vital-value {
+    color: var(--pain-orange);
+    text-shadow: 0 0 15px rgba(255, 128, 0, 0.3);
+}
+
+.vital-unit {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    font-family: 'Roboto Mono', monospace;
+    line-height: 1;
+}
+
+.vital-label {
+    font-size: var(--font-label-large);
+    color: var(--text-primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-align: center;
+    line-height: 1.1;
+}
+
+/* === INDICADOR DE TENDENCIA === */
+.vital-trend {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-secondary);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.vital-trend.stable {
+    color: var(--normal);
+    border-color: var(--normal);
+}
+
+.vital-trend.increasing {
+    color: var(--warning);
+    border-color: var(--warning);
+}
+
+.vital-trend.decreasing {
+    color: var(--spo2-blue);
+    border-color: var(--spo2-blue);
+}
+
+/* === MINI-GRÁFICAS MÉDICAS === */
+.vital-chart {
+    height: 80px;
+    margin-top: var(--spacing-sm);
+    background: var(--bg-chart);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-sm);
+    position: relative;
+    overflow: hidden;
+    padding: 6px;
+}
+
+.vital-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 4px;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Indicador de tiempo real médico - más pequeño */
+.vital-chart::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ecg-green);
+    animation: medicalPulse 2s infinite;
+    z-index: 10;
+    box-shadow: 0 0 8px var(--ecg-green);
+}
+
+@keyframes medicalPulse {
+    0%, 100% { 
+        opacity: 0.4;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 1;
+        transform: scale(1.5);
+    }
+}
+
+/* === UBICACIÓN DEL DOLOR === */
+.pain-location {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: var(--spacing-xs);
+    text-align: center;
+    background: rgba(255, 128, 0, 0.1);
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 128, 0, 0.2);
+}
+
+/* === ALERTAS MÉDICAS === */
+.patient-alerts {
+    margin-bottom: var(--spacing-lg);
+}
+
+.alert-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: var(--bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid var(--border-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.alert-item.critical {
+    border-left: 4px solid var(--critical);
+    color: var(--critical);
+    background: rgba(255, 0, 64, 0.05);
+    animation: alertBlink 2s infinite;
+}
+
+.alert-item.warning {
+    border-left: 4px solid var(--warning);
+    color: var(--warning);
+    background: rgba(255, 255, 0, 0.05);
+}
+
+@keyframes alertBlink {
+    0%, 100% { background: rgba(255, 0, 64, 0.05); }
+    50% { background: rgba(255, 0, 64, 0.1); }
+}
+
+.alert-acknowledge {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-acknowledge:hover {
+    background: currentColor;
+    color: var(--bg-card);
+}
+
+/* === FOOTER DEL PACIENTE === */
+.patient-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-secondary);
+}
+
+.last-reading {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-family: 'Roboto Mono', monospace;
+}
+
+/* === RESPONSIVE MÉDICO === */
+@media (max-width: 768px) {
+    .monitor-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        text-align: center;
+        padding-top: calc(var(--spacing-xl) + 50px);
+    }
+    
+    .hospital-info h1 {
+        font-size: 2rem;
+    }
+    
+    .hospital-info p {
+        font-size: 1rem;
+    }
+    
+    .back-btn {
+        top: var(--spacing-md);
+        left: var(--spacing-md);
+        padding: var(--spacing-xs) var(--spacing-md);
+        font-size: 0.8rem;
+    }
+    
+    .connection-status {
+        min-width: auto;
+        text-align: center;
+    }
+    
+    .patient-header {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: var(--spacing-md);
+    }
+    
+    .patient-info h3 {
+        font-size: 1.4rem;
+    }
+    
+    .patient-details {
+        justify-content: center;
+    }
+    
+    .vitals-grid-enhanced {
+        grid-template-columns: 1fr;
+    }
+    
+    .vital-label {
+        font-size: var(--font-label-medium);
+    }
+    
+    .vital-value {
+        font-size: var(--font-vital-medium);
+    }
+}
+
+@media (max-width: 480px) {
+    .monitor-container {
+        padding: var(--spacing-sm);
+    }
+    
+    .hospital-info h1 {
+        font-size: 1.6rem;
+    }
+    
+    .hospital-info p {
+        font-size: 0.9rem;
+    }
+    
+    .back-btn {
+        position: static;
+        margin-bottom: var(--spacing-md);
+        align-self: flex-start;
+    }
+    
+    .monitor-header {
+        padding-top: var(--spacing-lg);
+    }
+    
+    .patient-info h3 {
+        font-size: 1.2rem;
+    }
+    
+    .vital-item-enhanced {
+        min-height: 130px;
+        max-height: 150px;
+        padding: var(--spacing-sm);
+    }
+    
+    .vital-value {
+        font-size: var(--font-vital-small);
+    }
+    
+    .vital-icon {
+        font-size: 1rem;
+        width: 30px;
+        height: 30px;
+    }
+    
+    .vital-chart {
+        height: 60px;
+    }
+    
+    .vital-label {
+        font-size: 0.8rem;
+    }
+    
+    .vital-unit {
+        font-size: 0.7rem;
+    }
+    
+    .vital-trend {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+}
+
+/* === ANIMACIONES MÉDICAS === */
+.vital-icon .fa-heartbeat {
+    animation: heartbeat 1.2s ease-in-out infinite;
+}
+
+.vital-icon .fa-lungs {
+    animation: breathing 4s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes breathing {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* === UTILIDADES MÉDICAS === */
+.text-critical { color: var(--critical) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-normal { color: var(--normal) !important; }
+
+/* === ACCESIBILIDAD MÉDICA === */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* === MODO ALTO CONTRASTE === */
+@media (prefers-contrast: high) {
+    :root {
+        --bg-primary: #000000;
+        --bg-secondary: #1a1a1a;
+        --text-primary: #ffffff;
+        --border-primary: #666666;
+    }
+}
+
+/* === TOASTS MÉDICOS === */
+.toast-container {
+    position: fixed;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 1100;
+    max-width: min(400px, calc(100vw - 2rem));
+}
+
+.toast {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    box-shadow: var(--shadow-vital);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    animation: toastSlideIn 0.3s ease;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.toast.critical {
+    border-left: 4px solid var(--critical);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-card);
+}
+
+.toast.critical i {
+    color: var(--critical);
+}
+
+.toast.warning {
+    border-left: 4px solid var(--warning);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-card);
+}
+
+.toast.warning i {
+    color: var(--warning);
+}
+
+.toast.success {
+    border-left: 4px solid var(--normal);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-card);
+}
+
+.toast.success i {
+    color: var(--normal);
+}
+
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.toast-message {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+
+.toast-close {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-close:hover {
+    background: currentColor;
+    color: var(--bg-card);
+}
+
+/* === LOADING OVERLAY MÉDICO === */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 10, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;
+    backdrop-filter: blur(5px);
+}
+
+.loading-spinner {
+    text-align: center;
+    color: var(--ecg-green);
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-lg);
+    animation: medicalSpin 1s linear infinite;
+}
+
+.loading-spinner p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 500;
+}
+
+@keyframes medicalSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* === IMPRESIÓN MÉDICA === */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .monitor-container {
+        background: white !important;
+    }
+    
+    .patient-card {
+        background: white !important;
+        border: 2px solid black !important;
+        break-inside: avoid;
+        margin-bottom: 20px;
+    }
+    
+    .vital-value {
+        color: black !important;
+        text-shadow: none !important;
+    }
+    
+    .toast-container,
+    .loading-overlay {
+        display: none !important;
+    }
+}

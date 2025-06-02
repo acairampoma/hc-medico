@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rondas Médicas - Hospital System</title>
+    
+    <!-- CSS Externo -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    
+    <!-- Alpine.js para reactividad -->
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+</head>
+<body>
+    <div class="rounds-container" x-data="medicalRounds()">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-user-md"></i> Rondas Médicas</h1>
+            <p>Sistema Hospitalario Integrado - Navegación intuitiva para visita médica</p>
+        </div>
+
+        <div class="navigation-steps">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb" x-show="currentStep > 1">
+                <span x-html="getBreadcrumb()"></span>
+            </div>
+
+            <!-- PASO 1: Selección de Piso -->
+            <div class="step" :class="{ active: currentStep === 1 }">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Seleccione el Piso</div>
+                </div>
+
+                <div class="floor-selection">
+                    <template x-for="floor in hospital.floors" :key="floor.floor_number">
+                        <div class="floor-card">
+                            <div class="floor-info">
+                                <i class="floor-icon fas fa-hospital" :style="{ color: floor.color_theme }"></i>
+                                <div class="floor-number" x-text="`Piso ${floor.floor_number}`"></div>
+                                <div class="floor-specialty" x-text="floor.specialty"></div>
+                                <div style="font-size: 0.9rem; color: #64748B; margin-top: 0.5rem;">
+                                    <i class="fas fa-user-md"></i> <span x-text="floor.department_head"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="wing-buttons">
+                                <div class="wing-btn east" @click="selectFloorAndWing(floor, 'east')">
+                                    <span class="wing-name">Este</span>
+                                    <span class="wing-count" x-text="getWingStatsShort(floor, 'east')"></span>
+                                </div>
+                                <div class="wing-btn west" @click="selectFloorAndWing(floor, 'west')">
+                                    <span class="wing-name">Oeste</span>
+                                    <span class="wing-count" x-text="getWingStatsShort(floor, 'west')"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- PASO 2: Mapa de Camas (directo desde paso 1) -->
+            <div class="step" :class="{ active: currentStep === 2 }">
+                <div class="step-header-with-back">
+                    <div class="step-info">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Mapa de Camas</div>
+                    </div>
+                    <button class="back-button-elegant" @click="goBack()">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </button>
+                </div>
+
+                <div class="beds-map">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 x-text="`${getCurrentFloorData()?.specialty} - Ala ${selectedWing === 'east' ? 'Este' : 'Oeste'}`"></h3>
+                        <div style="background: white; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem;">
+                            <strong x-text="getOccupancyStats()"></strong>
+                        </div>
+                    </div>
+
+                    <!-- PANEL DE ESTADÍSTICAS DETALLADAS -->
+                    <div class="wing-stats-panel">
+                        <div class="stats-header">
+                            <h4><i class="fas fa-chart-bar"></i> Resumen del Ala</h4>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card total">
+                                <div class="stat-icon"><i class="fas fa-bed"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-number" x-text="getWingTotalBeds()"></div>
+                                    <div class="stat-label">Total Camas</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card male">
+                                <div class="stat-icon"><i class="fas fa-mars"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-number" x-text="getWingMaleCount()"></div>
+                                    <div class="stat-label">Hombres</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card female">
+                                <div class="stat-icon"><i class="fas fa-venus"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-number" x-text="getWingFemaleCount()"></div>
+                                    <div class="stat-label">Mujeres</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card available">
+                                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-number" x-text="getWingAvailableCount()"></div>
+                                    <div class="stat-label">Disponibles</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card maintenance">
+                                <div class="stat-icon"><i class="fas fa-tools"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-number" x-text="getWingMaintenanceCount()"></div>
+                                    <div class="stat-label">Mantenimiento</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card cleaning">
+                                <div class="stat-icon"><i class="fas fa-spray-can"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-number" x-text="getWingCleaningCount()"></div>
+                                    <div class="stat-label">Limpieza</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="beds-grid">
+                        <template x-for="bed in getCurrentBeds()" :key="bed.bed_number">
+                            <div class="bed-card" 
+                                 :class="getBedClass(bed)"
+                                 @click="selectBed(bed)"
+                                 :title="getBedTooltip(bed)">
+                                <i class="bed-icon" :class="getBedIcon(bed)"></i>
+                                <div class="bed-number" x-text="bed.bed_number"></div>
+                                <!-- Mostrar género si está ocupada -->
+                                <div x-show="bed.status === 'occupied'" 
+                                     style="font-size: 0.6rem; margin-top: 0.2rem;">
+                                    <i :class="bed.gender === 'M' ? 'fas fa-mars' : 'fas fa-venus'"></i>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Leyenda -->
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: var(--bed-available);"></div>
+                            <span>Disponible</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: var(--bed-male);"></div>
+                            <span>Paciente Masculino</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: var(--bed-female);"></div>
+                            <span>Paciente Femenino</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: var(--bed-maintenance);"></div>
+                            <span>Mantenimiento</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: var(--bed-cleaning);"></div>
+                            <span>Limpieza</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript desde static/ (donde FastAPI puede encontrarlo) -->
+    <script src="/static/js/medical_rounds.js"></script>
+</body>
+</html>

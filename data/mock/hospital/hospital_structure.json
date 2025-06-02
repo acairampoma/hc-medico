@@ -1,0 +1,305 @@
+{
+    "hospital": {
+      "name": "Hospital General San José",
+      "address": "Av. Principal 123, Ciudad Médica",
+      "total_floors": 6,
+      "beds_per_wing": 11,
+      "wings_per_floor": 2,
+      "total_beds": 132
+    },
+    "floors": [
+      {
+        "floor_number": 1,
+        "specialty": "UROLOGIA",
+        "specialty_code": "URO",
+        "department_head": "Dr. Carlos Mendoza",
+        "phone_extension": "1001",
+        "color_theme": "#3498db",
+        "icon": "fas fa-kidneys",
+        "wings": {
+          "east": {
+            "name": "Ala Este - Urología",
+            "wing_code": "1E",
+            "beds": [
+              {"bed_number": "101E", "status": "occupied", "gender": "M"},
+              {"bed_number": "102E", "status": "occupied", "gender": "F"},
+              {"bed_number": "103E", "status": "available", "gender": null},
+              {"bed_number": "104E", "status": "occupied", "gender": "M"},
+              {"bed_number": "105E", "status": "maintenance", "gender": null},
+              {"bed_number": "106E", "status": "occupied", "gender": "M"},
+              {"bed_number": "107E", "status": "available", "gender": null},
+              {"bed_number": "108E", "status": "occupied", "gender": "F"},
+              {"bed_number": "109E", "status": "occupied", "gender": "M"},
+              {"bed_number": "110E", "status": "available", "gender": null},
+              {"bed_number": "111E", "status": "occupied", "gender": "M"}
+            ]
+          },
+          "west": {
+            "name": "Ala Oeste - Urología",
+            "wing_code": "1W",
+            "beds": [
+              {"bed_number": "101W", "status": "occupied", "gender": "F"},
+              {"bed_number": "102W", "status": "occupied", "gender": "M"},
+              {"bed_number": "103W", "status": "available", "gender": null},
+              {"bed_number": "104W", "status": "occupied", "gender": "M"},
+              {"bed_number": "105W", "status": "occupied", "gender": "F"},
+              {"bed_number": "106W", "status": "available", "gender": null},
+              {"bed_number": "107W", "status": "occupied", "gender": "M"},
+              {"bed_number": "108W", "status": "cleaning", "gender": null},
+              {"bed_number": "109W", "status": "occupied", "gender": "M"},
+              {"bed_number": "110W", "status": "occupied", "gender": "F"},
+              {"bed_number": "111W", "status": "available", "gender": null}
+            ]
+          }
+        }
+      },
+      {
+        "floor_number": 2,
+        "specialty": "CIRUGÍA ABDOMINAL",
+        "specialty_code": "ABD",
+        "department_head": "Dr. Ana García",
+        "phone_extension": "2002",
+        "color_theme": "#e74c3c",
+        "icon": "fas fa-user-md",
+        "wings": {
+          "east": {
+            "name": "Ala Este - Cirugía Abdominal",
+            "wing_code": "2E",
+            "beds": [
+              {"bed_number": "201E", "status": "occupied", "gender": "M"},
+              {"bed_number": "202E", "status": "occupied", "gender": "F"},
+              {"bed_number": "203E", "status": "occupied", "gender": "M"},
+              {"bed_number": "204E", "status": "available", "gender": null},
+              {"bed_number": "205E", "status": "occupied", "gender": "F"},
+              {"bed_number": "206E", "status": "occupied", "gender": "M"},
+              {"bed_number": "207E", "status": "available", "gender": null},
+              {"bed_number": "208E", "status": "occupied", "gender": "F"},
+              {"bed_number": "209E", "status": "occupied", "gender": "M"},
+              {"bed_number": "210E", "status": "occupied", "gender": "F"},
+              {"bed_number": "211E", "status": "maintenance", "gender": null}
+            ]
+          },
+          "west": {
+            "name": "Ala Oeste - Cirugía Abdominal",
+            "wing_code": "2W",
+            "beds": [
+              {"bed_number": "201W", "status": "occupied", "gender": "M"},
+              {"bed_number": "202W", "status": "available", "gender": null},
+              {"bed_number": "203W", "status": "occupied", "gender": "F"},
+              {"bed_number": "204W", "status": "occupied", "gender": "M"},
+              {"bed_number": "205W", "status": "occupied", "gender": "F"},
+              {"bed_number": "206W", "status": "occupied", "gender": "M"},
+              {"bed_number": "207W", "status": "available", "gender": null},
+              {"bed_number": "208W", "status": "occupied", "gender": "F"},
+              {"bed_number": "209W", "status": "occupied", "gender": "M"},
+              {"bed_number": "210W", "status": "cleaning", "gender": null},
+              {"bed_number": "211W", "status": "occupied", "gender": "F"}
+            ]
+          }
+        }
+      },
+      {
+        "floor_number": 3,
+        "specialty": "CABEZA Y CUELLO",
+        "specialty_code": "CYC",
+        "department_head": "Dr. Luis Rodríguez",
+        "phone_extension": "3003",
+        "color_theme": "#f39c12",
+        "icon": "fas fa-head-side-medical",
+        "wings": {
+          "east": {
+            "name": "Ala Este - Cabeza y Cuello",
+            "wing_code": "3E",
+            "beds": [
+              {"bed_number": "301E", "status": "occupied", "gender": "F"},
+              {"bed_number": "302E", "status": "occupied", "gender": "M"},
+              {"bed_number": "303E", "status": "available", "gender": null},
+              {"bed_number": "304E", "status": "occupied", "gender": "F"},
+              {"bed_number": "305E", "status": "occupied", "gender": "M"},
+              {"bed_number": "306E", "status": "occupied", "gender": "F"},
+              {"bed_number": "307E", "status": "available", "gender": null},
+              {"bed_number": "308E", "status": "occupied", "gender": "M"},
+              {"bed_number": "309E", "status": "occupied", "gender": "F"},
+              {"bed_number": "310E", "status": "occupied", "gender": "M"},
+              {"bed_number": "311E", "status": "available", "gender": null}
+            ]
+          },
+          "west": {
+            "name": "Ala Oeste - Cabeza y Cuello",
+            "wing_code": "3W",
+            "beds": [
+              {"bed_number": "301W", "status": "occupied", "gender": "M"},
+              {"bed_number": "302W", "status": "occupied", "gender": "F"},
+              {"bed_number": "303W", "status": "occupied", "gender": "M"},
+              {"bed_number": "304W", "status": "available", "gender": null},
+              {"bed_number": "305W", "status": "occupied", "gender": "F"},
+              {"bed_number": "306W", "status": "maintenance", "gender": null},
+              {"bed_number": "307W", "status": "occupied", "gender": "M"},
+              {"bed_number": "308W", "status": "occupied", "gender": "F"},
+              {"bed_number": "309W", "status": "available", "gender": null},
+              {"bed_number": "310W", "status": "occupied", "gender": "M"},
+              {"bed_number": "311W", "status": "occupied", "gender": "F"}
+            ]
+          }
+        }
+      },
+      {
+        "floor_number": 4,
+        "specialty": "MAMAS Y TEJIDOS BLANDOS",
+        "specialty_code": "MTB",
+        "department_head": "Dra. Patricia López",
+        "phone_extension": "4004",
+        "color_theme": "#e91e63",
+        "icon": "fas fa-ribbon",
+        "wings": {
+          "east": {
+            "name": "Ala Este - Mamas y Tejidos",
+            "wing_code": "4E",
+            "beds": [
+              {"bed_number": "401E", "status": "occupied", "gender": "F"},
+              {"bed_number": "402E", "status": "occupied", "gender": "F"},
+              {"bed_number": "403E", "status": "occupied", "gender": "F"},
+              {"bed_number": "404E", "status": "available", "gender": null},
+              {"bed_number": "405E", "status": "occupied", "gender": "F"},
+              {"bed_number": "406E", "status": "occupied", "gender": "M"},
+              {"bed_number": "407E", "status": "occupied", "gender": "F"},
+              {"bed_number": "408E", "status": "available", "gender": null},
+              {"bed_number": "409E", "status": "occupied", "gender": "F"},
+              {"bed_number": "410E", "status": "occupied", "gender": "F"},
+              {"bed_number": "411E", "status": "cleaning", "gender": null}
+            ]
+          },
+          "west": {
+            "name": "Ala Oeste - Mamas y Tejidos",
+            "wing_code": "4W",
+            "beds": [
+              {"bed_number": "401W", "status": "occupied", "gender": "F"},
+              {"bed_number": "402W", "status": "occupied", "gender": "F"},
+              {"bed_number": "403W", "status": "available", "gender": null},
+              {"bed_number": "404W", "status": "occupied", "gender": "F"},
+              {"bed_number": "405W", "status": "occupied", "gender": "M"},
+              {"bed_number": "406W", "status": "occupied", "gender": "F"},
+              {"bed_number": "407W", "status": "occupied", "gender": "F"},
+              {"bed_number": "408W", "status": "available", "gender": null},
+              {"bed_number": "409W", "status": "occupied", "gender": "F"},
+              {"bed_number": "410W", "status": "maintenance", "gender": null},
+              {"bed_number": "411W", "status": "occupied", "gender": "F"}
+            ]
+          }
+        }
+      },
+      {
+        "floor_number": 5,
+        "specialty": "CIRUGÍA DE TÓRAX",
+        "specialty_code": "TOR",
+        "department_head": "Dr. Roberto Martínez",
+        "phone_extension": "5005",
+        "color_theme": "#9b59b6",
+        "icon": "fas fa-lungs",
+        "wings": {
+          "east": {
+            "name": "Ala Este - Cirugía de Tórax",
+            "wing_code": "5E",
+            "beds": [
+              {"bed_number": "501E", "status": "occupied", "gender": "M"},
+              {"bed_number": "502E", "status": "occupied", "gender": "F"},
+              {"bed_number": "503E", "status": "occupied", "gender": "M"},
+              {"bed_number": "504E", "status": "occupied", "gender": "M"},
+              {"bed_number": "505E", "status": "available", "gender": null},
+              {"bed_number": "506E", "status": "occupied", "gender": "F"},
+              {"bed_number": "507E", "status": "occupied", "gender": "M"},
+              {"bed_number": "508E", "status": "available", "gender": null},
+              {"bed_number": "509E", "status": "occupied", "gender": "M"},
+              {"bed_number": "510E", "status": "occupied", "gender": "F"},
+              {"bed_number": "511E", "status": "occupied", "gender": "M"}
+            ]
+          },
+          "west": {
+            "name": "Ala Oeste - Cirugía de Tórax",
+            "wing_code": "5W",
+            "beds": [
+              {"bed_number": "501W", "status": "occupied", "gender": "M"},
+              {"bed_number": "502W", "status": "available", "gender": null},
+              {"bed_number": "503W", "status": "occupied", "gender": "F"},
+              {"bed_number": "504W", "status": "occupied", "gender": "M"},
+              {"bed_number": "505W", "status": "occupied", "gender": "M"},
+              {"bed_number": "506W", "status": "cleaning", "gender": null},
+              {"bed_number": "507W", "status": "occupied", "gender": "F"},
+              {"bed_number": "508W", "status": "occupied", "gender": "M"},
+              {"bed_number": "509W", "status": "available", "gender": null},
+              {"bed_number": "510W", "status": "occupied", "gender": "F"},
+              {"bed_number": "511W", "status": "occupied", "gender": "M"}
+            ]
+          }
+        }
+      },
+      {
+        "floor_number": 6,
+        "specialty": "GINECOLOGÍA",
+        "specialty_code": "GIN",
+        "department_head": "Dra. Carmen Silva",
+        "phone_extension": "6006",
+        "color_theme": "#2ecc71",
+        "icon": "fas fa-female",
+        "wings": {
+          "east": {
+            "name": "Ala Este - Ginecología",
+            "wing_code": "6E",
+            "beds": [
+              {"bed_number": "601E", "status": "occupied", "gender": "F"},
+              {"bed_number": "602E", "status": "occupied", "gender": "F"},
+              {"bed_number": "603E", "status": "available", "gender": null},
+              {"bed_number": "604E", "status": "occupied", "gender": "F"},
+              {"bed_number": "605E", "status": "occupied", "gender": "F"},
+              {"bed_number": "606E", "status": "occupied", "gender": "F"},
+              {"bed_number": "607E", "status": "available", "gender": null},
+              {"bed_number": "608E", "status": "occupied", "gender": "F"},
+              {"bed_number": "609E", "status": "occupied", "gender": "F"},
+              {"bed_number": "610E", "status": "maintenance", "gender": null},
+              {"bed_number": "611E", "status": "occupied", "gender": "F"}
+            ]
+          },
+          "west": {
+            "name": "Ala Oeste - Ginecología",
+            "wing_code": "6W",
+            "beds": [
+              {"bed_number": "601W", "status": "occupied", "gender": "F"},
+              {"bed_number": "602W", "status": "occupied", "gender": "F"},
+              {"bed_number": "603W", "status": "occupied", "gender": "F"},
+              {"bed_number": "604W", "status": "available", "gender": null},
+              {"bed_number": "605W", "status": "occupied", "gender": "F"},
+              {"bed_number": "606W", "status": "available", "gender": null},
+              {"bed_number": "607W", "status": "occupied", "gender": "F"},
+              {"bed_number": "608W", "status": "occupied", "gender": "F"},
+              {"bed_number": "609W", "status": "cleaning", "gender": null},
+              {"bed_number": "610W", "status": "occupied", "gender": "F"},
+              {"bed_number": "611W", "status": "occupied", "gender": "F"}
+            ]
+          }
+        }
+      }
+    ],
+    "bed_status_legend": {
+      "available": {
+        "label": "Disponible",
+        "color": "#95a5a6",
+        "icon": "fas fa-bed"
+      },
+      "occupied": {
+        "label": "Ocupada",
+        "color_male": "#3498db",
+        "color_female": "#e91e63",
+        "icon": "fas fa-user"
+      },
+      "maintenance": {
+        "label": "Mantenimiento",
+        "color": "#f39c12",
+        "icon": "fas fa-tools"
+      },
+      "cleaning": {
+        "label": "Limpieza",
+        "color": "#1abc9c",
+        "icon": "fas fa-broom"
+      }
+    }
+  }

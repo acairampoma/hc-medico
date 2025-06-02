@@ -1,0 +1,208 @@
+{
+    "order_templates": [
+      {
+        "template_id": "ORD001",
+        "name": "Postoperatorio Urología",
+        "specialty": "URO",
+        "orders": [
+          {
+            "type": "medication",
+            "description": "Ciprofloxacino 500mg VO cada 12h x 7 días",
+            "priority": "routine"
+          },
+          {
+            "type": "laboratory",
+            "description": "Hemograma + Creatinina en 24h",
+            "priority": "routine"
+          },
+          {
+            "type": "nursing",
+            "description": "Control de diuresis cada 8h",
+            "priority": "routine"
+          },
+          {
+            "type": "diet",
+            "description": "Dieta líquida progresiva",
+            "priority": "routine"
+          }
+        ]
+      },
+      {
+        "template_id": "ORD002", 
+        "name": "Preoperatorio Cirugía General",
+        "specialty": "ABD",
+        "orders": [
+          {
+            "type": "laboratory",
+            "description": "Hemograma + Coagulograma + Química sanguínea",
+            "priority": "urgent"
+          },
+          {
+            "type": "radiology",
+            "description": "Radiografía de tórax PA",
+            "priority": "routine"
+          },
+          {
+            "type": "cardiology",
+            "description": "ECG de 12 derivaciones",
+            "priority": "routine"
+          },
+          {
+            "type": "anesthesia",
+            "description": "Evaluación preanestésica",
+            "priority": "urgent"
+          },
+          {
+            "type": "nursing",
+            "description": "NPO desde las 00:00h",
+            "priority": "routine"
+          }
+        ]
+      },
+      {
+        "template_id": "ORD003",
+        "name": "Postoperatorio Mastectomía",
+        "specialty": "MTB",
+        "orders": [
+          {
+            "type": "medication",
+            "description": "Morfina 10mg IV cada 4h PRN dolor",
+            "priority": "routine"
+          },
+          {
+            "type": "medication",
+            "description": "Ondansetrón 8mg IV cada 8h",
+            "priority": "routine"
+          },
+          {
+            "type": "nursing",
+            "description": "Control de drenaje cada 4h",
+            "priority": "routine"
+          },
+          {
+            "type": "nursing",
+            "description": "Ejercicios respiratorios cada 2h",
+            "priority": "routine"
+          },
+          {
+            "type": "laboratory",
+            "description": "Hemograma en 24h",
+            "priority": "routine"
+          },
+          {
+            "type": "pathology",
+            "description": "Estudio histopatológico de pieza quirúrgica",
+            "priority": "urgent"
+          }
+        ]
+      }
+    ],
+    "quick_orders": [
+      {
+        "category": "Analgesia",
+        "orders": [
+          "Paracetamol 1g VO cada 8h",
+          "Diclofenaco 50mg VO cada 12h",
+          "Morfina 10mg IV cada 4h PRN",
+          "Tramadol 100mg VO cada 8h"
+        ]
+      },
+      {
+        "category": "Antibióticos",
+        "orders": [
+          "Amoxicilina 500mg VO cada 8h x 7 días",
+          "Ciprofloxacino 500mg VO cada 12h x 7 días",
+          "Ceftriaxona 1g IV cada 24h",
+          "Clindamicina 600mg IV cada 8h"
+        ]
+      },
+      {
+        "category": "Laboratorio",
+        "orders": [
+          "Hemograma completo",
+          "Química sanguínea (glucosa, urea, creatinina)",
+          "Perfil hepático (ALT, AST, bilirrubinas)",
+          "Coagulograma (TP, TPT, INR)",
+          "Uroanálisis",
+          "Hemocultivo x 2",
+          "Marcadores cardíacos (CK-MB, Troponina)"
+        ]
+      },
+      {
+        "category": "Imágenes",
+        "orders": [
+          "Radiografía de tórax PA",
+          "Ecografía abdominal",
+          "Tomografía de abdomen con contraste",
+          "Ecografía renal",
+          "Mamografía bilateral"
+        ]
+      },
+      {
+        "category": "Cuidados de enfermería",
+        "orders": [
+          "Control de signos vitales cada 4h",
+          "Control de glicemia cada 6h",
+          "Control de diuresis cada 8h",
+          "Curación de herida quirúrgica diaria",
+          "Movilización precoz",
+          "Ejercicios respiratorios cada 2h"
+        ]
+      }
+    ],
+    "prescription_formats": [
+      {
+        "format_id": "RX001",
+        "name": "Receta estándar",
+        "fields": [
+          "patient_name",
+          "patient_age", 
+          "date",
+          "medications",
+          "physician_signature",
+          "physician_license"
+        ]
+      },
+      {
+        "format_id": "RX002",
+        "name": "Receta controlada",
+        "fields": [
+          "patient_name",
+          "patient_document",
+          "patient_age",
+          "date",
+          "medications",
+          "quantity_dispensed",
+          "physician_signature",
+          "physician_license",
+          "dea_number"
+        ]
+      }
+    ],
+    "order_priorities": [
+      {
+        "priority": "stat",
+        "description": "STAT - Inmediato",
+        "color": "#e74c3c",
+        "response_time": "< 15 minutos"
+      },
+      {
+        "priority": "urgent",
+        "description": "Urgente",
+        "color": "#f39c12", 
+        "response_time": "< 1 hora"
+      },
+      {
+        "priority": "routine",
+        "description": "Rutina",
+        "color": "#2ecc71",
+        "response_time": "Horario habitual"
+      },
+      {
+        "priority": "scheduled",
+        "description": "Programado",
+        "color": "#3498db",
+        "response_time": "Según programación"
+      }
+    ]
+  }

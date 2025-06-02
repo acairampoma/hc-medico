@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orden de Exámenes - Hospital San José</title>
+    
+    <!-- Librerías Externas -->
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Archivos del Proyecto -->
+    <link rel="stylesheet" href="/static/css/exam_orders.css">
+    <script src="/static/js/exam_orders.js"></script>
+</head>
+<body>
+    <div class="container" x-data="examOrdersApp">
+        <!-- Header -->
+        <div class="header">
+            <a href="/medical/rounds" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <h1><i class="fas fa-vials"></i> Nueva Orden de Exámenes</h1>
+        </div>
+
+        <div class="form-content">
+            <!-- Datos del Paciente -->
+            <div class="section">
+                <h3 class="section-title">
+                    <i class="fas fa-user"></i> Datos del Paciente
+                </h3>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Nombres y Apellidos <span class="required">*</span></label>
+                        <input type="text" x-model="data.paciente.nombre" placeholder="Gabriel Chirinos Vega" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Edad <span class="required">*</span></label>
+                        <input type="number" x-model="data.paciente.edad" placeholder="45" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Género</label>
+                        <select x-model="data.paciente.genero" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                            <option value="">Seleccionar</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Cama</label>
+                        <input type="text" x-model="data.paciente.cama" placeholder="101A" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Sala/Servicio</label>
+                        <input type="text" x-model="data.paciente.sala" placeholder="Cardiología" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                    <div class="form-group">
+                        <label>Médico <span class="required">*</span></label>
+                        <input type="text" x-model="data.medico.nombre" placeholder="Dr. Juan Pérez" :disabled="datosDesdeRondas" :class="{ 'readonly-field': datosDesdeRondas }">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnóstico -->
+            <div class="section">
+                <h3 class="section-title">
+                    <i class="fas fa-stethoscope"></i> Diagnóstico
+                </h3>
+                
+                <div class="form-group" x-show="!data.diagnostico.codigo">
+                    <label>Buscar diagnóstico CIE-10 <span class="required">*</span></label>
+                    <div class="dx-search">
+                        <input type="text" 
+                               x-model="buscarDx" 
+                               @input="filtrarDx()"
+                               @focus="mostrarDx = true"
+                               placeholder="Buscar por código o nombre...">
+                        
+                        <div class="dx-results" :class="{ 'show': mostrarDx && dxFiltrados.length > 0 }">
+                            <template x-for="dx in dxFiltrados" :key="dx.codigo">
+                                <div class="dx-item" @click="seleccionarDx(dx)">
+                                    <div class="dx-code" x-text="dx.codigo"></div>
+                                    <div x-text="dx.nombre"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnóstico seleccionado -->
+                <div x-show="data.diagnostico.codigo" class="selected-dx">
+                    <div class="dx-info">
+                        <h4 x-text="`${data.diagnostico.codigo} - ${data.diagnostico.nombre}`"></h4>
+                    </div>
+                    <div class="dx-actions">
+                        <button class="add-exam-from-dx-btn" @click="mostrarFormExamen = true" x-show="!mostrarFormExamen && data.examenes.length === 0">
+                            <i class="fas fa-vials"></i> Agregar examen
+                        </button>
+                        <button class="remove-dx" @click="eliminarDiagnostico()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exámenes -->
+            <div class="section" x-show="data.diagnostico.codigo">
+                <h3 class="section-title">
+                    <i class="fas fa-vials"></i> Exámenes para <span x-text="data.diagnostico.nombre"></span>
+                    <button class="add-exam-btn-header" @click="mostrarFormExamen = true" x-show="!mostrarFormExamen && data.examenes.length > 0 && data.diagnostico.codigo">
+                        <i class="fas fa-plus-circle"></i> Agregar otro examen
+                    </button>
+                </h3>
+                
+                    <!-- 🆕 COMBO DE PLANTILLAS -->
+                    <div class="templates-combo" x-show="!mostrarFormExamen">
+                        <div class="row">
+                            <div class="form-group">
+                                <label><i class="fas fa-clipboard-list"></i> Plantillas Rápidas</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <select x-model="plantillaSeleccionada" style="flex: 1;">
+                                        <option value="">Seleccionar plantilla...</option>
+                                        <template x-for="plantilla in plantillasExamenes" :key="plantilla.id">
+                                            <option :value="plantilla.id" x-text="plantilla.nombre"></option>
+                                        </template>
+                                    </select>
+                                    <button class="btn-apply-template" 
+                                            @click="aplicarPlantilla()" 
+                                            :disabled="!plantillaSeleccionada">
+                                        <i class="fas fa-magic"></i> Aplicar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- Formulario para agregar exámenes -->
+                <div class="exam-form" x-show="mostrarFormExamen">
+                    <div class="exam-form-header">
+                        <h4>Agregar examen para <span x-text="data.diagnostico.nombre" class="dx-name"></span></h4>
+                        <button class="btn-close-form" @click="mostrarFormExamen = false" title="Cerrar formulario">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="exam-search">
+                        <label>Buscar examen <span class="required">*</span></label>
+                        <div class="search-container">
+                            <input type="text" 
+                                   x-model="buscarExam" 
+                                   @input="filtrarExamenes()"
+                                   @focus="mostrarExams = true"
+                                   placeholder="Buscar examen...">
+                            
+                            <div class="exam-results" :class="{ 'show': mostrarExams && examFiltrados.length > 0 }">
+                                <template x-for="exam in examFiltrados" :key="exam.id">
+                                    <div class="exam-result-item" @click="seleccionarExamen(exam)">
+                                        <div class="exam-result-name" x-text="exam.codigo + ' - ' + exam.nombre"></div>
+                                        <div class="exam-result-type" x-text="exam.categoria + ' | ' + exam.tipo"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div x-show="nuevoExam.nombre" class="exam-details">
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Cantidad <span class="required">*</span></label>
+                                <div class="input-with-options">
+                                    <input type="text" x-model="nuevoExam.cantidad" placeholder="1 examen">
+                                    <div class="quick-options">
+                                        <span @click="nuevoExam.cantidad = '1 examen'">1 examen</span>
+                                        <span @click="nuevoExam.cantidad = '2 vistas'">2 vistas</span>
+                                        <span @click="nuevoExam.cantidad = 'Con contraste'">Con contraste</span>
+                                        <span @click="nuevoExam.cantidad = 'Sin contraste'">Sin contraste</span>
+                                        <span @click="nuevoExam.cantidad = 'Bilateral'">Bilateral</span>
+                                        <span @click="nuevoExam.cantidad = '1 muestra'">1 muestra</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo de Examen</label>
+                                <select x-model="nuevoExam.tipo">
+                                    <option value="">Seleccionar</option>
+                                    <option value="Laboratorio">Laboratorio</option>
+                                    <option value="Imagenología">Imagenología</option>
+                                    <option value="Cardiología">Cardiología</option>
+                                    <option value="Neumología">Neumología</option>
+                                    <option value="Endoscopía">Endoscopía</option>
+                                    <option value="Funcional">Funcional</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" x-model="nuevoExam.urgente">
+                                    <span class="checkmark"></span>
+                                    <strong style="color: #e74c3c;">Examen Urgente</strong>
+                                    <small style="display: block; color: #666; margin-top: 5px;">Marcar si requiere procesamiento prioritario</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="form-group col-full">
+                                <label>Indicaciones específicas</label>
+                                <div class="input-with-options">
+                                    <textarea x-model="nuevoExam.indicaciones" 
+                                              placeholder="Indicaciones especiales para el examen..." 
+                                              rows="2"></textarea>
+                                    <div class="quick-options">
+                                        <span @click="nuevoExam.indicaciones = 'En ayunas de 12 horas'">En ayunas</span>
+                                        <span @click="nuevoExam.indicaciones = 'Con sedación consciente'">Con sedación</span>
+                                        <span @click="nuevoExam.indicaciones = 'Suspender anticoagulantes'">Sin anticoagulantes</span>
+                                        <span @click="nuevoExam.indicaciones = 'Alergia a contrastes yodados'">Alergia contraste</span>
+                                        <span @click="nuevoExam.indicaciones = 'Paciente claustrofóbico'">Claustrofobia</span>
+                                        <span @click="nuevoExam.indicaciones = 'Control post-operatorio'">Control post-op</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="exam-form-actions">
+                            <button class="add-btn" 
+                                    @click="agregarExam()" 
+                                    :disabled="!nuevoExam.nombre || !nuevoExam.cantidad">
+                                <i class="fas fa-plus"></i> Agregar a la orden
+                            </button>
+                            <button class="cancel-btn" @click="cancelarAgregarExam()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de exámenes -->
+                <div class="exam-list" x-show="data.examenes.length > 0 || !mostrarFormExamen">
+                    <template x-for="(exam, i) in data.examenes" :key="i">
+                        <div class="exam-item">
+                            <div class="exam-content">
+                                <div class="exam-header">
+                                    <div class="exam-number" x-text="i+1"></div>
+                                    <div class="exam-name" x-text="exam.nombre"></div>
+                                    <div x-show="exam.urgente" class="urgent-badge">
+                                        <i class="fas fa-exclamation-triangle"></i> URGENTE
+                                    </div>
+                                </div>
+                                <div class="exam-details-display">
+                                    <span><strong>Cantidad:</strong> <span x-text="exam.cantidad"></span></span>
+                                    <span x-show="exam.tipo"> | <strong>Tipo:</strong> <span x-text="exam.tipo"></span></span>
+                                </div>
+                                <div x-show="exam.indicaciones" class="exam-instructions" x-text="exam.indicaciones"></div>
+                            </div>
+                            <button class="btn-remove" @click="eliminarExamen(i)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <div x-show="data.examenes.length === 0 && !mostrarFormExamen" class="empty">
+                        <i class="fas fa-vials fa-2x" style="margin-bottom: 10px; opacity: 0.3;"></i>
+                        <p>No hay exámenes agregados</p>
+                        <button class="start-exam-btn" @click="mostrarFormExamen = true">
+                            <i class="fas fa-plus-circle"></i> Agregar el primer examen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Firma -->
+            <div class="section" x-show="data.diagnostico.codigo && data.examenes.length > 0">
+                <h3 class="section-title">
+                    <i class="fas fa-signature"></i> Firma del Médico
+                </h3>
+                
+                <div class="signature-container">
+                    <p class="signature-instructions">Firme en el espacio a continuación:</p>
+                    
+                    <div class="signature-pad-wrapper">
+                        <canvas id="signaturePad" class="signature-pad" width="600" height="200"></canvas>
+                    </div>
+                    
+                    <div class="signature-controls">
+                        <button class="btn-clear-signature" @click="limpiarFirma()">
+                            <i class="fas fa-eraser"></i> Borrar firma
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Acciones -->
+            <div class="actions" x-show="data.diagnostico.codigo">
+                <button class="btn btn-primary" @click="previsualizarOrden()">
+                    <i class="fas fa-eye"></i> Previsualizar
+                </button>
+                <button class="btn btn-success" @click="generarPDF()" :disabled="data.examenes.length === 0">
+                    <i class="fas fa-download"></i> Generar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

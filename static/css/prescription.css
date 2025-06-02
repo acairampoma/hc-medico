@@ -1,0 +1,836 @@
+/* ===============================================
+   PRESCRIPTION FORM STYLES
+   Hospital San José - Sistema de Prescripción
+   =============================================== */
+
+/* === VARIABLES CSS === */
+:root {
+    --medical-blue: #2c5aa0;
+    --medical-green: #00a86b;
+    --medical-red: #e74c3c;
+    
+    /* Colores adicionales */
+    --gray-light: #f8f9fa;
+    --gray-medium: #e1e5e9;
+    --gray-dark: #6c757d;
+    --white: #ffffff;
+    --black: #000000;
+    
+    /* Espaciado */
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 15px;
+    --spacing-lg: 20px;
+    --spacing-xl: 40px;
+    
+    /* Bordes */
+    --border-radius: 8px;
+    --border-radius-sm: 4px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 20px;
+    
+    /* Sombras */
+    --shadow-sm: 0 2px 10px rgba(108, 117, 125, 0.2);
+    --shadow-md: 0 4px 15px rgba(44, 90, 160, 0.2);
+    --shadow-lg: 0 20px 40px rgba(44, 90, 160, 0.2);
+}
+
+/* === RESET Y BASE === */
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 25%, #00b894 75%, #00cec9 100%);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+/* === CONTENEDOR PRINCIPAL === */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: var(--white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+/* === HEADER === */
+.header {
+    background: linear-gradient(135deg, var(--medical-blue), var(--medical-green));
+    color: var(--white);
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="medical-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23medical-pattern)"/></svg>');
+    pointer-events: none;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.header p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+/* === BOTONES DEL HEADER === */
+.back-btn {
+    position: absolute;
+    top: var(--spacing-lg);
+    left: var(--spacing-lg);
+    background: linear-gradient(135deg, var(--gray-dark) 0%, #495057 100%);
+    color: var(--white);
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius-lg);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.back-btn:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #343a40 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+}
+
+.back-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* === CONTENIDO DEL FORMULARIO === */
+.form-content {
+    padding: var(--spacing-xl);
+}
+
+.section {
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: 30px;
+    border-bottom: 1px solid #eee;
+}
+
+.section:last-child {
+    border-bottom: none;
+}
+
+.section-title {
+    font-size: 1.3rem;
+    color: var(--medical-blue);
+    margin-bottom: var(--spacing-lg);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* === GRID Y FORMULARIOS === */
+.row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.col-full {
+    grid-column: 1 / -1;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+input, select, textarea {
+    padding: 12px;
+    border: 2px solid var(--gray-medium);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--medical-blue);
+}
+
+.required {
+    color: var(--medical-red);
+}
+
+.readonly-field {
+    background-color: var(--gray-light);
+    border: 1px solid #e2e6ea;
+    color: #495057;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* === BÚSQUEDA DE DIAGNÓSTICOS === */
+.dx-search {
+    position: relative;
+}
+
+.dx-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 2px solid var(--gray-medium);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+}
+
+.dx-results.show { 
+    display: block; 
+}
+
+.dx-item {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.dx-item:hover {
+    background: var(--gray-light);
+}
+
+.dx-code {
+    font-weight: bold;
+    color: var(--medical-blue);
+    font-size: 13px;
+}
+
+.selected-dx {
+    background: #e3f2fd;
+    border: 2px solid var(--medical-blue);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dx-info h4 {
+    color: var(--medical-blue);
+    margin-bottom: var(--spacing-xs);
+}
+
+.dx-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.remove-dx {
+    background: var(--medical-red);
+    color: var(--white);
+    border: none;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+}
+
+/* === MEDICAMENTOS === */
+.med-form {
+    background: var(--gray-light);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-lg);
+}
+
+.med-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid #eee;
+}
+
+.med-form-header h4 {
+    margin: 0;
+    color: var(--medical-blue);
+}
+
+.dx-name {
+    color: var(--medical-blue);
+    font-weight: bold;
+}
+
+.btn-close-form {
+    background: #eee;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.med-search {
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-container {
+    position: relative;
+}
+
+.med-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 2px solid var(--gray-medium);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+}
+
+.med-results.show {
+    display: block;
+}
+
+.med-result-item {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.med-result-item:hover {
+    background: var(--gray-light);
+}
+
+.med-result-name {
+    font-weight: bold;
+    color: var(--medical-blue);
+}
+
+.med-result-type {
+    font-size: 12px;
+    color: #666;
+}
+
+.med-details {
+    background: var(--gray-light);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    margin-top: var(--spacing-md);
+}
+
+.med-form-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+/* === BOTONES === */
+.add-btn {
+    background: var(--medical-green);
+    color: var(--white);
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    margin-top: var(--spacing-md);
+}
+
+.add-btn:hover {
+    background: #00965f;
+}
+
+.add-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.cancel-btn {
+    background: #eee;
+    color: #333;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.add-med-from-dx-btn {
+    background: var(--medical-green);
+    color: var(--white);
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--border-radius-sm);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.add-med-btn-header {
+    background: var(--medical-green);
+    color: var(--white);
+    border: none;
+    padding: 5px 10px;
+    border-radius: var(--border-radius-sm);
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: var(--spacing-md);
+    vertical-align: middle;
+}
+
+.start-med-btn {
+    background: var(--medical-green);
+    color: var(--white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    margin-top: var(--spacing-md);
+    font-weight: 600;
+}
+
+.btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+    margin: 0 10px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: var(--medical-blue);
+    color: var(--white);
+}
+
+.btn-success {
+    background: var(--medical-green);
+    color: var(--white);
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-remove {
+    background: var(--medical-red);
+    color: var(--white);
+    border: none;
+    padding: 6px 10px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* === LISTA DE MEDICAMENTOS === */
+.med-list {
+    border: 2px solid var(--gray-medium);
+    border-radius: var(--border-radius);
+    min-height: 100px;
+}
+
+.med-item {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.med-item:last-child {
+    border-bottom: none;
+}
+
+.med-content {
+    flex: 1;
+}
+
+.med-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.med-number {
+    background: var(--medical-blue);
+    color: var(--white);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.med-name {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: var(--spacing-xs);
+}
+
+.med-dose {
+    color: #666;
+    font-size: 13px;
+}
+
+.med-instructions {
+    font-style: italic;
+    color: #666;
+    font-size: 13px;
+    margin-top: var(--spacing-xs);
+}
+
+.empty {
+    text-align: center;
+    color: #999;
+    padding: var(--spacing-xl);
+    font-style: italic;
+}
+
+/* === OPCIONES RÁPIDAS === */
+.input-with-options {
+    position: relative;
+    width: 100%;
+}
+
+.quick-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-xs);
+}
+
+.quick-options span {
+    display: inline-block;
+    background: #f0f7ff;
+    border: 1px solid #cce5ff;
+    color: #0066cc;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quick-options span:hover {
+    background: #0066cc;
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+/* === FIRMA DIGITAL === */
+.signature-container {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    border: 2px solid var(--gray-medium);
+}
+
+.signature-instructions {
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+    color: #666;
+}
+
+.signature-pad-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+.signature-pad {
+    border: 2px solid var(--gray-medium);
+    border-radius: var(--border-radius);
+    background: #f9f9f9;
+    touch-action: none;
+}
+
+.signature-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--spacing-md);
+}
+
+.btn-clear-signature {
+    background: #eee;
+    color: #333;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* === ACCIONES === */
+.actions {
+    text-align: center;
+    margin-top: var(--spacing-xl);
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+    }
+    
+    .form-content {
+        padding: var(--spacing-lg);
+    }
+    
+    .row {
+        grid-template-columns: 1fr;
+    }
+    
+    .back-btn {
+        position: static;
+        margin-bottom: var(--spacing-lg);
+        display: inline-block;
+    }
+    
+    .actions .btn {
+        display: block;
+        margin: 10px 0;
+    }
+    
+    .dx-actions {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .signature-pad {
+        width: 100%;
+        height: 150px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header p {
+        font-size: 1rem;
+    }
+    
+    .med-form-actions {
+        flex-direction: column;
+    }
+    
+    .quick-options {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0.5rem;
+    }
+    
+    .form-content {
+        padding: var(--spacing-md);
+    }
+    
+    .section {
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-md);
+    }
+    
+    .header {
+        padding: 1.5rem;
+    }
+    
+    .header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .back-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* === ANIMACIONES === */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dx-results.show,
+.med-results.show {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.med-item,
+.selected-dx {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* === ESTADOS DE HOVER Y FOCUS === */
+button:hover {
+    transition: all 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+
+/* === UTILIDADES === */
+.text-center {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: var(--spacing-xs); }
+.mb-2 { margin-bottom: var(--spacing-sm); }
+.mb-3 { margin-bottom: var(--spacing-md); }
+.mb-4 { margin-bottom: var(--spacing-lg); }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: var(--spacing-xs); }
+.mt-2 { margin-top: var(--spacing-sm); }
+.mt-3 { margin-top: var(--spacing-md); }
+.mt-4 { margin-top: var(--spacing-lg); }
+
+/* === ACCESIBILIDAD === */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* === MODO ALTO CONTRASTE === */
+@media (prefers-contrast: high) {
+    :root {
+        --medical-blue: #000080;
+        --medical-green: #006400;
+        --medical-red: #8B0000;
+        --gray-medium: #000000;
+    }
+    
+    input, select, textarea {
+        border-width: 3px;
+    }
+}
+
+/* === IMPRESIÓN === */
+@media print {
+    body {
+        background: var(--white);
+    }
+    
+    .container {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .header {
+        background: var(--white) !important;
+        color: var(--black) !important;
+    }
+    
+    .back-btn,
+    .actions {
+        display: none;
+    }
+}
+
+/* ===== ESTILOS PARA MÓVILES - RECETAS ===== */
+.mobile-prescription-popup {
+    font-size: 16px !important;
+}
+
+@media (max-width: 768px) {
+    .mobile-prescription-popup {
+        margin: 0 !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+    }
+    
+    .mobile-prescription-popup .swal2-html-container {
+        padding: 1rem !important;
+    }
+    
+    .mobile-prescription-popup button {
+        min-height: 48px !important;
+        min-width: 48px !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* ===============================================
+   FIN DE ESTILOS
+   =============================================== */

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Monitor de Signos Vitales - Hospital San José</title>
+   
+   <!-- Librerías -->
+   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+   
+   <!-- Estilos -->
+   <link rel="stylesheet" href="/static/css/vital_signs.css">
+</head>
+<body>
+   <div class="monitor-container" x-data="vitalSignsMonitor">
+       <!-- Header -->
+       <div class="monitor-header">
+           <div class="hospital-info">
+               <h1><i class="fas fa-heartbeat"></i> Monitor de Signos Vitales</h1>
+               <p>Hospital Central San José - Sistema HL7</p>
+           </div>
+           <div class="connection-status">
+               <div class="status-indicator" :class="connectionStatus">
+                   <i class="fas fa-circle"></i>
+                   <span x-text="connectionText"></span>
+               </div>
+               <div class="last-update">
+                   Última actualización: <span x-text="lastUpdate"></span>
+               </div>
+           </div>
+           <a href="/medical/rounds" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Volver
+            </a>
+       </div>
+
+       
+
+       <!-- Grid de Pacientes -->
+       <div class="patients-grid">
+           <template x-for="patient in filteredPatients" :key="patient.patient_info.bed">
+               <div class="patient-card" :class="getCardClass(patient)">
+                   
+                   <!-- Header del Paciente -->
+                   <div class="patient-header">
+                       <div class="patient-info">
+                           <h3 x-text="patient.patient_info.name"></h3>
+                           <div class="patient-details">
+                               <span class="bed-number" x-text="'Cama: ' + patient.patient_info.bed"></span>
+                               <span class="room-type" x-text="patient.patient_info.room_type"></span>
+                               <span class="age-gender" x-text="patient.patient_info.age + ' años, ' + (patient.patient_info.gender === 'M' ? 'Masculino' : 'Femenino')"></span>
+                           </div>
+                           <div class="diagnosis" x-text="patient.patient_info.diagnosis"></div>
+                       </div>
+                       <div class="monitoring-status" :class="patient.monitoring_status">
+                           <i class="fas fa-circle"></i>
+                           <span x-text="getStatusText(patient.monitoring_status)"></span>
+                       </div>
+                   </div>
+
+                   <!-- NUEVA ESTRUCTURA: Signos Vitales con Mini-Gráficas (3x2) -->
+                   <div class="vitals-grid-enhanced">
+                       
+                       <!-- FILA 1: Frecuencia Cardíaca, Presión Arterial, Temperatura -->
+                       <div class="vital-item-enhanced" :class="patient.current_vitals.heart_rate.status">
+                           <div class="vital-header-enhanced">
+                               <div class="vital-icon">
+                                   <i class="fas fa-heartbeat"></i>
+                               </div>
+                               <div class="vital-info">
+                                   <div class="vital-value" x-text="patient.current_vitals.heart_rate.value"></div>
+                                   <div class="vital-unit">bpm</div>
+                                   <div class="vital-label">Frecuencia Cardíaca</div>
+                               </div>
+                               <div class="vital-trend" :class="patient.current_vitals.heart_rate.trend">
+                                   <i :class="getTrendIcon(patient.current_vitals.heart_rate.trend)"></i>
+                               </div>
+                           </div>
+                           <!-- Mini-Gráfica Integrada -->
+                           <div class="vital-chart">
+                               <canvas :id="'chart-hr-' + patient.patient_info.bed" width="200" height="60"></canvas>
+                           </div>
+                       </div>
+
+                       <div class="vital-item-enhanced" :class="patient.current_vitals.blood_pressure.status">
+                           <div class="vital-header-enhanced">
+                               <div class="vital-icon">
+                                   <i class="fas fa-tachometer-alt"></i>
+                               </div>
+                               <div class="vital-info">
+                                   <div class="vital-value" x-text="patient.current_vitals.blood_pressure.systolic + '/' + patient.current_vitals.blood_pressure.diastolic"></div>
+                                   <div class="vital-unit">mmHg</div>
+                                   <div class="vital-label">Presión Arterial</div>
+                               </div>
+                               <div class="vital-trend" :class="patient.current_vitals.blood_pressure.trend">
+                                   <i :class="getTrendIcon(patient.current_vitals.blood_pressure.trend)"></i>
+                               </div>
+                           </div>
+                           <!-- Mini-Gráfica Integrada -->
+                           <div class="vital-chart">
+                               <canvas :id="'chart-bp-' + patient.patient_info.bed" width="200" height="60"></canvas>
+                           </div>
+                       </div>
+
+                       <div class="vital-item-enhanced" :class="patient.current_vitals.temperature.status">
+                           <div class="vital-header-enhanced">
+                               <div class="vital-icon">
+                                   <i class="fas fa-thermometer-half"></i>
+                               </div>
+                               <div class="vital-info">
+                                   <div class="vital-value" x-text="patient.current_vitals.temperature.value.toFixed(1)"></div>
+                                   <div class="vital-unit">°C</div>
+                                   <div class="vital-label">Temperatura</div>
+                               </div>
+                               <div class="vital-trend" :class="patient.current_vitals.temperature.trend">
+                                   <i :class="getTrendIcon(patient.current_vitals.temperature.trend)"></i>
+                               </div>
+                           </div>
+                           <!-- Mini-Gráfica Integrada -->
+                           <div class="vital-chart">
+                               <canvas :id="'chart-temp-' + patient.patient_info.bed" width="200" height="60"></canvas>
+                           </div>
+                       </div>
+
+                       <!-- FILA 2: Frecuencia Respiratoria, Saturación O2, Dolor -->
+                       <div class="vital-item-enhanced" :class="patient.current_vitals.respiratory_rate.status">
+                           <div class="vital-header-enhanced">
+                               <div class="vital-icon">
+                                   <i class="fas fa-lungs"></i>
+                               </div>
+                               <div class="vital-info">
+                                   <div class="vital-value" x-text="patient.current_vitals.respiratory_rate.value"></div>
+                                   <div class="vital-unit">rpm</div>
+                                   <div class="vital-label">Freq. Respiratoria</div>
+                               </div>
+                               <div class="vital-trend" :class="patient.current_vitals.respiratory_rate.trend">
+                                   <i :class="getTrendIcon(patient.current_vitals.respiratory_rate.trend)"></i>
+                               </div>
+                           </div>
+                           <!-- Mini-Gráfica Integrada -->
+                           <div class="vital-chart">
+                               <canvas :id="'chart-rr-' + patient.patient_info.bed" width="200" height="60"></canvas>
+                           </div>
+                       </div>
+
+                       <div class="vital-item-enhanced" :class="patient.current_vitals.oxygen_saturation.status">
+                           <div class="vital-header-enhanced">
+                               <div class="vital-icon">
+                                   <i class="fas fa-percentage"></i>
+                               </div>
+                               <div class="vital-info">
+                                   <div class="vital-value" x-text="patient.current_vitals.oxygen_saturation.value"></div>
+                                   <div class="vital-unit">%</div>
+                                   <div class="vital-label">SpO₂</div>
+                               </div>
+                               <div class="vital-trend" :class="patient.current_vitals.oxygen_saturation.trend">
+                                   <i :class="getTrendIcon(patient.current_vitals.oxygen_saturation.trend)"></i>
+                               </div>
+                           </div>
+                           <!-- Mini-Gráfica Integrada -->
+                           <div class="vital-chart">
+                               <canvas :id="'chart-spo2-' + patient.patient_info.bed" width="200" height="60"></canvas>
+                           </div>
+                       </div>
+
+                       <div class="vital-item-enhanced" :class="patient.current_vitals.pain_scale.status">
+                           <div class="vital-header-enhanced">
+                               <div class="vital-icon">
+                                   <i class="fas fa-hand-paper"></i>
+                               </div>
+                               <div class="vital-info">
+                                   <div class="vital-value" x-text="patient.current_vitals.pain_scale.value + '/10'"></div>
+                                   <div class="vital-unit">EVA</div>
+                                   <div class="vital-label">Dolor</div>
+                               </div>
+                               <div class="pain-location" x-text="patient.current_vitals.pain_scale.location" x-show="patient.current_vitals.pain_scale.location"></div>
+                           </div>
+                           <!-- Mini-Gráfica Integrada -->
+                           <div class="vital-chart">
+                               <canvas :id="'chart-pain-' + patient.patient_info.bed" width="200" height="60"></canvas>
+                           </div>
+                       </div>
+
+                   </div>
+
+                   <!-- Alertas -->
+                   <div class="patient-alerts" x-show="patient.alerts && patient.alerts.length > 0">
+                       <template x-for="(alert, index) in patient.alerts.slice(0, 3)" :key="index">
+                           <div class="alert-item" :class="alert.type" x-show="!alert.acknowledged">
+                               <i :class="getAlertIcon(alert.type)"></i>
+                               <span class="alert-message" x-text="alert.message"></span>
+                               <button class="alert-acknowledge" @click="acknowledgeAlert(patient.patient_info.bed, index)">
+                                   <i class="fas fa-check"></i>
+                               </button>
+                           </div>
+                       </template>
+                   </div>
+
+                   <!-- Footer con timestamps -->
+                   <div class="patient-footer">
+                       <div class="last-reading">
+                           <i class="fas fa-clock"></i>
+                           <span x-text="formatTime(patient.current_vitals.timestamp)"></span>
+                       </div>
+                   </div>
+               </div>
+           </template>
+       </div>
+
+       <!-- Toast de Alertas -->
+       <div class="toast-container">
+           <template x-for="toast in toasts" :key="toast.id">
+               <div class="toast" :class="toast.type" x-show="toast.visible">
+                   <i :class="getAlertIcon(toast.type)"></i>
+                   <div class="toast-content">
+                       <div class="toast-title" x-text="toast.title"></div>
+                       <div class="toast-message" x-text="toast.message"></div>
+                   </div>
+                   <button class="toast-close" @click="closeToast(toast.id)">
+                       <i class="fas fa-times"></i>
+                   </button>
+               </div>
+           </template>
+       </div>
+
+       <!-- Loading Overlay -->
+       <div class="loading-overlay" x-show="isLoading">
+           <div class="loading-spinner">
+               <i class="fas fa-spinner fa-spin"></i>
+               <p>Actualizando signos vitales...</p>
+           </div>
+       </div>
+   </div>
+
+   <!-- JavaScript -->
+   <script src="/static/js/vital_signs.js"></script>
+</body>
+</html>

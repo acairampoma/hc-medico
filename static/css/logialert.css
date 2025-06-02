@@ -1,0 +1,37 @@
+/* Estilos personalizados para SweetAlert2 médico extraídos de login.html */
+.medical-popup {
+    border-radius: 20px !important;
+    box-shadow: 0 10px 30px rgba(44, 90, 160, 0.2) !important;
+}
+
+.medical-title {
+    color: #2c5aa0 !important;
+    font-weight: 700 !important;
+}
+
+.swal2-popup {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.swal2-timer-progress-bar {
+    background: linear-gradient(135deg, #2c5aa0, #00a86b) !important;
+}
+
+.swal2-toast {
+    border-radius: 15px !important;
+    box-shadow: 0 5px 20px rgba(44, 90, 160, 0.15) !important;
+}
+
+.welcome-popup {
+    border-radius: 25px !important;
+    box-shadow: 0 15px 40px rgba(44, 90, 160, 0.3) !important;
+}
+
+.welcome-popup .swal2-title {
+    font-size: 1.8rem !important;
+    margin-bottom: 1rem !important;
+}
+
+.welcome-popup .swal2-html-container {
+    margin: 1.5rem 0 !important;
+}

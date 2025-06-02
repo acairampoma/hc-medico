@@ -1,0 +1,666 @@
+{
+  "vital_signs_monitoring": {
+    "metadata": {
+      "hospital": "Hospital Central San José",
+      "system": "HL7 Vital Signs Monitor",
+      "last_updated": "2025-01-30T10:30:00Z",
+      "refresh_interval": 5000,
+      "units": {
+        "temperature": "°C",
+        "heart_rate": "bpm",
+        "blood_pressure": "mmHg",
+        "respiratory_rate": "rpm",
+        "oxygen_saturation": "%",
+        "pain_scale": "0-10"
+      }
+    },
+    "patients_vitals": {
+      "101E": {
+        "patient_info": {
+          "name": "Carlos García Mendoza",
+          "bed": "101E",
+          "room_type": "Urología",
+          "admission_date": "2025-01-20",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "diagnosis": "Hiperplasia benigna de próstata",
+          "age": 68,
+          "gender": "M"
+        },
+        "current_vitals": {
+          "timestamp": "2025-05-30T21:31:31.513960",
+          "heart_rate": {
+            "value": 97,
+            "status": "normal",
+            "range": "60-100",
+            "trend": "stable"
+          },
+          "blood_pressure": {
+            "systolic": 128,
+            "diastolic": 109,
+            "status": "normal",
+            "range": "120/80",
+            "trend": "increasing"
+          },
+          "temperature": {
+            "value": 40.49999999999999,
+            "status": "fever",
+            "range": "36.0-37.5",
+            "trend": "stable"
+          },
+          "respiratory_rate": {
+            "value": 40,
+            "status": "normal",
+            "range": "12-20",
+            "trend": "stable"
+          },
+          "oxygen_saturation": {
+            "value": 85,
+            "status": "critical",
+            "range": ">95",
+            "trend": "stable"
+          },
+          "pain_scale": {
+            "value": 3,
+            "status": "mild",
+            "range": "0-10",
+            "location": "región suprapúbica"
+          }
+        },
+        "alerts": [
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:01.507830Z",
+            "acknowledged": true
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:03.291826Z",
+            "acknowledged": true
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:06.509842Z",
+            "acknowledged": true
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:08.295303Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:11.508456Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:13.286231Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:16.520566Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:21.517751Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          }
+        ],
+        "monitoring_status": "active",
+        "device_id": "MON_101E_001"
+      },
+      "102E": {
+        "patient_info": {
+          "name": "Ana López Rivera",
+          "bed": "102E",
+          "room_type": "Urología",
+          "admission_date": "2025-01-22",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "diagnosis": "Litiasis renal bilateral",
+          "age": 45,
+          "gender": "F"
+        },
+        "current_vitals": {
+          "timestamp": "2025-05-30T21:31:31.513960",
+          "heart_rate": {
+            "value": 150,
+            "status": "elevated",
+            "range": "60-100",
+            "trend": "increasing"
+          },
+          "blood_pressure": {
+            "systolic": 200,
+            "diastolic": 120,
+            "status": "critical",
+            "range": "120/80",
+            "trend": "stable"
+          },
+          "temperature": {
+            "value": 42.0,
+            "status": "fever",
+            "range": "36.0-37.5",
+            "trend": "increasing"
+          },
+          "respiratory_rate": {
+            "value": 40,
+            "status": "elevated",
+            "range": "12-20",
+            "trend": "increasing"
+          },
+          "oxygen_saturation": {
+            "value": 85,
+            "status": "critical",
+            "range": ">95",
+            "trend": "stable"
+          },
+          "pain_scale": {
+            "value": 8,
+            "status": "severe",
+            "range": "0-10",
+            "location": "flanco derecho"
+          }
+        },
+        "alerts": [
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/120",
+            "timestamp": "2025-05-30T21:31:16.520566Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 86%",
+            "timestamp": "2025-05-30T21:31:21.517751Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:21.517751Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/120",
+            "timestamp": "2025-05-30T21:31:21.517751Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/120",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/120",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          }
+        ],
+        "monitoring_status": "active",
+        "device_id": "MON_102E_001"
+      },
+      "303E": {
+        "patient_info": {
+          "name": "Gabriel Chirinos Vega",
+          "bed": "303E",
+          "room_type": "Cabeza y Cuello",
+          "admission_date": "2025-01-22",
+          "attending_physician": "Dr. Luis Rodríguez",
+          "diagnosis": "Tumor de parótida",
+          "age": 35,
+          "gender": "M"
+        },
+        "current_vitals": {
+          "timestamp": "2025-05-30T21:31:31.513960",
+          "heart_rate": {
+            "value": 150,
+            "status": "elevated",
+            "range": "60-100",
+            "trend": "stable"
+          },
+          "blood_pressure": {
+            "systolic": 200,
+            "diastolic": 117,
+            "status": "critical",
+            "range": "120/80",
+            "trend": "stable"
+          },
+          "temperature": {
+            "value": 42.0,
+            "status": "fever",
+            "range": "36.0-37.5",
+            "trend": "stable"
+          },
+          "respiratory_rate": {
+            "value": 40,
+            "status": "normal",
+            "range": "12-20",
+            "trend": "stable"
+          },
+          "oxygen_saturation": {
+            "value": 85,
+            "status": "critical",
+            "range": ">95",
+            "trend": "stable"
+          },
+          "pain_scale": {
+            "value": 2,
+            "status": "mild",
+            "range": "0-10",
+            "location": "región parotídea"
+          }
+        },
+        "alerts": [
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 189/119",
+            "timestamp": "2025-05-30T21:31:16.520566Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:21.517751Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:21.517751Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 197/120",
+            "timestamp": "2025-05-30T21:31:21.517751Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 193/120",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/117",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          }
+        ],
+        "monitoring_status": "active",
+        "device_id": "MON_303E_001"
+      },
+      "401E": {
+        "patient_info": {
+          "name": "María González Torres",
+          "bed": "401E",
+          "room_type": "Mamas y Tejidos Blandos",
+          "admission_date": "2025-01-19",
+          "attending_physician": "Dra. Patricia López",
+          "diagnosis": "Cáncer de mama derecha",
+          "age": 54,
+          "gender": "F"
+        },
+        "current_vitals": {
+          "timestamp": "2025-05-30T21:31:31.513960",
+          "heart_rate": {
+            "value": 148,
+            "status": "elevated",
+            "range": "60-100",
+            "trend": "stable"
+          },
+          "blood_pressure": {
+            "systolic": 199,
+            "diastolic": 120,
+            "status": "critical",
+            "range": "120/80",
+            "trend": "increasing"
+          },
+          "temperature": {
+            "value": 42.0,
+            "status": "fever",
+            "range": "36.0-37.5",
+            "trend": "stable"
+          },
+          "respiratory_rate": {
+            "value": 40,
+            "status": "normal",
+            "range": "12-20",
+            "trend": "stable"
+          },
+          "oxygen_saturation": {
+            "value": 85,
+            "status": "critical",
+            "range": ">95",
+            "trend": "stable"
+          },
+          "pain_scale": {
+            "value": 4,
+            "status": "moderate",
+            "range": "0-10",
+            "location": "área quirúrgica mama derecha"
+          }
+        },
+        "alerts": [
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/117",
+            "timestamp": "2025-05-30T21:31:16.520566Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:21.518754Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:21.518754Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/117",
+            "timestamp": "2025-05-30T21:31:21.518754Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 86%",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 198/120",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 148 bpm",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 199/120",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          }
+        ],
+        "monitoring_status": "active",
+        "device_id": "MON_401E_001"
+      },
+      "501E": {
+        "patient_info": {
+          "name": "Jorge Vargas Salinas",
+          "bed": "501E",
+          "room_type": "Cirugía de Tórax",
+          "admission_date": "2025-01-17",
+          "attending_physician": "Dr. Roberto Martínez",
+          "diagnosis": "Cáncer pulmonar",
+          "age": 59,
+          "gender": "M"
+        },
+        "current_vitals": {
+          "timestamp": "2025-05-30T21:31:31.513960",
+          "heart_rate": {
+            "value": 150,
+            "status": "elevated",
+            "range": "60-100",
+            "trend": "increasing"
+          },
+          "blood_pressure": {
+            "systolic": 200,
+            "diastolic": 120,
+            "status": "critical",
+            "range": "120/80",
+            "trend": "stable"
+          },
+          "temperature": {
+            "value": 42.0,
+            "status": "fever",
+            "range": "36.0-37.5",
+            "trend": "increasing"
+          },
+          "respiratory_rate": {
+            "value": 40,
+            "status": "elevated",
+            "range": "12-20",
+            "trend": "increasing"
+          },
+          "oxygen_saturation": {
+            "value": 85,
+            "status": "critical",
+            "range": ">95",
+            "trend": "decreasing"
+          },
+          "pain_scale": {
+            "value": 7,
+            "status": "severe",
+            "range": "0-10",
+            "location": "tórax bilateral"
+          }
+        },
+        "alerts": [
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/118",
+            "timestamp": "2025-05-30T21:31:16.520566Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:21.518754Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:21.518754Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/117",
+            "timestamp": "2025-05-30T21:31:21.518754Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 86%",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/118",
+            "timestamp": "2025-05-30T21:31:26.505647Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Saturación crítica: 85%",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "warning",
+            "message": "Taquicardia: 150 bpm",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          },
+          {
+            "type": "critical",
+            "message": "Crisis hipertensiva: 200/120",
+            "timestamp": "2025-05-30T21:31:31.513960Z",
+            "acknowledged": false
+          }
+        ],
+        "monitoring_status": "critical",
+        "device_id": "MON_501E_001"
+      }
+    },
+    "reference_ranges": {
+      "adult": {
+        "heart_rate": {
+          "normal": "60-100",
+          "unit": "bpm"
+        },
+        "blood_pressure": {
+          "normal": "120/80",
+          "unit": "mmHg"
+        },
+        "temperature": {
+          "normal": "36.0-37.5",
+          "unit": "°C"
+        },
+        "respiratory_rate": {
+          "normal": "12-20",
+          "unit": "rpm"
+        },
+        "oxygen_saturation": {
+          "normal": ">95",
+          "unit": "%"
+        },
+        "pain_scale": {
+          "normal": "0-3",
+          "unit": "0-10"
+        }
+      }
+    },
+    "status_definitions": {
+      "normal": {
+        "color": "#4CAF50",
+        "priority": 0
+      },
+      "elevated": {
+        "color": "#FF9800",
+        "priority": 1
+      },
+      "high": {
+        "color": "#F44336",
+        "priority": 2
+      },
+      "low": {
+        "color": "#2196F3",
+        "priority": 1
+      },
+      "critical": {
+        "color": "#D32F2F",
+        "priority": 3
+      },
+      "fever": {
+        "color": "#E91E63",
+        "priority": 2
+      },
+      "mild": {
+        "color": "#4CAF50",
+        "priority": 0
+      },
+      "moderate": {
+        "color": "#FF9800",
+        "priority": 1
+      },
+      "severe": {
+        "color": "#F44336",
+        "priority": 2
+      }
+    }
+  }
+}

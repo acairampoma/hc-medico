@@ -1,0 +1,287 @@
+{
+    "laboratory_exams": [
+      {
+        "exam_id": "LAB001",
+        "patient_id": "PAC001",
+        "exam_type": "Hemograma completo",
+        "order_date": "2025-05-29",
+        "collection_date": "2025-05-29",
+        "result_date": "2025-05-29",
+        "status": "completed",
+        "ordered_by": "Dr. Carlos Mendoza",
+        "results": {
+          "hemoglobin": {
+            "value": 12.5,
+            "unit": "g/dL",
+            "reference_range": "13.5-17.5",
+            "status": "low"
+          },
+          "hematocrit": {
+            "value": 38.2,
+            "unit": "%",
+            "reference_range": "41-53",
+            "status": "low"
+          },
+          "white_blood_cells": {
+            "value": 8200,
+            "unit": "/μL",
+            "reference_range": "4500-11000",
+            "status": "normal"
+          },
+          "platelets": {
+            "value": 285000,
+            "unit": "/μL",
+            "reference_range": "150000-450000",
+            "status": "normal"
+          },
+          "glucose": {
+            "value": 95,
+            "unit": "mg/dL",
+            "reference_range": "70-100",
+            "status": "normal"
+          }
+        },
+        "interpretation": "Anemia leve postoperatoria. Resto de parámetros normales.",
+        "critical_values": [],
+        "technician": "Lic. María Santos",
+        "validated_by": "Dr. Jorge Ramírez"
+      },
+      {
+        "exam_id": "LAB002",
+        "patient_id": "PAC002",
+        "exam_type": "Urocultivo",
+        "order_date": "2025-05-28",
+        "collection_date": "2025-05-28",
+        "result_date": "2025-05-30",
+        "status": "pending",
+        "ordered_by": "Dra. Sofia Ramírez",
+        "preliminary_results": {
+          "bacteria_count": ">100,000 UFC/mL",
+          "predominant_organism": "E. coli",
+          "sensitivity_testing": "En proceso"
+        },
+        "interpretation": "Infección del tracto urinario por E. coli. Antibiograma pendiente.",
+        "technician": "Lic. Pedro Vargas"
+      }
+    ],
+    "radiology_exams": [
+      {
+        "exam_id": "RAD001",
+        "patient_id": "PAC002",
+        "exam_type": "Ecografía renal",
+        "order_date": "2025-05-29",
+        "study_date": "2025-05-29",
+        "result_date": "2025-05-29",
+        "status": "completed",
+        "ordered_by": "Dr. Carlos Mendoza",
+        "modality": "Ultrasonido",
+        "body_part": "Riñones y vías urinarias",
+        "findings": {
+          "right_kidney": {
+            "size": "Normal (10.5 cm)",
+            "echogenicity": "Normal",
+            "stones": "No se observan"
+          },
+          "left_kidney": {
+            "size": "Normal (10.8 cm)",
+            "echogenicity": "Normal",
+            "stones": "Cálculo de 8mm en pelvis renal"
+          },
+          "bladder": {
+            "distension": "Adecuada",
+            "wall": "Normal",
+            "content": "Anecogénico"
+          }
+        },
+        "impression": "Litiasis renal izquierda. Cálculo de 8mm en pelvis renal izquierda.",
+        "recommendations": "Control evolutivo. Considerar litotricia si persiste sintomatología.",
+        "radiologist": "Dr. Antonio Herrera",
+        "images": [
+          {
+            "image_id": "IMG001",
+            "description": "Riñón izquierdo - corte longitudinal",
+            "file_path": "/images/radiology/PAC002_kidney_left.jpg",
+            "annotations": ["Cálculo 8mm pelvis renal"]
+          },
+          {
+            "image_id": "IMG002", 
+            "description": "Riñón derecho - corte longitudinal",
+            "file_path": "/images/radiology/PAC002_kidney_right.jpg",
+            "annotations": ["Sin alteraciones"]
+          }
+        ]
+      },
+      {
+        "exam_id": "RAD002",
+        "patient_id": "PAC003",
+        "exam_type": "Radiografía de tórax",
+        "order_date": "2025-05-25",
+        "study_date": "2025-05-25",
+        "result_date": "2025-05-25",
+        "status": "completed",
+        "ordered_by": "Dra. Ana García",
+        "modality": "Radiografía",
+        "body_part": "Tórax",
+        "findings": {
+          "lungs": "Campos pulmonares libres. Sin infiltrados ni consolidaciones.",
+          "heart": "Silueta cardíaca de tamaño normal.",
+          "mediastinum": "Sin alteraciones.",
+          "pleura": "Sin derrame pleural.",
+          "bones": "Estructuras óseas sin alteraciones."
+        },
+        "impression": "Radiografía de tórax normal. Apto para procedimiento quirúrgico.",
+        "radiologist": "Dra. Isabel Moreno",
+        "images": [
+          {
+            "image_id": "IMG003",
+            "description": "Tórax PA",
+            "file_path": "/images/radiology/PAC003_chest_pa.jpg",
+            "annotations": ["Normal"]
+          }
+        ]
+      }
+    ],
+    "pathology_exams": [
+      {
+        "exam_id": "PAT001",
+        "patient_id": "PAC004",
+        "exam_type": "Estudio histopatológico",
+        "order_date": "2025-05-25",
+        "result_date": "2025-05-28",
+        "status": "completed",
+        "ordered_by": "Dra. Patricia López",
+        "specimen_type": "Pieza de mastectomía",
+        "gross_description": "Pieza de mastectomía radical modificada de 18x15x8 cm. Se identifica tumor de 3.5x2.8 cm en cuadrante superior externo.",
+        "microscopic_findings": {
+          "tumor_type": "Carcinoma ductal invasivo",
+          "grade": "Grado II (moderadamente diferenciado)",
+          "size": "3.5 cm",
+          "margins": "Libres de tumor (margen más cercano 1.2 cm)",
+          "lymph_nodes": "2 de 15 ganglios positivos para metástasis",
+          "receptors": {
+            "estrogen": "Positivo (85%)",
+            "progesterone": "Positivo (70%)",
+            "her2": "Negativo"
+          }
+        },
+        "staging": {
+          "t_stage": "T2",
+          "n_stage": "N1",
+          "m_stage": "Mx",
+          "overall_stage": "IIB"
+        },
+        "interpretation": "Carcinoma ductal invasivo grado II, T2N1Mx, estadio IIB. Receptores hormonales positivos, HER2 negativo.",
+        "recommendations": "Oncología médica para adyuvancia. Considerar quimioterapia y hormonoterapia.",
+        "pathologist": "Dr. Manuel Gutiérrez"
+      }
+    ],
+    "cardiology_exams": [
+      {
+        "exam_id": "CAR001",
+        "patient_id": "PAC005",
+        "exam_type": "Electrocardiograma",
+        "order_date": "2025-05-27",
+        "study_date": "2025-05-27",
+        "result_date": "2025-05-27",
+        "status": "completed",
+        "ordered_by": "Dra. Carmen Silva",
+        "findings": {
+          "rhythm": "Ritmo sinusal",
+          "rate": "78 lpm",
+          "axis": "Normal",
+          "intervals": {
+            "pr": "160 ms (normal)",
+            "qrs": "80 ms (normal)",
+            "qt": "400 ms (normal)"
+          },
+          "waves": "Ondas P normales. Complejos QRS normales.",
+          "segments": "Sin alteraciones del ST.",
+          "abnormalities": "Ninguna"
+        },
+        "interpretation": "ECG normal. Ritmo sinusal a 78 lpm. Sin alteraciones agudas.",
+        "cardiologist": "Dr. Fernando Castro"
+      }
+    ],
+    "exam_types": [
+      {
+        "category": "laboratory",
+        "exams": [
+          "Hemograma completo",
+          "Química sanguínea",
+          "Perfil lipídico",
+          "Función renal",
+          "Función hepática",
+          "Marcadores cardíacos",
+          "Hemoglobina glicosilada",
+          "Uroanálisis",
+          "Urocultivo",
+          "Hemocultivo",
+          "Coagulograma",
+          "Marcadores tumorales",
+          "Hormonas tiroideas",
+          "Electrolitos"
+        ]
+      },
+      {
+        "category": "radiology",
+        "exams": [
+          "Radiografía de tórax",
+          "Radiografía de abdomen",
+          "Ecografía abdominal",
+          "Ecografía renal",
+          "Ecografía pélvica",
+          "Tomografía de tórax",
+          "Tomografía de abdomen",
+          "Resonancia magnética",
+          "Mamografía",
+          "Densitometría ósea",
+          "Angiografía",
+          "Urografía excretora"
+        ]
+      },
+      {
+        "category": "pathology",
+        "exams": [
+          "Biopsia por punción",
+          "Estudio histopatológico",
+          "Citología cervical",
+          "Citología de líquidos",
+          "Inmunohistoquímica",
+          "Estudio de receptores hormonales",
+          "Biopsia por congelación",
+          "Autopsia"
+        ]
+      },
+      {
+        "category": "cardiology",
+        "exams": [
+          "Electrocardiograma",
+          "Ecocardiograma",
+          "Prueba de esfuerzo",
+          "Holter 24 horas",
+          "Monitoreo de presión arterial",
+          "Cateterismo cardíaco"
+        ]
+      }
+    ],
+    "priority_levels": [
+      {
+        "level": "stat",
+        "description": "STAT - Urgente",
+        "turnaround_time": "< 1 hora",
+        "color": "#e74c3c"
+      },
+      {
+        "level": "urgent", 
+        "description": "Urgente",
+        "turnaround_time": "< 4 horas",
+        "color": "#f39c12"
+      },
+      {
+        "level": "routine",
+        "description": "Rutina",
+        "turnaround_time": "24-48 horas",
+        "color": "#2ecc71"
+      }
+    ]
+  }

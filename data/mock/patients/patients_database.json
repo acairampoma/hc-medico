@@ -1,0 +1,460 @@
+{
+    "patients": [
+      {
+        "patient_id": "PAC001",
+        "bed_number": "101E",
+        "floor": 1,
+        "wing": "east",
+        "personal_info": {
+          "first_name": "Carlos",
+          "last_name": "Mendoza Ruiz",
+          "date_of_birth": "1968-03-15",
+          "age": 57,
+          "gender": "M",
+          "document_type": "DNI",
+          "document_number": "12345678",
+          "blood_type": "O+",
+          "phone": "+51 987-654-321",
+          "emergency_contact": {
+            "name": "María Mendoza",
+            "relationship": "Esposa",
+            "phone": "+51 987-654-322"
+          }
+        },
+        "admission": {
+          "admission_date": "2025-05-26",
+          "admission_time": "08:30",
+          "admission_type": "Programada",
+          "reason": "Resección transuretral de próstata",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "resident": "Dr. Junior Pérez"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Hiperplasia benigna de próstata",
+          "secondary_diagnosis": ["Hipertensión arterial", "Diabetes mellitus tipo 2"],
+          "allergies": ["Penicilina"],
+          "current_medications": [
+            {
+              "medication": "Tamsulosina",
+              "dose": "0.4mg",
+              "frequency": "1 vez al día",
+              "route": "Oral"
+            },
+            {
+              "medication": "Enalapril",
+              "dose": "10mg",
+              "frequency": "2 veces al día",
+              "route": "Oral"
+            }
+          ],
+          "vital_signs": {
+            "last_update": "2025-05-29 06:00",
+            "blood_pressure": "130/80",
+            "heart_rate": 72,
+            "temperature": 36.8,
+            "respiratory_rate": 18,
+            "oxygen_saturation": 98
+          }
+        },
+        "surgical_info": {
+          "surgery_date": "2025-05-27",
+          "procedure": "RTUP - Resección transuretral de próstata",
+          "surgeon": "Dr. Carlos Mendoza",
+          "anesthesia_type": "Raquídea",
+          "duration": "90 minutos",
+          "complications": "Ninguna"
+        },
+        "pending_orders": [
+          {
+            "type": "laboratory",
+            "description": "Hemograma completo",
+            "priority": "routine",
+            "ordered_by": "Dr. Carlos Mendoza",
+            "order_date": "2025-05-29"
+          }
+        ],
+        "notes": [
+          {
+            "date": "2025-05-29 07:00",
+            "type": "evolution",
+            "physician": "Dr. Carlos Mendoza",
+            "note": "Paciente estable, buena evolución postoperatoria. Continuar tratamiento actual."
+          }
+        ]
+      },
+      {
+        "patient_id": "PAC002",
+        "bed_number": "102E",
+        "floor": 1,
+        "wing": "east",
+        "personal_info": {
+          "first_name": "Ana",
+          "last_name": "García López",
+          "date_of_birth": "1975-08-22",
+          "age": 49,
+          "gender": "F",
+          "document_type": "DNI",
+          "document_number": "87654321",
+          "blood_type": "A+",
+          "phone": "+51 987-654-323",
+          "emergency_contact": {
+            "name": "Pedro García",
+            "relationship": "Hermano",
+            "phone": "+51 987-654-324"
+          }
+        },
+        "admission": {
+          "admission_date": "2025-05-28",
+          "admission_time": "14:20",
+          "admission_type": "Emergencia",
+          "reason": "Cólico nefrítico",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "resident": "Dra. Sofia Ramírez"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Litiasis renal",
+          "secondary_diagnosis": ["Infección del tracto urinario"],
+          "allergies": ["Ninguna conocida"],
+          "current_medications": [
+            {
+              "medication": "Diclofenaco",
+              "dose": "75mg",
+              "frequency": "Cada 12 horas",
+              "route": "Intramuscular"
+            },
+            {
+              "medication": "Ciprofloxacino",
+              "dose": "500mg",
+              "frequency": "Cada 12 horas",
+              "route": "Endovenoso"
+            }
+          ],
+          "vital_signs": {
+            "last_update": "2025-05-29 06:30",
+            "blood_pressure": "140/90",
+            "heart_rate": 85,
+            "temperature": 37.2,
+            "respiratory_rate": 20,
+            "oxygen_saturation": 97
+          }
+        },
+        "pending_orders": [
+          {
+            "type": "radiology",
+            "description": "Ecografía renal",
+            "priority": "urgent",
+            "ordered_by": "Dr. Carlos Mendoza",
+            "order_date": "2025-05-29"
+          },
+          {
+            "type": "laboratory",
+            "description": "Urocultivo",
+            "priority": "routine",
+            "ordered_by": "Dra. Sofia Ramírez",
+            "order_date": "2025-05-28"
+          }
+        ],
+        "notes": [
+          {
+            "date": "2025-05-29 07:30",
+            "type": "evolution",
+            "physician": "Dra. Sofia Ramírez",
+            "note": "Paciente refiere mejoría del dolor. Diuresis conservada. Continuar antibioticoterapia."
+          }
+        ]
+      },
+      {
+        "patient_id": "PAC003",
+        "bed_number": "201E",
+        "floor": 2,
+        "wing": "east",
+        "personal_info": {
+          "first_name": "Roberto",
+          "last_name": "Silva Castro",
+          "date_of_birth": "1955-12-10",
+          "age": 69,
+          "gender": "M",
+          "document_type": "DNI",
+          "document_number": "11223344",
+          "blood_type": "B+",
+          "phone": "+51 987-654-325",
+          "emergency_contact": {
+            "name": "Elena Silva",
+            "relationship": "Hija",
+            "phone": "+51 987-654-326"
+          }
+        },
+        "admission": {
+          "admission_date": "2025-05-25",
+          "admission_time": "09:15",
+          "admission_type": "Programada",
+          "reason": "Colecistectomía laparoscópica",
+          "attending_physician": "Dra. Ana García",
+          "resident": "Dr. Miguel Torres"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Colelitiasis sintomática",
+          "secondary_diagnosis": ["Diabetes mellitus tipo 2", "Hipertensión arterial"],
+          "allergies": ["Metamizol"],
+          "current_medications": [
+            {
+              "medication": "Metformina",
+              "dose": "850mg",
+              "frequency": "2 veces al día",
+              "route": "Oral"
+            },
+            {
+              "medication": "Losartán",
+              "dose": "50mg",
+              "frequency": "1 vez al día",
+              "route": "Oral"
+            },
+            {
+              "medication": "Tramadol",
+              "dose": "100mg",
+              "frequency": "Cada 8 horas PRN",
+              "route": "Oral"
+            }
+          ],
+          "vital_signs": {
+            "last_update": "2025-05-29 06:15",
+            "blood_pressure": "125/75",
+            "heart_rate": 68,
+            "temperature": 36.5,
+            "respiratory_rate": 16,
+            "oxygen_saturation": 99
+          }
+        },
+        "surgical_info": {
+          "surgery_date": "2025-05-26",
+          "procedure": "Colecistectomía laparoscópica",
+          "surgeon": "Dra. Ana García",
+          "anesthesia_type": "General",
+          "duration": "75 minutos",
+          "complications": "Ninguna"
+        },
+        "pending_orders": [
+          {
+            "type": "laboratory",
+            "description": "Glicemia en ayunas",
+            "priority": "routine",
+            "ordered_by": "Dra. Ana García",
+            "order_date": "2025-05-29"
+          }
+        ],
+        "notes": [
+          {
+            "date": "2025-05-29 07:45",
+            "type": "evolution",
+            "physician": "Dr. Miguel Torres",
+            "note": "POI día 3. Evolución satisfactoria. Tolerando dieta líquida. Heridas quirúrgicas sin signos de infección."
+          }
+        ]
+      },
+      {
+        "patient_id": "PAC004",
+        "bed_number": "401E",
+        "floor": 4,
+        "wing": "east",
+        "personal_info": {
+          "first_name": "Carmen",
+          "last_name": "López Vega",
+          "date_of_birth": "1982-06-30",
+          "age": 42,
+          "gender": "F",
+          "document_type": "DNI",
+          "document_number": "55667788",
+          "blood_type": "AB+",
+          "phone": "+51 987-654-327",
+          "emergency_contact": {
+            "name": "Luis López",
+            "relationship": "Esposo",
+            "phone": "+51 987-654-328"
+          }
+        },
+        "admission": {
+          "admission_date": "2025-05-24",
+          "admission_time": "11:00",
+          "admission_type": "Programada",
+          "reason": "Mastectomía radical modificada",
+          "attending_physician": "Dra. Patricia López",
+          "resident": "Dra. Andrea Morales"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Carcinoma ductal invasivo de mama izquierda",
+          "secondary_diagnosis": ["Ansiedad"],
+          "allergies": ["Ninguna conocida"],
+          "current_medications": [
+            {
+              "medication": "Morfina",
+              "dose": "10mg",
+              "frequency": "Cada 4 horas PRN",
+              "route": "Endovenoso"
+            },
+            {
+              "medication": "Ondansetrón",
+              "dose": "8mg",
+              "frequency": "Cada 8 horas",
+              "route": "Endovenoso"
+            },
+            {
+              "medication": "Lorazepam",
+              "dose": "1mg",
+              "frequency": "Cada 12 horas PRN",
+              "route": "Oral"
+            }
+          ],
+          "vital_signs": {
+            "last_update": "2025-05-29 06:45",
+            "blood_pressure": "110/70",
+            "heart_rate": 78,
+            "temperature": 36.9,
+            "respiratory_rate": 18,
+            "oxygen_saturation": 98
+          }
+        },
+        "surgical_info": {
+          "surgery_date": "2025-05-25",
+          "procedure": "Mastectomía radical modificada + Biopsia de ganglio centinela",
+          "surgeon": "Dra. Patricia López",
+          "anesthesia_type": "General",
+          "duration": "180 minutos",
+          "complications": "Ninguna"
+        },
+        "pending_orders": [
+          {
+            "type": "pathology",
+            "description": "Estudio histopatológico de pieza quirúrgica",
+            "priority": "urgent",
+            "ordered_by": "Dra. Patricia López",
+            "order_date": "2025-05-25"
+          },
+          {
+            "type": "laboratory",
+            "description": "Hemograma completo",
+            "priority": "routine",
+            "ordered_by": "Dra. Andrea Morales",
+            "order_date": "2025-05-29"
+          }
+        ],
+        "notes": [
+          {
+            "date": "2025-05-29 08:00",
+            "type": "evolution",
+            "physician": "Dra. Patricia López",
+            "note": "POI día 4. Paciente estable. Drenaje serosanguinolento escaso. Herida quirúrgica en buenas condiciones. Continuar analgesia y apoyo psicológico."
+          }
+        ]
+      },
+      {
+        "patient_id": "PAC005",
+        "bed_number": "601E",
+        "floor": 6,
+        "wing": "east",
+        "personal_info": {
+          "first_name": "María",
+          "last_name": "Fernández Torres",
+          "date_of_birth": "1990-11-18",
+          "age": 34,
+          "gender": "F",
+          "document_type": "DNI",
+          "document_number": "99887766",
+          "blood_type": "O-",
+          "phone": "+51 987-654-329",
+          "emergency_contact": {
+            "name": "José Fernández",
+            "relationship": "Esposo",
+            "phone": "+51 987-654-330"
+          }
+        },
+        "admission": {
+          "admission_date": "2025-05-27",
+          "admission_time": "16:45",
+          "admission_type": "Programada",
+          "reason": "Histerectomía abdominal total",
+          "attending_physician": "Dra. Carmen Silva",
+          "resident": "Dr. Carlos Medina"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Miomatosis uterina sintomática",
+          "secondary_diagnosis": ["Anemia ferropénica"],
+          "allergies": ["Yodo"],
+          "current_medications": [
+            {
+              "medication": "Sulfato ferroso",
+              "dose": "325mg",
+              "frequency": "3 veces al día",
+              "route": "Oral"
+            },
+            {
+              "medication": "Ketorolaco",
+              "dose": "30mg",
+              "frequency": "Cada 8 horas",
+              "route": "Intramuscular"
+            }
+          ],
+          "vital_signs": {
+            "last_update": "2025-05-29 06:00",
+            "blood_pressure": "105/65",
+            "heart_rate": 82,
+            "temperature": 36.7,
+            "respiratory_rate": 19,
+            "oxygen_saturation": 97
+          }
+        },
+        "surgical_info": {
+          "surgery_date": "2025-05-28",
+          "procedure": "Histerectomía abdominal total",
+          "surgeon": "Dra. Carmen Silva",
+          "anesthesia_type": "General",
+          "duration": "120 minutos",
+          "complications": "Ninguna"
+        },
+        "pending_orders": [
+          {
+            "type": "laboratory",
+            "description": "Hemoglobina y hematocrito",
+            "priority": "urgent",
+            "ordered_by": "Dra. Carmen Silva",
+            "order_date": "2025-05-29"
+          },
+          {
+            "type": "pathology",
+            "description": "Estudio histopatológico de útero",
+            "priority": "routine",
+            "ordered_by": "Dra. Carmen Silva",
+            "order_date": "2025-05-28"
+          }
+        ],
+        "notes": [
+          {
+            "date": "2025-05-29 07:15",
+            "type": "evolution",
+            "physician": "Dr. Carlos Medina",
+            "note": "POI día 1. Paciente estable. Buena tolerancia oral. Herida quirúrgica limpia y seca. Continuar tratamiento actual."
+          }
+        ]
+      }
+    ],
+    "statistics": {
+      "total_patients": 5,
+      "by_floor": {
+        "1": 2,
+        "2": 1,
+        "3": 0,
+        "4": 1,
+        "5": 0,
+        "6": 1
+      },
+      "by_gender": {
+        "male": 2,
+        "female": 3
+      },
+      "by_admission_type": {
+        "programmed": 4,
+        "emergency": 1
+      },
+      "average_age": 50.2,
+      "pending_orders_total": 8
+    }
+  }

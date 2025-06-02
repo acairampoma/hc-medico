@@ -1,0 +1,332 @@
+{
+    "medications": [
+      {
+        "medication_id": "MED001",
+        "generic_name": "Paracetamol",
+        "brand_names": ["Panadol", "Tylenol", "Acetaminofén"],
+        "category": "Analgésico-Antipirético",
+        "presentations": [
+          {
+            "form": "Tableta",
+            "concentration": "500mg",
+            "package": "Caja x 20 tabletas"
+          },
+          {
+            "form": "Jarabe",
+            "concentration": "160mg/5ml",
+            "package": "Frasco x 100ml"
+          }
+        ],
+        "indications": ["Dolor leve a moderado", "Fiebre"],
+        "contraindications": ["Hipersensibilidad al paracetamol", "Insuficiencia hepática severa"],
+        "dosing": {
+          "adult": "500-1000mg cada 6-8 horas (máx 4g/día)",
+          "pediatric": "10-15mg/kg cada 6-8 horas"
+        },
+        "route": ["Oral"],
+        "warnings": ["No exceder dosis máxima", "Precaución en hepatopatía"],
+        "drug_interactions": ["Warfarina", "Rifampicina"],
+        "pregnancy_category": "B",
+        "prescription_required": false
+      },
+      {
+        "medication_id": "MED002",
+        "generic_name": "Amoxicilina",
+        "brand_names": ["Amoxil", "Clavulin", "Augmentine"],
+        "category": "Antibiótico-Penicilina",
+        "presentations": [
+          {
+            "form": "Cápsula",
+            "concentration": "500mg",
+            "package": "Caja x 21 cápsulas"
+          },
+          {
+            "form": "Suspensión",
+            "concentration": "250mg/5ml",
+            "package": "Frasco x 60ml"
+          }
+        ],
+        "indications": ["Infecciones respiratorias", "Infecciones urinarias", "Infecciones de piel"],
+        "contraindications": ["Alergia a penicilinas", "Mononucleosis infecciosa"],
+        "dosing": {
+          "adult": "500mg cada 8 horas por 7-10 días",
+          "pediatric": "20-40mg/kg/día dividido cada 8 horas"
+        },
+        "route": ["Oral"],
+        "warnings": ["Completar tratamiento", "Riesgo de colitis pseudomembranosa"],
+        "drug_interactions": ["Anticoagulantes", "Metotrexato"],
+        "pregnancy_category": "B",
+        "prescription_required": true
+      },
+      {
+        "medication_id": "MED003",
+        "generic_name": "Omeprazol",
+        "brand_names": ["Prilosec", "Losec", "Ulcozol"],
+        "category": "Inhibidor de bomba de protones",
+        "presentations": [
+          {
+            "form": "Cápsula",
+            "concentration": "20mg",
+            "package": "Caja x 14 cápsulas"
+          },
+          {
+            "form": "Ampolla",
+            "concentration": "40mg",
+            "package": "Caja x 5 ampollas"
+          }
+        ],
+        "indications": ["Úlcera péptica", "ERGE", "Síndrome de Zollinger-Ellison"],
+        "contraindications": ["Hipersensibilidad al omeprazol"],
+        "dosing": {
+          "adult": "20-40mg una vez al día en ayunas",
+          "pediatric": "0.7-3.3mg/kg una vez al día"
+        },
+        "route": ["Oral", "Endovenoso"],
+        "warnings": ["Riesgo de fractura ósea", "Deficiencia de B12"],
+        "drug_interactions": ["Clopidogrel", "Digoxina", "Ketoconazol"],
+        "pregnancy_category": "C",
+        "prescription_required": true
+      },
+      {
+        "medication_id": "MED004",
+        "generic_name": "Morfina",
+        "brand_names": ["MST", "Oramorph", "Sevredol"],
+        "category": "Opiáceo analgésico",
+        "presentations": [
+          {
+            "form": "Ampolla",
+            "concentration": "10mg/ml",
+            "package": "Caja x 5 ampollas"
+          },
+          {
+            "form": "Tableta liberación prolongada",
+            "concentration": "30mg",
+            "package": "Caja x 20 tabletas"
+          }
+        ],
+        "indications": ["Dolor severo", "Dolor postoperatorio", "Dolor oncológico"],
+        "contraindications": ["Depresión respiratoria", "Íleo paralítico", "Asma bronquial severa"],
+        "dosing": {
+          "adult": "5-10mg cada 4 horas IV/IM, 15-30mg cada 4 horas VO",
+          "pediatric": "0.1-0.2mg/kg cada 4 horas"
+        },
+        "route": ["Oral", "Endovenoso", "Intramuscular", "Subcutáneo"],
+        "warnings": ["Riesgo de dependencia", "Depresión respiratoria", "Uso bajo supervisión"],
+        "drug_interactions": ["Benzodiacepinas", "Alcohol", "IMAO"],
+        "pregnancy_category": "C",
+        "prescription_required": true,
+        "controlled_substance": true,
+        "storage": "Caja de seguridad"
+      },
+      {
+        "medication_id": "MED005",
+        "generic_name": "Ciprofloxacino",
+        "brand_names": ["Cipro", "Ciproxina", "Bacquinor"],
+        "category": "Antibiótico-Fluoroquinolona",
+        "presentations": [
+          {
+            "form": "Tableta",
+            "concentration": "500mg",
+            "package": "Caja x 14 tabletas"
+          },
+          {
+            "form": "Solución inyectable",
+            "concentration": "200mg/100ml",
+            "package": "Frasco x 100ml"
+          }
+        ],
+        "indications": ["Infecciones urinarias", "Infecciones respiratorias", "Infecciones gastrointestinales"],
+        "contraindications": ["Hipersensibilidad a quinolonas", "Miastenia gravis", "Menores de 18 años"],
+        "dosing": {
+          "adult": "500mg cada 12 horas VO, 400mg cada 12 horas IV",
+          "pediatric": "No recomendado en menores de 18 años"
+        },
+        "route": ["Oral", "Endovenoso"],
+        "warnings": ["Riesgo de tendinopatía", "Fotosensibilidad", "Prolongación QT"],
+        "drug_interactions": ["Teofilina", "Warfarina", "Antiácidos"],
+        "pregnancy_category": "C",
+        "prescription_required": true
+      },
+      {
+        "medication_id": "MED006",
+        "generic_name": "Diclofenaco",
+        "brand_names": ["Voltaren", "Cataflam", "Dolac"],
+        "category": "AINE",
+        "presentations": [
+          {
+            "form": "Tableta",
+            "concentration": "50mg",
+            "package": "Caja x 20 tabletas"
+          },
+          {
+            "form": "Ampolla",
+            "concentration": "75mg/3ml",
+            "package": "Caja x 5 ampollas"
+          },
+          {
+            "form": "Gel tópico",
+            "concentration": "1%",
+            "package": "Tubo x 30g"
+          }
+        ],
+        "indications": ["Dolor musculoesquelético", "Inflamación", "Artritis"],
+        "contraindications": ["Úlcera péptica activa", "Insuficiencia renal severa", "Alergia a AINES"],
+        "dosing": {
+          "adult": "50mg cada 8 horas VO, 75mg cada 12 horas IM",
+          "pediatric": "1-3mg/kg/día dividido cada 8-12 horas"
+        },
+        "route": ["Oral", "Intramuscular", "Tópico"],
+        "warnings": ["Riesgo cardiovascular", "Hepatotoxicidad", "Nefrotoxicidad"],
+        "drug_interactions": ["Anticoagulantes", "ACE inhibidores", "Litio"],
+        "pregnancy_category": "C (D en tercer trimestre)",
+        "prescription_required": true
+      },
+      {
+        "medication_id": "MED007",
+        "generic_name": "Metformina",
+        "brand_names": ["Glucophage", "Glafornil", "Dabex"],
+        "category": "Antidiabético-Biguanida",
+        "presentations": [
+          {
+            "form": "Tableta",
+            "concentration": "850mg",
+            "package": "Caja x 30 tabletas"
+          },
+          {
+            "form": "Tableta liberación prolongada",
+            "concentration": "500mg",
+            "package": "Caja x 28 tabletas"
+          }
+        ],
+        "indications": ["Diabetes mellitus tipo 2", "Síndrome de ovario poliquístico"],
+        "contraindications": ["Insuficiencia renal", "Acidosis metabólica", "Insuficiencia cardíaca"],
+        "dosing": {
+          "adult": "500-850mg cada 12 horas con alimentos",
+          "pediatric": "500mg cada 12 horas (>10 años)"
+        },
+        "route": ["Oral"],
+        "warnings": ["Riesgo de acidosis láctica", "Suspender antes de cirugía", "Control renal"],
+        "drug_interactions": ["Contraste yodado", "Alcohol", "Cimetidina"],
+        "pregnancy_category": "B",
+        "prescription_required": true
+      },
+      {
+        "medication_id": "MED008",
+        "generic_name": "Losartán",
+        "brand_names": ["Cozaar", "Losacor", "Losaprex"],
+        "category": "ARA II",
+        "presentations": [
+          {
+            "form": "Tableta",
+            "concentration": "50mg",
+            "package": "Caja x 30 tabletas"
+          },
+          {
+            "form": "Tableta",
+            "concentration": "100mg",
+            "package": "Caja x 30 tabletas"
+          }
+        ],
+        "indications": ["Hipertensión arterial", "Insuficiencia cardíaca", "Nefropatía diabética"],
+        "contraindications": ["Embarazo", "Estenosis arterial renal bilateral", "Hiperpotasemia"],
+        "dosing": {
+          "adult": "50-100mg una vez al día",
+          "pediatric": "0.7mg/kg una vez al día (>6 años)"
+        },
+        "route": ["Oral"],
+        "warnings": ["Hipotensión sintomática", "Hiperpotasemia", "Insuficiencia renal"],
+        "drug_interactions": ["Diuréticos ahorradores de potasio", "AINES", "Litio"],
+        "pregnancy_category": "D",
+        "prescription_required": true
+      }
+    ],
+    "categories": [
+      {
+        "category_name": "Analgésicos",
+        "subcategories": ["Opiáceos", "No opiáceos", "AINES"]
+      },
+      {
+        "category_name": "Antibióticos",
+        "subcategories": ["Penicilinas", "Fluoroquinolonas", "Cefalosporinas", "Macrólidos"]
+      },
+      {
+        "category_name": "Cardiovasculares",
+        "subcategories": ["ACE inhibidores", "ARA II", "Betabloqueadores", "Diuréticos"]
+      },
+      {
+        "category_name": "Endocrinos",
+        "subcategories": ["Antidiabéticos", "Hormonas tiroideas", "Corticosteroides"]
+      },
+      {
+        "category_name": "Gastrointestinales",
+        "subcategories": ["IBP", "Antiácidos", "Antieméticos", "Antidiarreicos"]
+      },
+      {
+        "category_name": "Neurológicos",
+        "subcategories": ["Anticonvulsivantes", "Antiparkinsonianos", "Ansiolíticos"]
+      }
+    ],
+    "prescription_templates": [
+      {
+        "template_id": "TEMP001",
+        "name": "Dolor postoperatorio",
+        "medications": [
+          {
+            "medication_id": "MED001",
+            "dose": "1g",
+            "frequency": "cada 8 horas",
+            "duration": "5 días",
+            "route": "oral"
+          },
+          {
+            "medication_id": "MED006",
+            "dose": "50mg",
+            "frequency": "cada 12 horas",
+            "duration": "3 días",
+            "route": "oral"
+          }
+        ]
+      },
+      {
+        "template_id": "TEMP002",
+        "name": "Infección urinaria",
+        "medications": [
+          {
+            "medication_id": "MED005",
+            "dose": "500mg",
+            "frequency": "cada 12 horas",
+            "duration": "7 días",
+            "route": "oral"
+          }
+        ]
+      },
+      {
+        "template_id": "TEMP003",
+        "name": "Úlcera péptica",
+        "medications": [
+          {
+            "medication_id": "MED003",
+            "dose": "20mg",
+            "frequency": "en ayunas",
+            "duration": "4 semanas",
+            "route": "oral"
+          },
+          {
+            "medication_id": "MED002",
+            "dose": "1g",
+            "frequency": "cada 12 horas",
+            "duration": "10 días",
+            "route": "oral"
+          }
+        ]
+      }
+    ],
+    "pharmacy_info": {
+      "formulary_version": "2025.1",
+      "last_updated": "2025-05-29",
+      "total_medications": 8,
+      "controlled_substances": 1,
+      "prescription_required": 7,
+      "otc_medications": 1
+    }
+  }

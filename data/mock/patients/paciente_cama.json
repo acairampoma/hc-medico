@@ -1,0 +1,520 @@
+{
+    "patients_by_bed": {
+      
+      "_comment": "PISO 1 - UROLOGÍA - Dr. Carlos Mendoza",
+      
+      "101E": {
+        "personal_info": {
+          "first_name": "Carlos",
+          "last_name": "García Mendoza",
+          "age": 68,
+          "gender": "M",
+          "dni": "12345678",
+          "phone": "987654321",
+          "emergency_contact": "María García (esposa) - 912345678"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Hiperplasia benigna de próstata",
+          "primary_diagnosis_code": "N40.1",
+          "secondary_diagnosis": "Hipertensión arterial",
+          "secondary_diagnosis_code": "I10",
+          "admission_date": "2025-01-20",
+          "medical_record": "HC001001",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "admission_reason": "Retención urinaria aguda",
+          "current_medications": ["Tamsulosina 0.4mg", "Enalapril 10mg"],
+          "allergies": "Penicilina"
+        }
+      },
+      
+      "102E": {
+        "personal_info": {
+          "first_name": "Ana",
+          "last_name": "López Rivera",
+          "age": 45,
+          "gender": "F",
+          "dni": "87654321",
+          "phone": "998877665",
+          "emergency_contact": "Luis López (hermano) - 923456789"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Litiasis renal bilateral",
+          "primary_diagnosis_code": "N20.0",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-22",
+          "medical_record": "HC001002",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "admission_reason": "Cólico nefrítico severo",
+          "current_medications": ["Tramadol 50mg", "Omeprazol 20mg"],
+          "allergies": "Ninguna conocida"
+        }
+      },
+      
+      "104E": {
+        "personal_info": {
+          "first_name": "Roberto",
+          "last_name": "Silva Vargas",
+          "age": 72,
+          "gender": "M",
+          "dni": "11223344",
+          "phone": "987123456",
+          "emergency_contact": "Carmen Silva (hija) - 934567890"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Cáncer de próstata",
+          "primary_diagnosis_code": "C61",
+          "secondary_diagnosis": "Diabetes mellitus tipo 2",
+          "secondary_diagnosis_code": "E11.9",
+          "admission_date": "2025-01-18",
+          "medical_record": "HC001003",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "admission_reason": "Pre-operatorio para prostatectomía",
+          "current_medications": ["Metformina 850mg", "Insulina NPH"],
+          "allergies": "Aspirina"
+        }
+      },
+      
+      "106W": {
+        "personal_info": {
+          "first_name": "Pedro",
+          "last_name": "Martínez Torres",
+          "age": 58,
+          "gender": "M",
+          "dni": "55667788",
+          "phone": "976543210",
+          "emergency_contact": "Rosa Martínez (esposa) - 945678901"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Cistitis crónica",
+          "primary_diagnosis_code": "N30.2",
+          "secondary_diagnosis": "Hiperplasia prostática",
+          "secondary_diagnosis_code": "N40.0",
+          "admission_date": "2025-01-23",
+          "medical_record": "HC001004",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "admission_reason": "Infección urinaria recurrente",
+          "current_medications": ["Ciprofloxacino 500mg", "Tamsulosina 0.4mg"],
+          "allergies": "Ninguna conocida"
+        }
+      },
+      
+      "108W": {
+        "personal_info": {
+          "first_name": "Manuel",
+          "last_name": "Hernández Cruz",
+          "age": 63,
+          "gender": "M",
+          "dni": "99887766",
+          "phone": "965432109",
+          "emergency_contact": "Elena Hernández (hija) - 956789012"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Incontinencia urinaria",
+          "primary_diagnosis_code": "N39.4",
+          "secondary_diagnosis": "Hipertensión arterial",
+          "secondary_diagnosis_code": "I10",
+          "admission_date": "2025-01-21",
+          "medical_record": "HC001005",
+          "attending_physician": "Dr. Carlos Mendoza",
+          "admission_reason": "Evaluación pre-quirúrgica",
+          "current_medications": ["Amlodipino 5mg", "Solifenacina 5mg"],
+          "allergies": "Yodo"
+        }
+      },
+  
+      "_comment2": "PISO 2 - CIRUGÍA ABDOMINAL - Dra. Ana García",
+      
+      "201E": {
+        "personal_info": {
+          "first_name": "Luis",
+          "last_name": "Rodríguez Paredes",
+          "age": 52,
+          "gender": "M",
+          "dni": "22334455",
+          "phone": "987654123",
+          "emergency_contact": "Isabel Rodríguez (esposa) - 912345670"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Hernia inguinal bilateral",
+          "primary_diagnosis_code": "K40.9",
+          "secondary_diagnosis": "Diabetes mellitus tipo 2",
+          "secondary_diagnosis_code": "E11.9",
+          "admission_date": "2025-01-21",
+          "medical_record": "HC002001",
+          "attending_physician": "Dra. Ana García",
+          "admission_reason": "Cirugía electiva de hernia",
+          "current_medications": ["Metformina 850mg", "Glibenclamida 5mg"],
+          "allergies": "Penicilina"
+        }
+      },
+      
+      "203E": {
+        "personal_info": {
+          "first_name": "Carmen",
+          "last_name": "Díaz Morales",
+          "age": 38,
+          "gender": "F",
+          "dni": "66778899",
+          "phone": "954321098",
+          "emergency_contact": "José Díaz (esposo) - 923456781"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Colecistitis aguda",
+          "primary_diagnosis_code": "K80.0",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-23",
+          "medical_record": "HC002002",
+          "attending_physician": "Dra. Ana García",
+          "admission_reason": "Dolor abdominal severo en hipocondrio derecho",
+          "current_medications": ["Metamizol 500mg", "Omeprazol 40mg"],
+          "allergies": "Ninguna conocida"
+        }
+      },
+      
+      "205E": {
+        "personal_info": {
+          "first_name": "Miguel",
+          "last_name": "Fernández Ruiz",
+          "age": 43,
+          "gender": "M",
+          "dni": "44556677",
+          "phone": "943210987",
+          "emergency_contact": "Patricia Fernández (esposa) - 934567892"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Apendicitis aguda",
+          "primary_diagnosis_code": "K35.9",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-24",
+          "medical_record": "HC002003",
+          "attending_physician": "Dra. Ana García",
+          "admission_reason": "Dolor abdominal en fosa ilíaca derecha",
+          "current_medications": ["Ceftriaxona 1g", "Metronidazol 500mg"],
+          "allergies": "Sulfonamidas"
+        }
+      },
+      
+      "207W": {
+        "personal_info": {
+          "first_name": "Rosa",
+          "last_name": "Vega Castillo",
+          "age": 61,
+          "gender": "F",
+          "dni": "77889900",
+          "phone": "932109876",
+          "emergency_contact": "Ana Vega (hija) - 945678903"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Obstrucción intestinal",
+          "primary_diagnosis_code": "K56.9",
+          "secondary_diagnosis": "Hipertensión arterial",
+          "secondary_diagnosis_code": "I10",
+          "admission_date": "2025-01-19",
+          "medical_record": "HC002004",
+          "attending_physician": "Dra. Ana García",
+          "admission_reason": "Vómitos y distensión abdominal",
+          "current_medications": ["Enalapril 10mg", "Suero fisiológico IV"],
+          "allergies": "Látex"
+        }
+      },
+  
+      "_comment3": "PISO 3 - CABEZA Y CUELLO - Dr. Luis Rodríguez",
+      
+      "301E": {
+        "personal_info": {
+          "first_name": "Patricia",
+          "last_name": "López Sandoval",
+          "age": 47,
+          "gender": "F",
+          "dni": "33445566",
+          "phone": "921098765",
+          "emergency_contact": "Carlos López (hermano) - 956789014"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Cáncer de tiroides",
+          "primary_diagnosis_code": "C73",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-20",
+          "medical_record": "HC003001",
+          "attending_physician": "Dr. Luis Rodríguez",
+          "admission_reason": "Pre-operatorio para tiroidectomía",
+          "current_medications": ["Levotiroxina 100mcg", "Omeprazol 20mg"],
+          "allergies": "Yodo radiactivo"
+        }
+      },
+      
+      "303E": {
+        "personal_info": {
+          "first_name": "Gabriel",
+          "last_name": "Chirinos Vega",
+          "age": 35,
+          "gender": "M",
+          "dni": "88990011",
+          "phone": "910987654",
+          "emergency_contact": "Lucía Chirinos (esposa) - 967890125"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Tumor de parótida",
+          "primary_diagnosis_code": "C07",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-22",
+          "medical_record": "HC003002",
+          "attending_physician": "Dr. Luis Rodríguez",
+          "admission_reason": "Masa palpable en región parotídea",
+          "current_medications": ["Paracetamol 500mg", "Dexametasona 4mg"],
+          "allergies": "Ninguna conocida"
+        }
+      },
+      
+      "305W": {
+        "personal_info": {
+          "first_name": "Elena",
+          "last_name": "Morales Quispe",
+          "age": 29,
+          "gender": "F",
+          "dni": "12309876",
+          "phone": "909876543",
+          "emergency_contact": "Ricardo Morales (padre) - 978901236"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Cáncer de laringe",
+          "primary_diagnosis_code": "C32.9",
+          "secondary_diagnosis": "Tabaquismo",
+          "secondary_diagnosis_code": "Z87.891",
+          "admission_date": "2025-01-18",
+          "medical_record": "HC003003",
+          "attending_physician": "Dr. Luis Rodríguez",
+          "admission_reason": "Disfonía y disfagia progresiva",
+          "current_medications": ["Morfina 10mg", "Ondansetrón 8mg"],
+          "allergies": "Penicilina"
+        }
+      },
+  
+      "_comment4": "PISO 4 - MAMAS Y TEJIDOS BLANDOS - Dra. Patricia López",
+      
+      "401E": {
+        "personal_info": {
+          "first_name": "María",
+          "last_name": "González Torres",
+          "age": 54,
+          "gender": "F",
+          "dni": "56789012",
+          "phone": "898765432",
+          "emergency_contact": "Pedro González (esposo) - 989012347"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Cáncer de mama derecha",
+          "primary_diagnosis_code": "C50.9",
+          "secondary_diagnosis": "Hipertensión arterial",
+          "secondary_diagnosis_code": "I10",
+          "admission_date": "2025-01-19",
+          "medical_record": "HC004001",
+          "attending_physician": "Dra. Patricia López",
+          "admission_reason": "Post-operatorio de mastectomía",
+          "current_medications": ["Tamoxifeno 20mg", "Amlodipino 5mg"],
+          "allergies": "Morfina"
+        }
+      },
+      
+      "403E": {
+        "personal_info": {
+          "first_name": "Sofía",
+          "last_name": "Ramírez Huamán",
+          "age": 41,
+          "gender": "F",
+          "dni": "67890123",
+          "phone": "887654321",
+          "emergency_contact": "Miguel Ramírez (hermano) - 990123458"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Lipoma en muslo derecho",
+          "primary_diagnosis_code": "D17.2",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-24",
+          "medical_record": "HC004002",
+          "attending_physician": "Dra. Patricia López",
+          "admission_reason": "Extirpación de masa en tejidos blandos",
+          "current_medications": ["Ibuprofeno 400mg", "Paracetamol 500mg"],
+          "allergies": "Ninguna conocida"
+        }
+      },
+      
+      "405W": {
+        "personal_info": {
+          "first_name": "Beatriz",
+          "last_name": "Castro Mendoza",
+          "age": 62,
+          "gender": "F",
+          "dni": "78901234",
+          "phone": "876543210",
+          "emergency_contact": "Carlos Castro (hijo) - 901234569"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Fibroadenoma mamario bilateral",
+          "primary_diagnosis_code": "D24",
+          "secondary_diagnosis": "Diabetes mellitus tipo 2",
+          "secondary_diagnosis_code": "E11.9",
+          "admission_date": "2025-01-21",
+          "medical_record": "HC004003",
+          "attending_physician": "Dra. Patricia López",
+          "admission_reason": "Evaluación de masas mamarias palpables",
+          "current_medications": ["Metformina 850mg", "Insulina glargina"],
+          "allergies": "Sulfonamidas"
+        }
+      },
+  
+      "_comment5": "PISO 5 - CIRUGÍA DE TÓRAX - Dr. Roberto Martínez",
+      
+      "501E": {
+        "personal_info": {
+          "first_name": "Jorge",
+          "last_name": "Vargas Salinas",
+          "age": 59,
+          "gender": "M",
+          "dni": "89012345",
+          "phone": "865432109",
+          "emergency_contact": "Martha Vargas (esposa) - 912345670"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Cáncer pulmonar",
+          "primary_diagnosis_code": "C78.0",
+          "secondary_diagnosis": "EPOC",
+          "secondary_diagnosis_code": "J44.1",
+          "admission_date": "2025-01-17",
+          "medical_record": "HC005001",
+          "attending_physician": "Dr. Roberto Martínez",
+          "admission_reason": "Pre-operatorio para lobectomía",
+          "current_medications": ["Salbutamol inhalador", "Morfina 20mg"],
+          "allergies": "Penicilina"
+        }
+      },
+      
+      "503E": {
+        "personal_info": {
+          "first_name": "Alberto",
+          "last_name": "Mendoza Flores",
+          "age": 44,
+          "gender": "M",
+          "dni": "90123456",
+          "phone": "854321098",
+          "emergency_contact": "Sandra Mendoza (esposa) - 923456781"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Neumotórax espontáneo",
+          "primary_diagnosis_code": "J93.1",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-23",
+          "medical_record": "HC005002",
+          "attending_physician": "Dr. Roberto Martínez",
+          "admission_reason": "Dolor torácico y disnea súbita",
+          "current_medications": ["Oxígeno suplementario", "Paracetamol 500mg"],
+          "allergies": "Ninguna conocida"
+        }
+      },
+      
+      "507W": {
+        "personal_info": {
+          "first_name": "Ricardo",
+          "last_name": "Peña Gutiérrez",
+          "age": 67,
+          "gender": "M",
+          "dni": "01234567",
+          "phone": "843210987",
+          "emergency_contact": "Mónica Peña (hija) - 934567892"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Derrame pleural",
+          "primary_diagnosis_code": "J94.8",
+          "secondary_diagnosis": "Insuficiencia cardíaca",
+          "secondary_diagnosis_code": "I50.9",
+          "admission_date": "2025-01-20",
+          "medical_record": "HC005003",
+          "attending_physician": "Dr. Roberto Martínez",
+          "admission_reason": "Disnea progresiva y dolor torácico",
+          "current_medications": ["Furosemida 40mg", "Enalapril 10mg"],
+          "allergies": "Aspirina"
+        }
+      },
+  
+      "_comment6": "PISO 6 - GINECOLOGÍA - Dra. Carmen Silva",
+      
+      "601E": {
+        "personal_info": {
+          "first_name": "Claudia",
+          "last_name": "Herrera Rojas",
+          "age": 33,
+          "gender": "F",
+          "dni": "23456789",
+          "phone": "832109876",
+          "emergency_contact": "Daniel Herrera (esposo) - 945678903"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Mioma uterino",
+          "primary_diagnosis_code": "D25.9",
+          "secondary_diagnosis": "Anemia ferropénica",
+          "secondary_diagnosis_code": "D50.9",
+          "admission_date": "2025-01-22",
+          "medical_record": "HC006001",
+          "attending_physician": "Dra. Carmen Silva",
+          "admission_reason": "Sangrado uterino anormal",
+          "current_medications": ["Sulfato ferroso 300mg", "Ácido tranexámico 500mg"],
+          "allergies": "Ninguna conocida"
+        }
+      },
+      
+      "603E": {
+        "personal_info": {
+          "first_name": "Valeria",
+          "last_name": "Jiménez Cáceres",
+          "age": 28,
+          "gender": "F",
+          "dni": "34567890",
+          "phone": "821098765",
+          "emergency_contact": "Luis Jiménez (padre) - 956789014"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Quiste ovárico complejo",
+          "primary_diagnosis_code": "N83.2",
+          "secondary_diagnosis": null,
+          "secondary_diagnosis_code": null,
+          "admission_date": "2025-01-24",
+          "medical_record": "HC006002",
+          "attending_physician": "Dra. Carmen Silva",
+          "admission_reason": "Dolor pélvico agudo",
+          "current_medications": ["Metamizol 500mg", "Omeprazol 20mg"],
+          "allergies": "Penicilina"
+        }
+      },
+      
+      "605W": {
+        "personal_info": {
+          "first_name": "Mónica",
+          "last_name": "Torres Espinoza",
+          "age": 42,
+          "gender": "F",
+          "dni": "45678901",
+          "phone": "810987654",
+          "emergency_contact": "Roberto Torres (esposo) - 967890125"
+        },
+        "medical_info": {
+          "primary_diagnosis": "Endometriosis",
+          "primary_diagnosis_code": "N80.9",
+          "secondary_diagnosis": "Dismenorrea severa",
+          "secondary_diagnosis_code": "N94.6",
+          "admission_date": "2025-01-20",
+          "medical_record": "HC006003",
+          "attending_physician": "Dra. Carmen Silva",
+          "admission_reason": "Dolor pélvico crónico severo",
+          "current_medications": ["Leuprolide 3.75mg", "Naproxeno 250mg"],
+          "allergies": "Aspirina"
+        }
+      }
+    }
+  }

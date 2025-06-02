@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital San José - Visor Médico DICOM</title>
+    <link rel="stylesheet" href="/static/css/dicom_viewer.css">
+    <link rel="stylesheet" href="/static/css/dicom_tools.css">
+</head>
+<body>
+    <!-- Botón móvil estático - NO crear dinámicamente -->
+    <button class="mobile-toggle" id="mobileToggle" onclick="toggleMobilePanel()" aria-label="Mostrar/ocultar panel lateral">☰</button>
+
+    <div class="dicom-container">
+        <!-- Panel lateral de series -->
+        <div class="series-panel" id="seriesPanel">
+            <div class="panel-header">
+                <div class="panel-title">Series DICOM</div>
+                <button class="collapse-btn" onclick="togglePanel()">◂</button>
+            </div>
+
+            <div class="patient-info">
+                <div class="patient-name">🏥 Hospital San José</div>
+                <div class="study-info">
+                    <div>📋 Paciente: Anónimo</div>
+                    <div>🦴 Estudio: Rodilla (Derecha)</div>
+                    <div>📅 Fecha: 01/01/2007</div>
+                </div>
+            </div>
+
+            <div class="series-list" id="seriesList">
+                <!-- Las series se cargarán dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Área principal del visor -->
+        <div class="viewer-area">
+            <div class="viewer-header">
+                <div class="current-series-info">
+                    <div class="series-title" id="currentSeriesTitle">Seleccione una serie</div>
+                    <div class="image-counter" id="imageCounter">
+                        <span class="current">0</span> / <span class="total">0</span>
+                    </div>
+                </div>
+
+                <div class="viewer-controls">
+                    <a href="http://localhost:8000/medical/rounds" class="control-btn back-btn">Volver</a>
+                    <button class="control-btn" onclick="resetView()">Reset</button>
+                    <button class="control-btn" onclick="toggleFullscreen()">Pantalla Completa</button>
+                    <button class="control-btn active" onclick="toggleScrollNavigation()">Scroll: ON</button>
+                    
+                    <div class="tool-separator"></div>
+                    
+                    <!-- Nuevas herramientas -->
+                    <button class="control-btn tool-btn" id="zoomTool" onclick="toggleTool('zoom')">
+                        <span class="tool-icon">🔍</span>
+                        <span class="tool-label">Zoom</span>
+                    </button>
+                    <button class="control-btn tool-btn" id="measureTool" onclick="toggleTool('measure')">
+                        <span class="tool-icon">📏</span>
+                        <span class="tool-label">Medir</span>
+                    </button>
+                    <button class="control-btn tool-btn" id="windowTool" onclick="toggleTool('window')">
+                        <span class="tool-icon">🌓</span>
+                        <span class="tool-label">Contraste</span>
+                    </button>
+                    <button class="control-btn tool-btn" id="rotateTool" onclick="toggleTool('rotate')">
+                        <span class="tool-icon">🔄</span>
+                        <span class="tool-label">Rotar</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="image-viewer" id="imageViewer">
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Cargando series DICOM...</div>
+                </div>
+
+                <div class="error-state" id="errorState" style="display: none;">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-message">Error cargando imágenes DICOM</div>
+                    <button class="retry-btn" onclick="loadDicomStudies()">Reintentar</button>
+                </div>
+
+                <img class="dicom-image" id="dicomImage" style="display: none;" />
+
+                <!-- Contenedor para todas las herramientas interactivas -->
+                <div class="tools-container" id="toolsContainer" style="z-index: 1000;">
+                    <!-- Herramientas de medición -->
+                    <div class="measurement-container" id="measurementContainer" style="display: none;">
+                        <canvas id="measureCanvas" class="measure-canvas"></canvas>
+                        <div class="measurement-info" id="measurementInfo">
+                            <span>0.0 mm</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles de zoom -->
+                    <div class="tool-controls" id="zoomControls" style="display: none;">
+                        <div class="tool-controls-header">Zoom</div>
+                        <div class="zoom-level" id="zoomLevel">100%</div>
+                        <div class="zoom-buttons">
+                            <button class="zoom-btn" onclick="adjustZoom(0.1)">+</button>
+                            <button class="zoom-btn" onclick="adjustZoom(-0.1)">-</button>
+                        </div>
+                        <button class="reset-btn" onclick="resetZoom()">Reset</button>
+                    </div>
+                    
+                    <!-- Controles de brillo/contraste -->
+                    <div class="tool-controls" id="windowControls" style="display: none;">
+                        <div class="tool-controls-header">Brillo/Contraste</div>
+                        <div class="slider-container">
+                            <label>Brillo</label>
+                            <input type="range" min="-100" max="100" value="0" class="slider" id="brightnessSlider" oninput="adjustBrightness(this.value)">
+                        </div>
+                        <div class="slider-container">
+                            <label>Contraste</label>
+                            <input type="range" min="-100" max="100" value="0" class="slider" id="contrastSlider" oninput="adjustContrast(this.value)">
+                        </div>
+                        <button class="reset-btn" onclick="resetWindowLevel()">Reset</button>
+                    </div>
+                    
+                    <!-- Controles de rotación -->
+                    <div class="tool-controls" id="rotateControls" style="display: none;">
+                        <div class="tool-controls-header">Rotación</div>
+                        <div class="rotation-value" id="rotationValue">0°</div>
+                        <div class="rotation-buttons">
+                            <button class="rotate-btn" onclick="adjustRotation(-90)">-90°</button>
+                            <button class="rotate-btn" onclick="adjustRotation(90)">+90°</button>
+                            <button class="rotate-btn" onclick="adjustRotation(-5)">-5°</button>
+                            <button class="rotate-btn" onclick="adjustRotation(5)">+5°</button>
+                        </div>
+                        <button class="reset-btn" onclick="resetRotation()">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Overlays de información -->
+                <div class="image-overlay overlay-top-left" id="overlayTopLeft"></div>
+                <div class="image-overlay overlay-top-right" id="overlayTopRight"></div>
+                <div class="image-overlay overlay-bottom-left" id="overlayBottomLeft"></div>
+                <div class="image-overlay overlay-bottom-right" id="overlayBottomRight"></div>
+
+                <!-- Indicador de scroll -->
+                <div class="scroll-indicator" id="scrollIndicator">
+                    <div class="scroll-icon">🖱️</div>
+                    <div class="scroll-text">Scroll para<br>navegar</div>
+                </div>
+
+                <!-- Progreso de precarga -->
+                <div class="preload-progress" id="preloadProgress">
+                    <div>Precargando imágenes...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript desde static/ (donde FastAPI puede encontrarlo) -->
+    <script src="/static/js/dicom_viewer.js"></script>
+    <script src="/static/js/dicom_tools.js"></script>
+</body>
+</html>
