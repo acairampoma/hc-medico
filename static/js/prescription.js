@@ -838,8 +838,44 @@ window.verificarLibrerias = function() {
     return librerias;
 };
 
+// Configura los botones de volver para la página de prescripción
+// Utiliza common_navigation.js para manejar la navegación
+function setupBackButtonsForPrescription() {
+    console.log('Configurando botones de volver para prescripción');
+    
+    // Verificar si la función de configuración común está disponible
+    if (typeof setupBackButtons === 'function') {
+        // Configurar el comportamiento del botón volver
+        setupBackButtons(function() {
+            // Guardar el borrador actual o estado antes de volver
+            console.log('Guardando estado de prescripción antes de volver');
+            
+            // Aquí se podría guardar el estado del formulario si es necesario
+            // Por ejemplo: guardarBorradorPrescripcion();
+            
+            // Usar la función común para volver a rondas médicas
+            returnToMedicalRounds();
+            return true; // Indicar que se ha manejado la navegación
+        });
+    } else {
+        console.warn('La función setupBackButtons no está disponible');
+        
+        // Fallback: configurar manualmente los botones de volver
+        const backButtons = document.querySelectorAll('.back-btn, .btn-back, [data-action="back"]');
+        backButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/medical/rounds';
+            });
+        });
+    }
+}
+
 // Auto-verificación al cargar
 document.addEventListener('DOMContentLoaded', function() {
+    // Configurar botones de volver
+    setupBackButtonsForPrescription();
+    
     setTimeout(() => {
         const librerias = window.verificarLibrerias();
         const faltantes = Object.entries(librerias)

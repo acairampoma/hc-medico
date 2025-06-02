@@ -975,8 +975,44 @@ window.verificarLibreriasExamenes = function() {
     return librerias;
 };
 
+// Configura los botones de volver para la página de órdenes de exámenes
+// Utiliza common_navigation.js para manejar la navegación
+function setupBackButtonsForExamOrders() {
+    console.log('Configurando botones de volver para órdenes de exámenes');
+    
+    // Verificar si la función de configuración común está disponible
+    if (typeof setupBackButtons === 'function') {
+        // Configurar el comportamiento del botón volver
+        setupBackButtons(function() {
+            // Guardar el borrador actual o estado antes de volver
+            console.log('Guardando estado de órdenes de exámenes antes de volver');
+            
+            // Aquí se podría guardar el estado del formulario si es necesario
+            // Por ejemplo: guardarBorradorExamenes();
+            
+            // Usar la función común para volver a rondas médicas
+            returnToMedicalRounds();
+            return true; // Indicar que se ha manejado la navegación
+        });
+    } else {
+        console.warn('La función setupBackButtons no está disponible');
+        
+        // Fallback: configurar manualmente los botones de volver
+        const backButtons = document.querySelectorAll('.back-btn, .btn-back, [data-action="back"]');
+        backButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/medical/rounds';
+            });
+        });
+    }
+}
+
 // Auto-verificación al cargar
 document.addEventListener('DOMContentLoaded', function() {
+    // Configurar botones de volver
+    setupBackButtonsForExamOrders();
+    
     setTimeout(() => {
         const librerias = window.verificarLibreriasExamenes();
         const faltantes = Object.entries(librerias)

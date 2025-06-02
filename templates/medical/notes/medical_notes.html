@@ -8,9 +8,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <a href="javascript:void(0);" onclick="window.close();" class="back-to-rounds-btn">
-        <i class="fas fa-arrow-left"></i> Volver a Rondas
-    </a>
     <div class="medical-note-with-signature">
         <!-- HEADER OFICIAL DEL HOSPITAL -->
         <div class="official-header">
@@ -22,10 +19,15 @@
                     <p>Teléf. 01-2016500</p>
                 </div>
             </div>
-            <div class="document-number">
-                <div class="note-type">NOTA DE EVOLUCIÓN MÉDICA</div>
-                <div class="note-id">N° NE20240101001</div>
-                <div class="note-date">01/01/2024</div>
+            <div class="header-actions">
+                <a href="javascript:void(0);" onclick="window.close();" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <div class="document-info">
+                    <div class="note-type">NOTA DE EVOLUCIÓN MÉDICA</div>
+                    <div class="note-id">N° NE20240101001</div>
+                    <div class="note-date">01/01/2024</div>
+                </div>
             </div>
         </div>
 
@@ -203,6 +205,37 @@
             </div>
         </div>
     </div>
+    <!-- Script de navegación común para manejar botones de volver -->
+    <script src="/static/js/common_navigation.js"></script>
     <script src="/static/js/notamedica.js"></script>
+    <script>
+        // Script de inicialización para cargar datos desde parámetros URL
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                console.log('Inicializando página de notas médicas...');
+                
+                // Cargar datos del paciente desde URL o localStorage
+                cargarDatosDesdeURL();
+                
+                // Configurar evento para guardar contenido antes de cerrar la ventana
+                window.addEventListener('beforeunload', handleWindowClose);
+                
+                // Configurar guardado automático
+                setInterval(function() {
+                    saveEditorContent();
+                }, AUTO_SAVE_INTERVAL);
+                
+                console.log('✅ Página de notas médicas inicializada correctamente');
+            } catch (error) {
+                console.error('Error en inicialización:', error);
+            }
+        });
+        
+        // Función para manejar el cierre de la ventana
+        function handleWindowClose(event) {
+            console.log('Guardando contenido antes de cerrar la ventana...');
+            saveEditorContent();
+        }
+    </script>
 </body>
 </html>

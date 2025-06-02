@@ -175,9 +175,13 @@ async def dicom_page(request: Request):
     return templates.TemplateResponse("medical/pacs/dicom_viewer.html", {"request": request})
 
 @app.get("/medical/notes", response_class=HTMLResponse)
-async def notes_page(request: Request):
+async def notes_page(request: Request, bed_number: str = None, patient_id: str = None):
     """Página de notas médicas"""
-    return templates.TemplateResponse("medical/notes/medical_notes.html", {"request": request})
+    return templates.TemplateResponse("medical/notes/medical_notes.html", {
+        "request": request,
+        "bed_number": bed_number,
+        "patient_id": patient_id
+    })
 
 # ===== TUS OTRAS RUTAS EXISTENTES (CONSERVAMOS) ===== 
 

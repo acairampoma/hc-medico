@@ -8,6 +8,15 @@
     --light-bg: #f9f9f9;          /* Fondo claro para secciones */
     --border-color: #ddd;         /* Color de bordes */
     --highlight-color: #fff9c4;   /* Color para resaltados */
+    --medical-blue: #2c5aa0;
+    --medical-green: #00a86b;
+    --medical-red: #e74c3c;
+    --medical-white: #ffffff;
+    --medical-light-blue: #e8f4f8;
+    --medical-dark: #2c3e50;
+    --medical-gray: #7f8c8d;
+    --medical-light-gray: #ecf0f1;
+    --gradient-background: linear-gradient(135deg, #74b9ff 0%, #0984e3 25%, #00b894 75%, #00cec9 100%);
 }
 
 /* Estilos mejorados para el botón Volver a Rondas */
@@ -83,8 +92,40 @@
     color: #666;
 }
 
-.document-number {
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.document-info {
     text-align: right;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--medical-blue);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 5px;
+}
+
+.back-btn:hover {
+    background: var(--medical-green);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.back-btn i {
+    margin-right: 5px;
 }
 
 .note-type {
@@ -328,6 +369,31 @@
 
 .btn-clear-signature:hover {
     background: #c82333;
+}
+
+/* === FONDO PRINCIPAL === */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--gradient-background);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* === PATRÓN DE PUNTOS === */
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
+        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 50px 50px, 30px 30px;
+    pointer-events: none;
+    z-index: -1; /* Para que esté detrás del contenido */
 }
 
 /* Responsive */

@@ -987,3 +987,40 @@ document.addEventListener('alpine:init', () => {
 });
 
 console.log('✅ Monitor de Signos Vitales Canvas Nativo - ¡Como tu ejemplo hermoso pero con WebSocket! 🏥✨');
+
+/**
+ * Configura los botones de volver para la página de signos vitales
+ * Utiliza common_navigation.js para manejar la navegación
+ */
+function setupBackButtonsForVitalSigns() {
+    console.log('Configurando botones de volver para monitor de signos vitales');
+    
+    // Verificar si la función de configuración común está disponible
+    if (typeof setupBackButtons === 'function') {
+        // Configurar el comportamiento del botón volver
+        setupBackButtons(function() {
+            console.log('Volviendo desde monitor de signos vitales a rondas médicas');
+            
+            // Usar la función común para volver a rondas médicas
+            returnToMedicalRounds();
+            return true; // Indicar que se ha manejado la navegación
+        });
+    } else {
+        console.warn('La función setupBackButtons no está disponible');
+        
+        // Fallback: configurar manualmente los botones de volver
+        const backButtons = document.querySelectorAll('.back-btn, .btn-back, [data-action="back"]');
+        backButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/medical/rounds';
+            });
+        });
+    }
+}
+
+// Inicializar configuración de botones de volver cuando el DOM esté cargado
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar botones de volver
+    setupBackButtonsForVitalSigns();
+});

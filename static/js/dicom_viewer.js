@@ -906,3 +906,41 @@ console.log(`
 `);
 
 console.log('🔧 Funciones de debug disponibles en window.dicomDebug');
+
+// ===== CONFIGURACIÓN DE BOTONES DE VOLVER =====
+/**
+ * Configura los botones de volver para la página de visualización DICOM/PACS
+ * Utiliza common_navigation.js para manejar la navegación
+ */
+function setupBackButtonsForDicomViewer() {
+    console.log('Configurando botones de volver para visor DICOM/PACS');
+    
+    // Verificar si la función de configuración común está disponible
+    if (typeof setupBackButtons === 'function') {
+        // Configurar el comportamiento del botón volver
+        setupBackButtons(function() {
+            console.log('Volviendo desde visor DICOM/PACS a rondas médicas');
+            
+            // Usar la función común para volver a rondas médicas
+            returnToMedicalRounds();
+            return true; // Indicar que se ha manejado la navegación
+        });
+    } else {
+        console.warn('La función setupBackButtons no está disponible');
+        
+        // Fallback: configurar manualmente los botones de volver
+        const backButtons = document.querySelectorAll('.back-btn, .btn-back, [data-action="back"]');
+        backButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/medical/rounds';
+            });
+        });
+    }
+}
+
+// Inicializar configuración de botones de volver cuando el DOM esté cargado
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar botones de volver
+    setupBackButtonsForDicomViewer();
+});

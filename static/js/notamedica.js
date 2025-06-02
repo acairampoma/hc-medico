@@ -15,6 +15,501 @@ let saveTimeout = null;
 const LOCAL_STORAGE_KEY = 'medical_note_draft';
 const AUTO_SAVE_INTERVAL = 30000; // 30 segundos
 
+// ===== FUNCIONES DE UTILIDAD =====
+function getUrlParameters() {
+    const params = {};
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    
+    // Obtener parámetros específicos
+    params.patientId = urlParams.get('patientId');
+    params.bedNumber = urlParams.get('bedNumber');
+    params.timestamp = urlParams.get('timestamp');
+    params.name = urlParams.get('name');
+    params.diagnosis = urlParams.get('diagnosis');
+    params.department = urlParams.get('department');
+    params.hc = urlParams.get('hc');
+    params.age = urlParams.get('age');
+    params.gender = urlParams.get('gender');
+    
+    return params;
+}
+
+// ===== CONFIGURACIÓN DE BOTONES DE VOLVER =====
+function setupBackButtonsForNotaMedica() {
+    // Obtener los parámetros de la URL para saber a dónde volver
+    const urlParams = getUrlParameters();
+    const bedNumber = urlParams.bedNumber;
+    const patientId = urlParams.patientId;
+    
+    console.log('🔍 Configurando botones de volver con datos:', { bedNumber, patientId });
+    
+    // Buscar todos los botones de volver en la página
+    const backButtons = document.querySelectorAll('.back-btn, [data-action="back"], .btn-volver, button:contains("Volver"), a:contains("Volver")');
+    
+    if (backButtons.length === 0) {
+        console.log('⚠️ No se encontraron botones de volver en la página');
+        
+        // Crear un botón de volver si no existe
+        const header = document.querySelector('header') || document.querySelector('.header') || document.body.firstChild;
+        const backButton = document.createElement('button');
+        backButton.innerHTML = '<i class="fas fa-arrow-left"></i> Volver';
+        backButton.className = 'btn btn-secondary back-btn';
+        backButton.style.margin = '10px';
+        header.parentNode.insertBefore(backButton, header);
+        
+        // Configurar el nuevo botón
+        backButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleBackNavigation(bedNumber, patientId);
+        });
+        
+        console.log('✅ Botón de volver creado y configurado');
+    } else {
+        // Configurar los botones existentes
+        backButtons.forEach(button => {
+            // Eliminar manejadores de eventos anteriores
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            
+            // Agregar nuevo manejador de eventos
+            newButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                handleBackNavigation(bedNumber, patientId);
+            });
+        });
+        
+        console.log('✅ Botones de volver configurados:', backButtons.length);
+    }
+}
+
+// ===== MANEJAR NAVEGACIÓN DE REGRESO =====
+function handleBackNavigation(bedNumber, patientId) {
+    console.log('🔙 Volviendo a rondas médicas con datos:', { bedNumber, patientId });
+    
+    // Guardar el borrador actual antes de salir
+    saveEditorContent();
+    
+    // Verificar si existe la función de navegación común
+    if (typeof returnToMedicalRounds === 'function') {
+        // Usar la función de navegación común
+        returnToMedicalRounds(patientId, bedNumber);
+    } else {
+        // Implementación alternativa si no está disponible la función común
+        // Guardar información para que se muestre el modal al volver
+        sessionStorage.setItem('showPatientModalOnReturn', 'true');
+        sessionStorage.setItem('returnPatientId', patientId);
+        sessionStorage.setItem('returnBedNumber', bedNumber);
+        
+        // Redirigir a la página de rondas médicas
+        window.location.href = '/medical/rounds';
+    }
+}
+
+// ===== OBTENER PARÁMETROS DE URL =====
+// Nota: Esta función ya está definida arriba con más parámetros
+// Esta es una versión simplificada para compatibilidad con código existente
+function getSimplifiedUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+        bedNumber: urlParams.get('bedNumber') || urlParams.get('bed_number'),
+        patientId: urlParams.get('patientId') || urlParams.get('patient_id'),
+        timestamp: urlParams.get('timestamp')
+    };
+}
+
+// ===== ACTUALIZAR INFORMACIÓN DEL PACIENTE EN LA INTERFAZ =====
+function updatePatientInfo(patientData) {
+    try {
+        console.log('Actualizando interfaz con datos del paciente:', patientData);
+        
+        // Guardar datos en variable global para acceso desde otras funciones
+        currentPatientData = patientData;
+        
+        // Actualizar tabla de datos del paciente
+        const patientTable = document.querySelector('.patient-data-table');
+        if (patientTable) {
+            // Nombre del paciente
+            const patientNameCell = patientTable.querySelector('tr:nth-child(1) td:nth-child(2)');
+            if (patientNameCell) {
+                patientNameCell.textContent = patientData.name || patientData.full_name || 'Paciente sin nombre';
+            }
+            
+            // Número de historia clínica
+            const hcNumberCell = patientTable.querySelector('tr:nth-child(1) td:nth-child(4)');
+            if (hcNumberCell) {
+                hcNumberCell.textContent = patientData.hc_number || 'HC-TEMP';
+            }
+            
+            // Edad del paciente
+            const ageCell = patientTable.querySelector('tr:nth-child(2) td:nth-child(2)');
+            if (ageCell) {
+                ageCell.textContent = patientData.age ? `${patientData.age} años` : '---';
+            }
+            
+            // Sexo del paciente
+            const genderCell = patientTable.querySelector('tr:nth-child(2) td:nth-child(4)');
+            if (genderCell) {
+                genderCell.textContent = patientData.gender || patientData.sexo || '---';
+            }
+            
+            // Número de cama
+            const bedCell = patientTable.querySelector('tr:nth-child(3) td:nth-child(2)');
+            if (bedCell) {
+                bedCell.textContent = patientData.bed_number || '---';
+            }
+            
+            // Servicio/departamento
+            const serviceCell = patientTable.querySelector('tr:nth-child(3) td:nth-child(4)');
+            if (serviceCell) {
+                serviceCell.textContent = patientData.department || patientData.room || 'Medicina General';
+            }
+            
+            // Diagnóstico - Implementación mejorada para mostrar correctamente
+            console.log('🔍 Actualizando diagnóstico del paciente');
+            console.log('Datos de diagnóstico disponibles:', {
+                diagnosis: patientData.diagnosis,
+                primaryDiagnosis: patientData.medical_info?.primary_diagnosis,
+                diagnosisCode: patientData.diagnosisCode,
+                diagnosisText: patientData.diagnosisText
+            });
+            
+            // Determinar el mejor diagnóstico disponible
+            const diagnosis = (function() {
+                // Prioridad 1: Si hay un diagnóstico completo
+                if (patientData.diagnosis && 
+                    typeof patientData.diagnosis === 'string' && 
+                    !patientData.diagnosis.includes('undefined')) {
+                    console.log('Usando diagnóstico de patientData.diagnosis');
+                    return patientData.diagnosis;
+                }
+                
+                // Prioridad 2: Si hay diagnóstico en medical_info
+                if (patientData.medical_info && 
+                    patientData.medical_info.primary_diagnosis && 
+                    typeof patientData.medical_info.primary_diagnosis === 'string' && 
+                    !patientData.medical_info.primary_diagnosis.includes('undefined')) {
+                    console.log('Usando diagnóstico de patientData.medical_info.primary_diagnosis');
+                    return patientData.medical_info.primary_diagnosis;
+                }
+                
+                // Prioridad 3: Combinar código y texto si existen
+                if (patientData.diagnosisCode || patientData.diagnosisText) {
+                    const code = patientData.diagnosisCode || '';
+                    const text = patientData.diagnosisText || '';
+                    
+                    if (code && text && 
+                        typeof code === 'string' && typeof text === 'string' && 
+                        !code.includes('undefined') && !text.includes('undefined')) {
+                        console.log('Usando combinación de código y texto de diagnóstico');
+                        return `${code} - ${text}`;
+                    } else if (code && typeof code === 'string' && !code.includes('undefined')) {
+                        console.log('Usando solo código de diagnóstico');
+                        return code;
+                    } else if (text && typeof text === 'string' && !text.includes('undefined')) {
+                        console.log('Usando solo texto de diagnóstico');
+                        return text;
+                    }
+                }
+                
+                // Valor por defecto
+                console.log('Usando diagnóstico por defecto: Pendiente de evaluación');
+                return 'Pendiente de evaluación';
+            })();
+            
+            console.log('✅ Diagnóstico final establecido:', diagnosis);
+            
+            // Actualizar TODOS los elementos que muestran el diagnóstico
+            // 1. Celda en la tabla de paciente
+            const diagnosisCell = patientTable.querySelector('tr:nth-child(4) td:nth-child(2)');
+            if (diagnosisCell) {
+                diagnosisCell.textContent = diagnosis;
+                console.log('Actualizada celda de diagnóstico en tabla');
+            }
+            
+            // 2. Elementos con clases especiales para diagnóstico
+            const diagnosisElements = document.querySelectorAll('.diagnosis-value, .patient-diagnosis');
+            if (diagnosisElements.length > 0) {
+                console.log(`Actualizando ${diagnosisElements.length} elementos adicionales con el diagnóstico`);
+                diagnosisElements.forEach(element => {
+                    element.textContent = diagnosis;
+                });
+            } else {
+                console.log('No se encontraron elementos adicionales para mostrar el diagnóstico');
+            }
+            
+            // 3. Guardar en el objeto global para referencias futuras
+            if (window.currentPatientData) {
+                window.currentPatientData.diagnosis = diagnosis;
+                console.log('Diagnóstico actualizado en objeto global currentPatientData');
+            }
+        }
+        
+        // Actualizar información del médico en la sección de firma digital
+        if (patientData.doctor_info) {
+            const doctorInfo = document.querySelector('.doctor-info');
+            if (doctorInfo) {
+                const doctorNameElement = doctorInfo.querySelector('p:nth-child(1)');
+                const doctorCMPElement = doctorInfo.querySelector('p:nth-child(2)');
+                const doctorSpecialtyElement = doctorInfo.querySelector('p:nth-child(3)');
+                
+                if (doctorNameElement) {
+                    doctorNameElement.innerHTML = `<strong>MÉDICO:</strong> ${patientData.doctor_info.name || 'Dr. Sin nombre'}`;
+                }
+                
+                if (doctorCMPElement) {
+                    doctorCMPElement.innerHTML = `<strong>CMP:</strong> ${patientData.doctor_info.cmp || '-----'}`;
+                }
+                
+                if (doctorSpecialtyElement) {
+                    doctorSpecialtyElement.innerHTML = `<strong>ESPECIALIDAD:</strong> ${patientData.doctor_info.specialty || 'Medicina General'}`;
+                }
+            }
+        }
+        
+        // Actualizar fecha y hora en la sección de firma
+        const dateElement = document.querySelector('.signature-date');
+        if (dateElement) {
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleDateString('es-PE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            dateElement.textContent = `Fecha: ${formattedDate}`;
+        }
+        
+        const timeElement = document.querySelector('.signature-time');
+        if (timeElement) {
+            const currentTime = new Date();
+            const formattedTime = currentTime.toLocaleTimeString('es-PE', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            timeElement.textContent = `Hora: ${formattedTime}`;
+        }
+        
+        console.log('✅ Interfaz actualizada con datos del paciente');
+        
+        // Cargar contenido del editor si existe un borrador previo para este paciente
+        loadEditorContent(patientData.patientId);
+        
+        return true;
+    } catch (error) {
+        console.error('Error actualizando interfaz con datos del paciente:', error);
+        return false;
+    }
+}
+
+// ===== CARGAR DATOS DESDE URL Y LOCALSTORAGE =====
+function cargarDatosDesdeURL() {
+    console.log('Buscando datos del paciente desde URL y almacenamiento local...');
+    
+    try {
+        // Verificar parámetros URL
+        const urlParams = getUrlParameters();
+        const bedNumber = urlParams.bedNumber;
+        const patientId = urlParams.patientId;
+        
+        console.log('Parámetros URL:', { bedNumber, patientId });
+        
+        if (bedNumber && patientId) {
+            // Verificar localStorage para datos específicos del paciente
+            const patientKey = `patient_${patientId}`;
+            const patientDataStr = localStorage.getItem(patientKey) || 
+                               localStorage.getItem('currentPatientData') || 
+                               localStorage.getItem('medicalNotePatientData');
+            
+            if (patientDataStr) {
+                try {
+                    const patientData = JSON.parse(patientDataStr);
+                    console.log('Datos del paciente encontrados en localStorage:', patientData);
+                    updatePatientInfo(patientData);
+                    return true;
+                } catch (parseError) {
+                    console.error('Error parseando datos del paciente:', parseError);
+                }
+            }
+            
+            // Si no hay datos en localStorage, intentar obtener desde API
+            console.log('Intentando obtener datos del paciente desde API...');
+            fetch(`/api/patients/${patientId}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Error obteniendo datos del paciente');
+                })
+                .then(data => {
+                    // Enriquecer datos del paciente
+                    const enrichedPatientData = {
+                        ...data,
+                        patientId: patientId,
+                        bed_number: bedNumber,
+                        timestamp: new Date().toISOString(),
+                        session_id: Date.now().toString(),
+                        // Información adicional
+                        hospital_name: 'Hospital Central San José',
+                        hospital_address: 'Av. Angamos Este 2520, Surquillo, Lima',
+                        department: data.room || data.department || 'Medicina General',
+                        doctor_info: {
+                            name: 'Dr. Alan Cairampoma Carrillo',
+                            cmp: '12345',
+                            specialty: 'Medicina Interna'
+                        }
+                    };
+                    
+                    // Guardar datos en localStorage para uso futuro
+                    localStorage.setItem('currentPatientData', JSON.stringify(enrichedPatientData));
+                    localStorage.setItem('medicalNotePatientData', JSON.stringify(enrichedPatientData));
+                    localStorage.setItem('lastNotePatientId', patientId);
+                    
+                    // Actualizar interfaz
+                    updatePatientInfo(enrichedPatientData);
+                    console.log('✅ Datos del paciente cargados desde API');
+                })
+                .catch(error => {
+                    console.error('Error obteniendo datos del paciente desde API:', error);
+                });
+        } else {
+            // Verificar localStorage general si no hay parámetros URL
+            const generalPatientData = localStorage.getItem('currentPatientData') || 
+                                    localStorage.getItem('medicalNotePatientData');
+            
+            if (generalPatientData) {
+                try {
+                    const patientData = JSON.parse(generalPatientData);
+                    console.log('Datos generales del paciente encontrados en localStorage');
+                    updatePatientInfo(patientData);
+                    return true;
+                } catch (parseError) {
+                    console.error('Error parseando datos generales del paciente:', parseError);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error cargando datos desde URL/localStorage:', error);
+    }
+    
+    return false;
+}
+
+// ===== CARGAR CONTENIDO DEL EDITOR =====
+function loadEditorContent(patientId) {
+    try {
+        console.log('Intentando cargar contenido del editor para paciente:', patientId);
+        
+        // Verificar si hay un ID de paciente válido
+        if (!patientId) {
+            console.log('No hay ID de paciente, no se cargará contenido');
+            return false;
+        }
+        
+        // Obtener el editor
+        const editor = document.getElementById('medicalNoteEditor');
+        if (!editor) {
+            console.error('No se encontró el editor de notas médicas');
+            return false;
+        }
+        
+        // Verificar si hay un borrador guardado
+        const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (!savedDraft) {
+            console.log('No hay borrador guardado para cargar');
+            return false;
+        }
+        
+        // Parsear el borrador guardado
+        try {
+            const draftData = JSON.parse(savedDraft);
+            
+            // Verificar si el borrador corresponde al paciente actual
+            if (draftData.patientId && draftData.patientId === patientId) {
+                console.log('Encontrado borrador para el paciente actual:', draftData);
+                
+                // Cargar el contenido en el editor
+                editor.innerHTML = draftData.content || '';
+                console.log('✅ Contenido cargado en el editor');
+                
+                // Guardar historial
+                if (draftData.content) {
+                    editorHistory = [draftData.content];
+                    historyIndex = 0;
+                }
+                
+                return true;
+            } else {
+                console.log('El borrador guardado pertenece a otro paciente, no se cargará');
+                console.log('ID guardado:', draftData.patientId, 'ID actual:', patientId);
+                return false;
+            }
+        } catch (parseError) {
+            console.error('Error parseando borrador guardado:', parseError);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error cargando contenido del editor:', error);
+        return false;
+    }
+}
+
+// ===== GUARDAR CONTENIDO DEL EDITOR =====
+function saveEditorContent() {
+    try {
+        // Verificar si hay un paciente actual
+        if (!currentPatientData || !currentPatientData.patientId) {
+            console.log('No hay paciente actual, no se guardará el contenido');
+            return false;
+        }
+        
+        // Obtener el editor
+        const editor = document.getElementById('medicalNoteEditor');
+        if (!editor) {
+            console.error('No se encontró el editor de notas médicas');
+            return false;
+        }
+        
+        // Obtener el contenido actual
+        const content = editor.innerHTML;
+        
+        // Si el contenido está vacío, no guardar
+        if (!content || content.trim() === '') {
+            console.log('Contenido vacío, no se guardará');
+            return false;
+        }
+        
+        // Crear objeto con datos del borrador
+        const draftData = {
+            patientId: currentPatientData.patientId,
+            content: content,
+            timestamp: new Date().toISOString(),
+            patientName: currentPatientData.name || currentPatientData.full_name,
+            bedNumber: currentPatientData.bed_number
+        };
+        
+        // Guardar en localStorage
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(draftData));
+        
+        // Actualizar historial si es necesario
+        if (editorHistory.length === 0 || editorHistory[editorHistory.length - 1] !== content) {
+            editorHistory.push(content);
+            historyIndex = editorHistory.length - 1;
+            
+            // Limitar tamaño del historial
+            if (editorHistory.length > 20) {
+                editorHistory.shift();
+                historyIndex--;
+            }
+        }
+        
+        console.log('✅ Contenido guardado correctamente para paciente:', currentPatientData.patientId);
+        return true;
+    } catch (error) {
+        console.error('Error guardando contenido del editor:', error);
+        return false;
+    }
+}
+
 // ===== FUNCIÓN PRINCIPAL CON FIRMA DIGITAL =====
 async function openMedicalNoteWithSignature(bedNumber, patientId) {
     try {
@@ -1559,6 +2054,18 @@ function handleWindowClose() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Inicializando editor de notas médicas...');
     
+    // Inicializar editor
+    initializeEditor();
+    
+    // Cargar datos del paciente
+    loadPatientInfo();
+    
+    // Cargar contenido guardado si existe
+    loadEditorContent();
+    
+    // Configurar botones de volver
+    setupBackButtonsForNotaMedica();
+    
     // Inicializar el editor y el canvas de firma
     initializeSignatureCanvas();
     
@@ -1590,8 +2097,105 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 2000);
         });
         
-        // Cargar contenido guardado desde localStorage
-        loadEditorContent();
+        // Cargar datos del paciente desde la URL y localStorage
+        console.log('🔍 Cargando datos del paciente desde URL y localStorage...');
+        
+        // Obtener parámetros de la URL y mostrar la URL completa para depuración
+        console.log('URL completa:', window.location.href);
+        
+        // Obtener todos los parámetros de la URL para depuración
+        const allUrlParams = {};
+        const searchParams = new URLSearchParams(window.location.search);
+        for (const [key, value] of searchParams.entries()) {
+            allUrlParams[key] = value;
+        }
+        console.log('Todos los parámetros de URL:', allUrlParams);
+        
+        // Obtener parámetros específicos
+        const urlParams = getUrlParameters();
+        const bedNumber = urlParams.bedNumber;
+        const patientId = urlParams.patientId;
+        
+        console.log('Parámetros procesados:', { bedNumber, patientId });
+        
+        // Crear un objeto de datos del paciente con la información de la URL
+        let minimalPatientData = null;
+        
+        if (patientId) {
+            // Obtener todos los parámetros de la URL
+            const urlParams = getUrlParameters();
+            
+            minimalPatientData = {
+                id: patientId,
+                patientId: patientId,
+                patient_id: patientId,
+                bed_number: bedNumber || 'No asignada',
+                bedNumber: bedNumber || 'No asignada',
+                name: urlParams.name || 'Paciente',
+                full_name: urlParams.name || 'Paciente',
+                diagnosis: urlParams.diagnosis || 'Pendiente de evaluación',
+                department: urlParams.department || 'Medicina General',
+                hc_number: urlParams.hc || 'HC-TEMP',
+                age: urlParams.age || '---',
+                gender: urlParams.gender || '---'
+            };
+            
+            console.log('📝 Datos del paciente desde URL:', minimalPatientData);
+        }
+        
+        // Intentar obtener datos completos del localStorage
+        let patientDataFromStorage = null;
+        
+        if (patientId) {
+            // Buscar en todas las posibles ubicaciones
+            const patientKey = `patient_${patientId}`;
+            const storageLocations = [
+                { name: 'patient_specific', data: localStorage.getItem(patientKey) },
+                { name: 'currentPatientData', data: localStorage.getItem('currentPatientData') },
+                { name: 'medicalNotePatientData', data: localStorage.getItem('medicalNotePatientData') },
+                { name: 'notePatientData', data: sessionStorage.getItem('notePatientData') }
+            ];
+            
+            // Mostrar todas las ubicaciones para depuración
+            storageLocations.forEach(location => {
+                console.log(`Datos en ${location.name}:`, location.data ? 'Encontrados' : 'No encontrados');
+            });
+            
+            // Encontrar la primera ubicación con datos
+            const foundLocation = storageLocations.find(location => location.data);
+            
+            if (foundLocation) {
+                try {
+                    patientDataFromStorage = JSON.parse(foundLocation.data);
+                    console.log(`✅ Datos del paciente encontrados en ${foundLocation.name}:`, patientDataFromStorage);
+                } catch (error) {
+                    console.error(`❌ Error parseando datos del paciente desde ${foundLocation.name}:`, error);
+                }
+            } else {
+                console.log('⚠️ No se encontraron datos del paciente en ninguna ubicación de almacenamiento');
+            }
+        }
+        
+        // Usar los datos más completos disponibles
+        const patientData = patientDataFromStorage || minimalPatientData;
+        
+        if (patientData) {
+            console.log('💾 Usando datos del paciente para actualizar interfaz:', patientData);
+            
+            // Guardar en variable global para acceso desde otras funciones
+            currentPatientData = patientData;
+            
+            // Actualizar la interfaz con los datos del paciente
+            updatePatientInfoDisplay(patientData);
+            
+            // Cargar contenido guardado para este paciente
+            const currentPatientId = patientData.id || patientData.patient_id || patientData.patientId;
+            if (currentPatientId) {
+                loadEditorContent(currentPatientId);
+            }
+        } else {
+            console.error('❌ No se pudieron obtener datos del paciente de ninguna fuente');
+        }
     } else {
         console.error('❌ Editor no encontrado en el DOM');
     }
@@ -1747,7 +2351,7 @@ function saveEditorContent() {
         
         if (currentPatientDataStr) {
             const currentPatientData = JSON.parse(currentPatientDataStr);
-            const currentPatientId = currentPatientData.id || currentPatientData.patient_id;
+            const currentPatientId = currentPatientData.id || currentPatientData.patient_id || currentPatientData.patientId;
             
             if (currentPatientId) {
                 // Guardar el ID del paciente actual para referencia futura
@@ -1808,7 +2412,7 @@ function loadEditorContent() {
         }
         
         const currentPatientData = JSON.parse(currentPatientDataStr);
-        const currentPatientId = currentPatientData.id || currentPatientData.patient_id;
+        const currentPatientId = currentPatientData.id || currentPatientData.patient_id || currentPatientData.patientId;
         
         if (!currentPatientId) {
             console.log('⚠️ No se pudo determinar el ID del paciente actual');
@@ -1968,10 +2572,42 @@ function updatePatientInfoDisplay(patientData) {
                       patientData.medical_info?.department || 'Medicina General',
                       
             // Diagnóstico (cuarta fila, segunda celda si existe)
-            'DIAGNÓSTICO:': patientData.diagnosis || 
-                          patientData.medical_info?.primary_diagnosis || 
-                          patientData.diagnosisCode ? `${patientData.diagnosisCode} - ${patientData.diagnosis}` : 
-                          'Pendiente'
+            'DIAGNÓSTICO:': (() => {
+                // Verificar todas las posibles fuentes de diagnóstico
+                console.log('🔍 Datos de diagnóstico disponibles:', {
+                    diagnosis: patientData.diagnosis,
+                    primary_diagnosis: patientData.medical_info?.primary_diagnosis,
+                    diagnosisCode: patientData.diagnosisCode,
+                    diagnosisText: patientData.diagnosisText
+                });
+                
+                // Prioridad 1: Si hay diagnosis directamente
+                if (patientData.diagnosis) {
+                    return patientData.diagnosis;
+                }
+                
+                // Prioridad 2: Si hay diagnóstico en medical_info
+                if (patientData.medical_info?.primary_diagnosis) {
+                    return patientData.medical_info.primary_diagnosis;
+                }
+                
+                // Prioridad 3: Si hay código y texto de diagnóstico
+                if (patientData.diagnosisCode || patientData.diagnosisText) {
+                    const code = patientData.diagnosisCode || '';
+                    const text = patientData.diagnosisText || '';
+                    
+                    if (code && text) {
+                        return `${code} - ${text}`;
+                    } else if (code) {
+                        return code;
+                    } else if (text) {
+                        return text;
+                    }
+                }
+                
+                // Valor por defecto
+                return 'Pendiente de evaluación';
+            })()
         };
         
         // Recorrer todas las filas de la tabla
@@ -1996,11 +2632,38 @@ function updatePatientInfoDisplay(patientData) {
         // Actualizar diagnóstico si existe un elemento con clase especial
         const diagnosisElement = document.querySelector('.diagnosis-value');
         if (diagnosisElement) {
-            const diagnosisToShow = patientData.diagnosis || 
-                                  patientData.medical_info?.primary_diagnosis || 
-                                  'Pendiente';
+            // Usar la misma lógica que para la tabla
+            const diagnosisToShow = (() => {
+                // Prioridad 1: Si hay diagnosis directamente
+                if (patientData.diagnosis) {
+                    return patientData.diagnosis;
+                }
+                
+                // Prioridad 2: Si hay diagnóstico en medical_info
+                if (patientData.medical_info?.primary_diagnosis) {
+                    return patientData.medical_info.primary_diagnosis;
+                }
+                
+                // Prioridad 3: Si hay código y texto de diagnóstico
+                if (patientData.diagnosisCode || patientData.diagnosisText) {
+                    const code = patientData.diagnosisCode || '';
+                    const text = patientData.diagnosisText || '';
+                    
+                    if (code && text) {
+                        return `${code} - ${text}`;
+                    } else if (code) {
+                        return code;
+                    } else if (text) {
+                        return text;
+                    }
+                }
+                
+                // Valor por defecto
+                return 'Pendiente de evaluación';
+            })();
             
             diagnosisElement.textContent = diagnosisToShow;
+            console.log('✅ Diagnóstico actualizado en elemento especial:', diagnosisToShow);
         }
         
         console.log('✅ Información del paciente actualizada correctamente');
