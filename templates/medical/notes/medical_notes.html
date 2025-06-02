@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota Médica - HTML Extraído</title>
+    <link rel="stylesheet" href="/static/css/notas_medica.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <a href="javascript:void(0);" onclick="window.close();" class="back-to-rounds-btn">
+        <i class="fas fa-arrow-left"></i> Volver a Rondas
+    </a>
+    <div class="medical-note-with-signature">
+        <!-- HEADER OFICIAL DEL HOSPITAL -->
+        <div class="official-header">
+            <div class="hospital-logo">
+                <img src="/static/images/hospital-logo.png" alt="Logo" style="height: 60px;" onerror="this.style.display='none'">
+                <div class="hospital-text">
+                    <h2>Hospital Central</h2>
+                    <p>Av. Hospitales 123</p>
+                    <p>Teléf. 01-2016500</p>
+                </div>
+            </div>
+            <div class="document-number">
+                <div class="note-type">NOTA DE EVOLUCIÓN MÉDICA</div>
+                <div class="note-id">N° NE20240101001</div>
+                <div class="note-date">01/01/2024</div>
+            </div>
+        </div>
+
+        <!-- DATOS COMPLETOS DEL PACIENTE -->
+        <div class="patient-complete-data">
+            <table class="patient-data-table">
+                <tr>
+                    <td class="label">PACIENTE:</td>
+                    <td class="value">Juan Carlos Pérez González</td>
+                    <td class="label">HC:</td>
+                    <td class="value">HC-2024-001234</td>
+                </tr>
+                <tr>
+                    <td class="label">EDAD:</td>
+                    <td class="value">58 años</td>
+                    <td class="label">SEXO:</td>
+                    <td class="value">Masculino</td>
+                </tr>
+                <tr>
+                    <td class="label">CAMA:</td>
+                    <td class="value">101A</td>
+                    <td class="label">SERVICIO:</td>
+                    <td class="value">Medicina Interna</td>
+                </tr>
+                <tr>
+                    <td class="label">DIAGNÓSTICO:</td>
+                    <td class="value" colspan="3">Diabetes Mellitus Tipo 2 + Hipertensión Arterial</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- SIGNOS VITALES ACTUALES -->
+        <div class="current-vitals">
+            <h4>📊 SIGNOS VITALES ACTUALES - 14:30</h4>
+            <div class="vitals-row">
+                <span><strong>PA:</strong> 140/90 mmHg</span>
+                <span><strong>FC:</strong> 78 lpm</span>
+                <span><strong>FR:</strong> 18 rpm</span>
+                <span><strong>T°:</strong> 36.8°C</span>
+                <span><strong>SpO2:</strong> 98%</span>
+            </div>
+        </div>
+
+        <!-- HERRAMIENTAS DEL EDITOR MEJORADAS -->
+        <div class="editor-tools">
+            <!-- FORMATO DE TEXTO -->
+            <div class="tools-group">
+                <button type="button" class="tool-btn" title="Negrita">
+                    <i class="fas fa-bold"></i>
+                </button>
+                <button type="button" class="tool-btn" title="Cursiva">
+                    <i class="fas fa-italic"></i>
+                </button>
+                <button type="button" class="tool-btn" title="Subrayado">
+                    <i class="fas fa-underline"></i>
+                </button>
+            </div>
+
+            <!-- ALINEACIÓN DE TEXTO -->
+            <div class="tools-group">
+                <button type="button" class="tool-btn align-btn" title="Alinear a la izquierda">
+                    <i class="fas fa-align-left"></i>
+                </button>
+                <button type="button" class="tool-btn align-btn" title="Centrar">
+                    <i class="fas fa-align-center"></i>
+                </button>
+                <button type="button" class="tool-btn align-btn" title="Alinear a la derecha">
+                    <i class="fas fa-align-right"></i>
+                </button>
+                <button type="button" class="tool-btn align-btn" title="Justificar">
+                    <i class="fas fa-align-justify"></i>
+                </button>
+            </div>
+
+            <!-- LISTAS Y ELEMENTOS -->
+            <div class="tools-group">
+                <button type="button" class="tool-btn" title="Lista con viñetas">
+                    <i class="fas fa-list-ul"></i>
+                </button>
+                <button type="button" class="tool-btn" title="Lista numerada">
+                    <i class="fas fa-list-ol"></i>
+                </button>
+                <button type="button" class="tool-btn" title="Insertar línea divisoria">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+
+            <!-- MICRÓFONO -->
+            <div class="tools-group">
+                <button type="button" class="tool-btn microphone-btn" 
+                        id="microphoneBtn" title="Dictado por voz">
+                    <i class="fas fa-microphone" id="micIcon"></i>
+                    Dictado
+                </button>
+            </div>
+
+            <!-- INSERTAR IMAGEN -->
+            <div class="tools-group">
+                <label class="tool-btn" for="imageInput" title="Insertar imagen">
+                    <i class="fas fa-image"></i>
+                    Imagen
+                </label>
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+            </div>
+
+            <!-- PLANTILLAS MÉDICAS -->
+            <div class="tools-group">
+                <button type="button" class="tool-btn template-btn" title="Plantilla SOAP">
+                    <i class="fas fa-notes-medical"></i>
+                    SOAP
+                </button>
+                <button type="button" class="tool-btn template-btn" title="Examen físico">
+                    <i class="fas fa-stethoscope"></i>
+                    Examen
+                </button>
+                <button type="button" class="tool-btn template-btn" title="Plan médico">
+                    <i class="fas fa-clipboard-list"></i>
+                    Plan
+                </button>
+            </div>
+
+            <!-- LIMPIAR Y DESHACER -->
+            <div class="tools-group">
+                <button type="button" class="tool-btn" title="Deshacer">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button type="button" class="tool-btn" title="Rehacer">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button type="button" class="tool-btn danger-btn" title="Limpiar todo">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- EDITOR PRINCIPAL -->
+        <div class="note-content-area">
+            <div class="note-editor" 
+                 id="medicalNoteEditor" 
+                 contenteditable="true" 
+                 placeholder="Escriba o dicte la nota de evolución médica...">
+            </div>
+        </div>
+
+        <!-- SECCIÓN DE FIRMA DIGITAL -->
+        <div class="digital-signature-section">
+            <div class="signature-header">
+                <h4>✍️ FIRMA DIGITAL DEL MÉDICO</h4>
+                <div class="signature-status" id="signatureStatus">
+                    <span class="status-pending">📝 Pendiente de firma</span>
+                </div>
+            </div>
+
+            <div class="signature-area">
+                <div class="signature-info">
+                    <div class="doctor-info">
+                        <p><strong>MÉDICO:</strong> Dr. Alan Cairampoma Carrillo</p>
+                        <p><strong>CMP:</strong> 12345</p>
+                        <p><strong>ESPECIALIDAD:</strong> Medicina Interna</p>
+                    </div>
+                    <div class="signature-datetime">
+                        <p><strong>FECHA:</strong> 01/01/2024</p>
+                        <p><strong>HORA:</strong> 14:30</p>
+                    </div>
+                </div>
+                
+                <div class="signature-canvas-container">
+                    <canvas id="signatureCanvas" width="400" height="150"></canvas>
+                    <div class="signature-actions">
+                        <button type="button" class="btn-clear-signature">
+                            <i class="fas fa-eraser"></i> Limpiar Firma
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/notamedica.js"></script>
+</body>
+</html>

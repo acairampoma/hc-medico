@@ -174,6 +174,11 @@ async def dicom_page(request: Request):
     """Página de dicom"""
     return templates.TemplateResponse("medical/pacs/dicom_viewer.html", {"request": request})
 
+@app.get("/medical/notes", response_class=HTMLResponse)
+async def notes_page(request: Request):
+    """Página de notas médicas"""
+    return templates.TemplateResponse("medical/notes/medical_notes.html", {"request": request})
+
 # ===== TUS OTRAS RUTAS EXISTENTES (CONSERVAMOS) ===== 
 
 @app.post("/api/logout")

@@ -9,6 +9,11 @@
 let speechRecognition = null;
 let isRecording = false;
 let currentPatientData = null;
+let editorHistory = [];
+let historyIndex = -1;
+let saveTimeout = null;
+const LOCAL_STORAGE_KEY = 'medical_note_draft';
+const AUTO_SAVE_INTERVAL = 30000; // 30 segundos
 
 // ===== FUNCIÓN PRINCIPAL CON FIRMA DIGITAL =====
 async function openMedicalNoteWithSignature(bedNumber, patientId) {
@@ -30,7 +35,7 @@ async function openMedicalNoteWithSignature(bedNumber, patientId) {
         // Guardar datos del paciente actual
         currentPatientData = patientData;
 
-        // Crear editor con sistema de firma
+        // Crear editor con sistema de firma (asume que el HTML ya está separado)
         const editorHTML = createMedicalNoteWithSignatureSystem(patientData);
         
         Swal.fire({
@@ -74,8 +79,25 @@ async function openMedicalNoteWithSignature(bedNumber, patientId) {
     }
 }
 
-// ===== CREAR EDITOR CON SISTEMA DE FIRMA MEJORADO =====
+// ===== CREAR EDITOR CON SISTEMA DE FIRMA (SOLO LÓGICA) =====
 function createMedicalNoteWithSignatureSystem(patientData) {
+    // Validar que patientData exista
+    if (!patientData) {
+        console.error('❌ Error: No hay datos del paciente disponibles');
+        patientData = {
+            id: 'unknown',
+            full_name: 'Paciente no identificado',
+            hc_number: 'Sin HC',
+            bed_number: 'N/A',
+            department: 'No asignado'
+        };
+    }
+    
+    // Registrar los datos del paciente en la consola para depuración
+    console.log('📝 Datos del paciente para la nota médica:', patientData);
+    
+    // Esta función ahora solo retorna el HTML dinámico
+    // Los estilos CSS están en archivo separado
     return `
         <div class="medical-note-with-signature">
             <!-- HEADER OFICIAL DEL HOSPITAL -->
@@ -100,25 +122,25 @@ function createMedicalNoteWithSignatureSystem(patientData) {
                 <table class="patient-data-table">
                     <tr>
                         <td class="label">PACIENTE:</td>
-                        <td class="value">${patientData.full_name || 'Paciente sin nombre'}</td>
+                        <td class="value"><strong>${patientData.full_name || 'Paciente sin nombre'}</strong></td>
                         <td class="label">HC:</td>
                         <td class="value">${patientData.hc_number || 'N/A'}</td>
                     </tr>
                     <tr>
                         <td class="label">EDAD:</td>
-                        <td class="value">${patientData.age || '---'} años</td>
+                        <td class="value">${patientData.age ? patientData.age + ' años' : '---'}</td>
                         <td class="label">SEXO:</td>
                         <td class="value">${patientData.gender || '---'}</td>
                     </tr>
                     <tr>
                         <td class="label">CAMA:</td>
-                        <td class="value">${patientData.bed_number || '---'}</td>
+                        <td class="value"><strong>${patientData.bed_number || '---'}</strong></td>
                         <td class="label">SERVICIO:</td>
                         <td class="value">${patientData.department || '---'}</td>
                     </tr>
                     <tr>
                         <td class="label">DIAGNÓSTICO:</td>
-                        <td class="value" colspan="3">${patientData.diagnosis || 'Pendiente'}</td>
+                        <td class="value" colspan="3">${patientData.diagnosis || 'Diagnóstico pendiente'}</td>
                     </tr>
                 </table>
             </div>
@@ -135,7 +157,7 @@ function createMedicalNoteWithSignatureSystem(patientData) {
                 </div>
             </div>
 
-            <!-- HERRAMIENTAS DEL EDITOR MEJORADAS -->
+            <!-- HERRAMIENTAS DEL EDITOR -->
             <div class="editor-tools">
                 <!-- FORMATO DE TEXTO -->
                 <div class="tools-group">
@@ -228,6 +250,9 @@ function createMedicalNoteWithSignatureSystem(patientData) {
                     </button>
                     <button type="button" class="tool-btn danger-btn" onclick="clearEditor()" title="Limpiar todo">
                         <i class="fas fa-trash"></i>
+                    </button>
+                    <button type="button" class="tool-btn" onclick="testLocalStorage()" title="Probar guardado/carga">
+                        <i class="fas fa-save"></i>
                     </button>
                 </div>
             </div>
@@ -381,7 +406,10 @@ function clearEditor() {
             if (editor) {
                 editor.innerHTML = '';
                 editor.focus();
-                console.log('🗑️ Editor limpiado');
+                
+                // Limpiar localStorage
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                console.log('🗑️ Editor limpiado y localStorage eliminado');
                 
                 Swal.fire({
                     title: 'Limpiado',
@@ -398,7 +426,7 @@ function clearEditor() {
 // ===== PLANTILLAS MÉDICAS =====
 function insertSOAPTemplate() {
     const template = `
-<div style="margin: 10px 0;">
+<div style="margin: 10px 0; text-align: left;">
     <h4 style="color: #2c5aa0; margin-bottom: 5px;">📋 EVALUACIÓN SOAP</h4>
     
     <p><strong>S - SUBJETIVO:</strong></p>
@@ -434,12 +462,17 @@ function insertSOAPTemplate() {
     
     insertTemplateInEditor(template);
     console.log('📋 Plantilla SOAP insertada');
+    
+    // Guardar en localStorage después de insertar plantilla
+    saveEditorContent();
 }
 
 function insertExamTemplate() {
     const template = `
-<div style="margin: 10px 0;">
-    <h4 style="color: #2c5aa0; margin-bottom: 5px;">🩺 EXAMEN FÍSICO</h4>
+<div style="margin: 10px 0; text-align: left;">
+    <h4 style="color: #2c5aa0; margin-bottom: 5px;">💉 EXAMEN FÍSICO</h4>
+    <p><strong>Fecha:</strong> ${getCurrentDate()} | <strong>Hora:</strong> ${getCurrentTime()}</p>
+    <hr>
     
     <p><strong>ASPECTO GENERAL:</strong> Paciente ___, colaborador, orientado en tiempo, espacio y persona.</p>
     
@@ -464,13 +497,18 @@ function insertExamTemplate() {
     `;
     
     insertTemplateInEditor(template);
-    console.log('🩺 Plantilla de examen físico insertada');
+    console.log('💉 Plantilla de examen físico insertada');
+    
+    // Guardar en localStorage después de insertar plantilla
+    saveEditorContent();
 }
 
 function insertPlanTemplate() {
     const template = `
-<div style="margin: 10px 0;">
+<div style="margin: 10px 0; text-align: left;">
     <h4 style="color: #2c5aa0; margin-bottom: 5px;">📋 PLAN MÉDICO</h4>
+    <p><strong>Fecha:</strong> ${getCurrentDate()} | <strong>Hora:</strong> ${getCurrentTime()}</p>
+    <hr>
     
     <p><strong>1. PLAN DIAGNÓSTICO:</strong></p>
     <ul style="margin-left: 20px;">
@@ -505,6 +543,9 @@ function insertPlanTemplate() {
     
     insertTemplateInEditor(template);
     console.log('📋 Plantilla de plan médico insertada');
+    
+    // Guardar en localStorage después de insertar plantilla
+    saveEditorContent();
 }
 
 function insertTemplateInEditor(template) {
@@ -558,11 +599,42 @@ function generateNoteNumber() {
 
 function getVitalValue(patientData, category, field) {
     try {
-        if (patientData.current_vitals && patientData.current_vitals[category]) {
-            return patientData.current_vitals[category][field] || '---';
+        // Verificar si patientData existe y tiene la estructura correcta
+        if (!patientData || !patientData.current_vitals) {
+            console.warn(`⚠️ No hay datos de signos vitales disponibles para ${category}.${field}`);
+            return '---';
         }
-        return '---';
+        
+        // Verificar si la categoría existe
+        if (!patientData.current_vitals[category]) {
+            console.warn(`⚠️ Categoría de signo vital no encontrada: ${category}`);
+            return '---';
+        }
+        
+        // Obtener el valor del campo específico
+        const value = patientData.current_vitals[category][field];
+        
+        // Si el valor es undefined, null o vacío, devolver '---'
+        if (value === undefined || value === null || value === '') {
+            return '---';
+        }
+        
+        // Formatear el valor según la categoría y el campo
+        if (category === 'temperature') {
+            // Formatear temperatura a 1 decimal
+            return parseFloat(value).toFixed(1);
+        } else if (category === 'blood_pressure' && (field === 'systolic' || field === 'diastolic')) {
+            // Asegurar que la presión arterial sea un número entero
+            return Math.round(parseFloat(value));
+        } else if (category === 'oxygen_saturation') {
+            // Asegurar que la saturación sea un número entero
+            return Math.round(parseFloat(value));
+        } else {
+            // Para otros valores, devolver tal cual
+            return value;
+        }
     } catch (error) {
+        console.error('❌ Error al obtener valor de signo vital:', error);
         return '---';
     }
 }
@@ -674,6 +746,14 @@ function insertTextInEditor(text) {
     selection.addRange(range);
     
     editor.focus();
+    console.log(`💬 Texto insertado: ${text.substring(0, 20)}${text.length > 20 ? '...' : ''}`);
+    
+    // Guardar en localStorage después de insertar texto dictado
+    // Usamos setTimeout para no guardar demasiado frecuentemente durante dictado continuo
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        saveEditorContent();
+    }, 2000); // Esperar 2 segundos después de la última inserción de texto
 }
 
 // ===== INSERTAR IMAGEN =====
@@ -705,9 +785,12 @@ function insertImageInNote(input) {
                 selection.addRange(range);
                 
                 editor.focus();
+                
+                // Guardar en localStorage después de insertar imagen
+                saveEditorContent();
             }
             
-            console.log('🖼️ Imagen insertada en nota médica');
+            console.log('💾️ Imagen insertada en nota médica');
         };
         
         reader.readAsDataURL(file);
@@ -721,6 +804,17 @@ function initializeEditorWithSignature(patientData) {
     // Configurar editor
     const editor = document.getElementById('medicalNoteEditor');
     if (editor) {
+        // Asegurarse de que el editor tenga el atributo contenteditable
+        editor.setAttribute('contenteditable', 'true');
+        
+        // Cargar contenido guardado en localStorage
+        loadEditorContent();
+        
+        // Actualizar la información del paciente
+        if (patientData) {
+            updatePatientInfoDisplay(patientData);
+        }
+        
         editor.focus();
         
         // Eventos del editor
@@ -741,12 +835,35 @@ function initializeEditorWithSignature(patientData) {
                 formatText('underline');
             }
         });
+        
+        // Guardar cuando se edita el contenido
+        editor.addEventListener('input', function() {
+            // Usamos setTimeout para no guardar demasiado frecuentemente durante edición continua
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveEditorContent();
+            }, 2000); // Esperar 2 segundos después de la última edición
+        });
+        
+        // Configurar autoguardado cada 30 segundos
+        const autoSaveInterval = setInterval(() => {
+            saveEditorContent();
+        }, AUTO_SAVE_INTERVAL);
+        
+        // Guardar al salir de la página
+        window.addEventListener('beforeunload', () => {
+            saveEditorContent();
+            clearInterval(autoSaveInterval);
+        });
+    } else {
+        console.error('❌ Editor no encontrado en initializeEditorWithSignature');
     }
     
     // Inicializar canvas de firma
     initializeSignatureCanvas();
 }
 
+// ===== CANVAS DE FIRMA =====
 // ===== CANVAS DE FIRMA =====
 function initializeSignatureCanvas() {
     const canvas = document.getElementById('signatureCanvas');
@@ -825,30 +942,54 @@ async function fetchPatientRealData(bedNumber, patientId) {
     try {
         console.log(`📡 Obteniendo datos del paciente: cama ${bedNumber}, ID ${patientId}`);
         
-        // Simular datos del paciente (en producción, esto vendría de la API)
+        // Intentar obtener datos reales del paciente desde la API
+        try {
+            const apiUrl = `/api/patients/${patientId}?bed=${bedNumber}`;
+            console.log(`🌐 Intentando obtener datos reales desde: ${apiUrl}`);
+            
+            const response = await fetch(apiUrl);
+            
+            if (response.ok) {
+                const realPatientData = await response.json();
+                console.log('✅ Datos reales del paciente obtenidos con éxito');
+                return realPatientData;
+            } else {
+                console.warn(`⚠️ No se pudieron obtener datos reales. Status: ${response.status}`);
+                // Continuar con datos de prueba si la API falla
+            }
+        } catch (apiError) {
+            console.warn('⚠️ Error al conectar con la API:', apiError);
+            // Continuar con datos de prueba si hay error de conexión
+        }
+        
+        // Si no se pudieron obtener datos reales, usar datos de prueba
+        console.log('📑 Usando datos de prueba para el paciente');
+        
+        // Datos de prueba pero con el ID y número de cama correctos
         const mockPatientData = {
-            full_name: 'Juan Carlos Pérez González',
-            hc_number: 'HC-2024-001234',
+            id: patientId,
+            full_name: `Paciente de Cama ${bedNumber}`,
+            hc_number: `HC-${patientId}`,
             age: '58',
             gender: 'Masculino',
             bed_number: bedNumber,
             department: 'Medicina Interna',
-            diagnosis: 'Diabetes Mellitus Tipo 2 + Hipertensión Arterial',
-            hospital_name: 'Hospital Central San José',
-            hospital_address: 'Av. Angamos Este 2520, Surquillo, Lima',
+            diagnosis: 'Diagnóstico pendiente',
+            hospital_name: 'Hospital Central',
+            hospital_address: 'Av. Hospitales 123',
             current_vitals: {
                 blood_pressure: {
-                    systolic: 140,
-                    diastolic: 90
+                    systolic: 120,
+                    diastolic: 80
                 },
                 heart_rate: {
-                    value: 78
+                    value: 75
                 },
                 respiratory_rate: {
-                    value: 18
+                    value: 16
                 },
                 temperature: {
-                    value: 36.8
+                    value: 36.5
                 },
                 oxygen_saturation: {
                     value: 98
@@ -860,10 +1001,6 @@ async function fetchPatientRealData(bedNumber, patientId) {
                 specialty: 'Medicina Interna'
             }
         };
-        
-        // En un entorno real, harías algo como:
-        // const response = await fetch(`/api/patients/${patientId}?bed=${bedNumber}`);
-        // return await response.json();
         
         return mockPatientData;
         
@@ -1404,4 +1541,471 @@ window.formatText = formatText;
 window.alignText = alignText;
 
 console.log('📋 notamedica.js cargado correctamente - Versión con alineación de texto');
+
+// ===== MANEJO DEL CIERRE DE LA VENTANA =====
+function handleWindowClose() {
+    console.log('🚪 Manejando cierre de ventana de nota médica');
+    
+    // Guardar el contenido actual antes de cerrar
+    saveEditorContent();
+    
+    // No es necesario limpiar localStorage aquí, ya que ahora usamos IDs de paciente
+    // para controlar qué contenido se carga
+    
+    return true;
+}
+
+// ===== INICIALIZACIÓN AUTOMÁTICA AL CARGAR LA PÁGINA =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inicializando editor de notas médicas...');
+    
+    // Inicializar el editor y el canvas de firma
+    initializeSignatureCanvas();
+    
+    // Configurar el botón de volver a rondas
+    const backButton = document.querySelector('.back-to-rounds-btn');
+    if (backButton) {
+        backButton.addEventListener('click', function(e) {
+            // Guardar antes de cerrar
+            saveEditorContent();
+            console.log('🔙 Volviendo a rondas médicas');
+            // window.close() ya está en el onclick del HTML
+        });
+    }
+    
+    // Manejar cierre de ventana
+    window.addEventListener('beforeunload', handleWindowClose);
+    
+    // Obtener el editor
+    const editor = document.getElementById('medicalNoteEditor');
+    if (editor) {
+        // Asegurarse de que el editor tenga el atributo contenteditable
+        editor.setAttribute('contenteditable', 'true');
+        
+        // Configurar eventos del editor
+        editor.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveEditorContent();
+            }, 2000);
+        });
+        
+        // Cargar contenido guardado desde localStorage
+        loadEditorContent();
+    } else {
+        console.error('❌ Editor no encontrado en el DOM');
+    }
+    
+    // Configurar los event listeners para los botones de formato
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Enfocar el editor antes de aplicar el formato
+            if (editor) editor.focus();
+            
+            // Determinar qué acción ejecutar según el botón
+            if (this.title.includes('Negrita')) formatText('bold');
+            if (this.title.includes('Cursiva')) formatText('italic');
+            if (this.title.includes('Subrayado')) formatText('underline');
+            
+            // Alineación de texto
+            if (this.title.includes('izquierda')) alignText('left');
+            if (this.title.includes('Centrar')) alignText('center');
+            if (this.title.includes('derecha')) alignText('right');
+            if (this.title.includes('Justificar')) alignText('justify');
+            
+            // Listas
+            if (this.title.includes('viñetas')) insertList('unordered');
+            if (this.title.includes('numerada')) insertList('ordered');
+            
+            // Otras acciones
+            if (this.title.includes('Limpiar todo')) clearEditor();
+            if (this.title.includes('Deshacer')) undoLastAction();
+            if (this.title.includes('Rehacer')) redoLastAction();
+            if (this.title.includes('Separador')) insertDivider();
+            
+            // Guardar después de aplicar el formato
+            saveEditorContent();
+        });
+    });
+    
+    // Inicializar botones de plantillas
+    document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Enfocar el editor antes de insertar la plantilla
+            if (editor) editor.focus();
+            
+            if (this.title.includes('SOAP')) insertSOAPTemplate();
+            if (this.title.includes('Examen')) insertExamTemplate();
+            if (this.title.includes('Plan')) insertPlanTemplate();
+            
+            // Guardar después de insertar la plantilla
+            saveEditorContent();
+        });
+    });
+    
+    // Inicializar otros componentes específicos
+    const microphoneBtn = document.getElementById('microphoneBtn');
+    if (microphoneBtn) {
+        microphoneBtn.addEventListener('click', toggleSpeechRecognition);
+    }
+    
+    const imageInput = document.getElementById('imageInput');
+    if (imageInput) {
+        imageInput.addEventListener('change', function() { 
+            insertImageInNote(this);
+            // Guardar después de insertar la imagen
+            saveEditorContent();
+        });
+    }
+    
+    const clearSignatureBtn = document.querySelector('.btn-clear-signature');
+    if (clearSignatureBtn) {
+        clearSignatureBtn.addEventListener('click', clearSignature);
+    }
+    
+    // Agregar botón para probar localStorage
+    const testStorageBtn = document.getElementById('testLocalStorage');
+    if (testStorageBtn) {
+        testStorageBtn.addEventListener('click', testLocalStorage);
+    }
+    
+    // Configurar autoguardado cada 30 segundos
+    const autoSaveInterval = setInterval(() => {
+        saveEditorContent();
+    }, AUTO_SAVE_INTERVAL);
+    
+    // Guardar al salir de la página
+    window.addEventListener('beforeunload', () => {
+        saveEditorContent();
+        clearInterval(autoSaveInterval);
+    });
+    
+    console.log('✅ Editor de notas médicas inicializado correctamente');
+});
+
+// ===== FUNCIONES DE ALMACENAMIENTO LOCAL =====
+/**
+ * Función para probar el guardado y carga de localStorage
+ */
+function testLocalStorage() {
+    Swal.fire({
+        title: 'Prueba de localStorage',
+        html: `
+            <div style="text-align: left; margin-bottom: 20px;">
+                <p>Esta función permite probar el guardado y carga de contenido en localStorage.</p>
+                <p>Seleccione una opción:</p>
+            </div>
+        `,
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar ahora',
+        denyButtonText: 'Cargar contenido',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Guardar contenido actual
+            saveEditorContent();
+            Swal.fire('Guardado', 'El contenido ha sido guardado en localStorage', 'success');
+        } else if (result.isDenied) {
+            // Cargar contenido guardado
+            loadEditorContent();
+            Swal.fire('Cargado', 'Se ha cargado el contenido desde localStorage', 'info');
+        }
+    });
+}
+
+/**
+ * Guarda el contenido del editor en localStorage junto con el ID del paciente actual
+ */
+function saveEditorContent() {
+    const editor = document.getElementById('medicalNoteEditor');
+    if (!editor) {
+        console.error('❌ Editor no encontrado al intentar guardar');
+        return;
+    }
+    
+    const content = editor.innerHTML;
+    
+    // No guardar si el contenido está vacío o es igual al último guardado
+    if (!content || content.trim() === '') {
+        console.log('⚠️ No se guardó contenido vacío');
+        return;
+    }
+    
+    // Verificar si el contenido ha cambiado antes de guardar
+    const lastSaved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (lastSaved === content) {
+        console.log('ℹ️ Contenido sin cambios, no se guarda');
+        return;
+    }
+    
+    try {
+        // Obtener ID del paciente actual
+        const currentPatientDataStr = localStorage.getItem('medicalNotePatientData') || 
+                                    sessionStorage.getItem('notePatientData') || 
+                                    localStorage.getItem('currentPatientData');
+        
+        if (currentPatientDataStr) {
+            const currentPatientData = JSON.parse(currentPatientDataStr);
+            const currentPatientId = currentPatientData.id || currentPatientData.patient_id;
+            
+            if (currentPatientId) {
+                // Guardar el ID del paciente actual para referencia futura
+                localStorage.setItem('lastNotePatientId', currentPatientId);
+                console.log(`🔑 ID del paciente guardado: ${currentPatientId}`);
+            }
+        }
+    } catch (e) {
+        console.error('❌ Error al guardar ID del paciente:', e);
+    }
+    
+    // Guardar en localStorage
+    localStorage.setItem(LOCAL_STORAGE_KEY, content);
+    console.log('💾 Contenido guardado en localStorage');
+    
+    // Guardar en el historial para deshacer/rehacer
+    if (editorHistory.length === 0 || editorHistory[editorHistory.length - 1] !== content) {
+        // Eliminar estados futuros si estamos en medio del historial
+        if (historyIndex < editorHistory.length - 1) {
+            editorHistory = editorHistory.slice(0, historyIndex + 1);
+        }
+        
+        // Añadir nuevo estado
+        editorHistory.push(content);
+        historyIndex = editorHistory.length - 1;
+        
+        // Limitar tamaño del historial
+        if (editorHistory.length > 50) {
+            editorHistory.shift();
+            historyIndex--;
+        }
+    }
+    
+    // Mostrar notificación sutil
+    showSaveNotification();
+}
+
+/**
+ * Carga el contenido guardado en localStorage al editor
+ * Solo carga el contenido si corresponde al paciente actual
+ */
+function loadEditorContent() {
+    const editor = document.getElementById('medicalNoteEditor');
+    if (!editor) {
+        console.error('❌ Editor no encontrado al intentar cargar contenido');
+        return;
+    }
+    
+    try {
+        // Obtener ID del paciente actual
+        const currentPatientDataStr = localStorage.getItem('medicalNotePatientData') || 
+                                     sessionStorage.getItem('notePatientData') || 
+                                     localStorage.getItem('currentPatientData');
+        
+        if (!currentPatientDataStr) {
+            console.log('⚠️ No se encontraron datos del paciente actual');
+            return;
+        }
+        
+        const currentPatientData = JSON.parse(currentPatientDataStr);
+        const currentPatientId = currentPatientData.id || currentPatientData.patient_id;
+        
+        if (!currentPatientId) {
+            console.log('⚠️ No se pudo determinar el ID del paciente actual');
+            return;
+        }
+        
+        // Verificar si tenemos el ID del paciente de la nota guardada
+        const savedPatientId = localStorage.getItem('lastNotePatientId');
+        
+        // Solo cargar el contenido si es del mismo paciente
+        if (savedPatientId && savedPatientId === currentPatientId) {
+            const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (savedContent && savedContent.trim() !== '') {
+                editor.innerHTML = savedContent;
+                console.log(`📂 Contenido cargado desde localStorage para paciente ID: ${currentPatientId}`);
+                
+                // Guardar en el historial para deshacer/rehacer
+                if (editorHistory.length === 0 || editorHistory[editorHistory.length - 1] !== savedContent) {
+                    editorHistory.push(savedContent);
+                    historyIndex = editorHistory.length - 1;
+                }
+                
+                // Mostrar notificación de carga
+                showLoadNotification();
+            } else {
+                console.log('📭 No hay contenido guardado para este paciente');
+            }
+        } else {
+            console.log(`🔄 Paciente diferente detectado. No se cargará contenido anterior.`);
+            console.log(`   Paciente actual: ${currentPatientId}, Paciente de nota guardada: ${savedPatientId || 'ninguno'}`);
+            // Limpiar el editor para el nuevo paciente
+            editor.innerHTML = '';
+        }
+        
+        // Actualizar la información del paciente en la interfaz
+        updatePatientInfoDisplay(currentPatientData);
+        
+    } catch (e) {
+        console.error('❌ Error al cargar datos del paciente:', e);
+    }
+}
+
+/**
+ * Muestra una notificación sutil de guardado
+ */
+function showSaveNotification() {
+    // Crear elemento de notificación si no existe
+    let notification = document.getElementById('saveNotification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'saveNotification';
+        notification.style.position = 'fixed';
+        notification.style.bottom = '20px';
+        notification.style.right = '20px';
+        notification.style.backgroundColor = '#28a745';
+        notification.style.color = 'white';
+        notification.style.padding = '10px 15px';
+        notification.style.borderRadius = '5px';
+        notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+        notification.style.zIndex = '9999';
+        notification.style.transition = 'opacity 0.5s';
+        notification.style.opacity = '0';
+        document.body.appendChild(notification);
+    }
+    
+    // Mostrar mensaje
+    notification.textContent = '✓ Nota guardada automáticamente';
+    notification.style.opacity = '1';
+    
+    // Ocultar después de 2 segundos
+    setTimeout(() => {
+        notification.style.opacity = '0';
+    }, 2000);
+}
+
+/**
+ * Muestra una notificación de carga de contenido
+ */
+function showLoadNotification() {
+    // Crear elemento de notificación si no existe
+    let notification = document.getElementById('loadNotification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'loadNotification';
+        notification.style.position = 'fixed';
+        notification.style.bottom = '20px';
+        notification.style.right = '20px';
+        notification.style.backgroundColor = '#2c5aa0';
+        notification.style.color = 'white';
+        notification.style.padding = '10px 15px';
+        notification.style.borderRadius = '5px';
+        notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+        notification.style.zIndex = '9999';
+        notification.style.transition = 'opacity 0.5s';
+        notification.style.opacity = '0';
+        document.body.appendChild(notification);
+    }
+    
+    // Mostrar mensaje
+    notification.textContent = '📂 Borrador anterior cargado';
+    notification.style.opacity = '1';
+    
+    // Ocultar después de 3 segundos
+    setTimeout(() => {
+        notification.style.opacity = '0';
+    }, 3000);
+}
+
+/**
+ * Actualiza la información del paciente en la interfaz de la nota médica
+ * @param {Object} patientData - Datos del paciente
+ */
+function updatePatientInfoDisplay(patientData) {
+    if (!patientData) {
+        console.warn('⚠️ No hay datos de paciente para mostrar');
+        return;
+    }
+    
+    console.log('🔄 Actualizando información del paciente en la interfaz', patientData);
+    
+    try {
+        // Obtener todas las filas de la tabla de datos del paciente
+        const table = document.querySelector('.patient-data-table');
+        if (!table) {
+            console.warn('⚠️ Tabla de datos del paciente no encontrada');
+            return;
+        }
+        
+        // Mapeo de campos para actualizar
+        const patientFields = {
+            // Nombre del paciente (primera fila, segunda celda)
+            'PACIENTE:': patientData.name || patientData.full_name || 
+                      `${patientData.personal_info?.first_name || ''} ${patientData.personal_info?.last_name || ''}`.trim() || 
+                      patientData.patientName || 'No registrado',
+                      
+            // Historia clínica (primera fila, cuarta celda)
+            'HC:': patientData.hc_number || patientData.medical_record || 
+                 patientData.medical_info?.medical_record || 'No registrado',
+                 
+            // Edad (segunda fila, segunda celda)
+            'EDAD:': (patientData.age || patientData.personal_info?.age || '---') + 
+                   (typeof patientData.age === 'number' || typeof patientData.personal_info?.age === 'number' ? ' años' : ''),
+                   
+            // Sexo/Género (segunda fila, cuarta celda)
+            'SEXO:': (() => {
+                let gender = patientData.gender || patientData.personal_info?.gender || '---';
+                if (gender === 'M') return 'Masculino';
+                if (gender === 'F') return 'Femenino';
+                return gender;
+            })(),
+            
+            // Cama (tercera fila, segunda celda)
+            'CAMA:': patientData.bed_number || patientData.bedNumber || '---',
+            
+            // Servicio/Departamento (tercera fila, cuarta celda)
+            'SERVICIO:': patientData.department || patientData.room || 
+                      patientData.medical_info?.department || 'Medicina General',
+                      
+            // Diagnóstico (cuarta fila, segunda celda si existe)
+            'DIAGNÓSTICO:': patientData.diagnosis || 
+                          patientData.medical_info?.primary_diagnosis || 
+                          patientData.diagnosisCode ? `${patientData.diagnosisCode} - ${patientData.diagnosis}` : 
+                          'Pendiente'
+        };
+        
+        // Recorrer todas las filas de la tabla
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            const label = row.querySelector('td:first-child');
+            const value = row.querySelector('td:nth-child(2)');
+            
+            if (label && value && patientFields[label.textContent]) {
+                value.textContent = patientFields[label.textContent];
+            }
+            
+            // Manejar las celdas de la derecha en la misma fila
+            const rightLabel = row.querySelector('td:nth-child(3)');
+            const rightValue = row.querySelector('td:nth-child(4)');
+            
+            if (rightLabel && rightValue && patientFields[rightLabel.textContent]) {
+                rightValue.textContent = patientFields[rightLabel.textContent];
+            }
+        });
+        
+        // Actualizar diagnóstico si existe un elemento con clase especial
+        const diagnosisElement = document.querySelector('.diagnosis-value');
+        if (diagnosisElement) {
+            const diagnosisToShow = patientData.diagnosis || 
+                                  patientData.medical_info?.primary_diagnosis || 
+                                  'Pendiente';
+            
+            diagnosisElement.textContent = diagnosisToShow;
+        }
+        
+        console.log('✅ Información del paciente actualizada correctamente');
+    } catch (error) {
+        console.error('❌ Error actualizando información del paciente:', error);
+    }
+}
 

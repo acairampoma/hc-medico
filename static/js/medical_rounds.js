@@ -574,7 +574,7 @@ function medicalRounds() {
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                                 
                                 <!-- FILA 1 -->
-                                <button onclick="openMedicalNoteWithSignature('${bed.bed_number}', '${bed.patient_id}')" 
+                                <button onclick="createMedicalNoteDirect('${bed.bed_number}', '${bed.patient_id}')" 
                                         style="background: #2c5aa0; color: white; border: none; padding: 1rem; border-radius: 10px; cursor: pointer; font-size: 1rem;">
                                     <i class="fas fa-edit"></i><br>Nota<br><small>Evolución</small>
                                 </button>
@@ -1161,8 +1161,182 @@ async function createExamOrderDirect(bedNumber, patientId) {
     }
 }
 
-// ===== FUNCIONES PARA ACCIONES MÉDICAS NOTAS EVOLUCIÓN =====
 
+// ===== FUNCIÓN PARA CREAR NOTA MÉDICA DESDE ACCIONES MÉDICAS =====
+async function createMedicalNoteDirect(bedNumber, patientId) {
+    try {
+        // Debug: mostrar qué datos recibimos
+        console.log('🔍 Debug createMedicalNoteDirect:');
+        console.log('bedNumber:', bedNumber);
+        console.log('patientId:', patientId);
+        
+        // Validar parámetros
+        if (!bedNumber) {
+            throw new Error('Número de cama no proporcionado');
+        }
+        
+        // Si no hay patientId válido, crear uno mock
+        if (!patientId || patientId === 'undefined' || patientId === 'null') {
+            patientId = `MOCK_${bedNumber}`;
+            console.log('🔧 Using mock patientId:', patientId);
+        }
+        
+        // Usar datos del contexto si están disponibles
+        let patientData = null;
+        const context = window.currentPatientData;
+        
+        if (context && context.patient) {
+            patientData = context.patient;
+            console.log('✅ Using context patient data:', patientData);
+        } else {
+            // Intentar obtener desde API si no hay contexto
+            if (!patientId.startsWith('MOCK_')) {
+                patientData = {
+                    name: context?.name || 'Paciente desconocido',
+                    age: context?.age || '---',
+                    room: context?.room || 'General',
+                    bed_number: bedNumber
+                };
+            } else {
+                console.log('⚠️ No hay datos en contexto, intentando obtener del servidor');
+                
+                try {
+                    // Intentar obtener datos del servidor
+                    const response = await fetch(`/api/patients/${patientId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        patientData = {
+                            name: data.name || data.full_name || 'Paciente desconocido',
+                            age: data.age || '---',
+                            room: data.room || data.department || 'General',
+                            bed_number: bedNumber,
+                            hc_number: data.hc_number || 'N/A',
+                            gender: data.gender || data.sexo || '---',
+                            diagnosis: data.diagnosis || 'Pendiente'
+                        };
+                        console.log('✅ Datos obtenidos del servidor:', patientData);
+                    } else {
+                        throw new Error('Error obteniendo datos del paciente');
+                    }
+                } catch (apiError) {
+                    console.warn('⚠️ Error al obtener datos del servidor, usando datos de ejemplo');
+                    // Usar datos de ejemplo si no se pueden obtener del servidor
+                    patientData = {
+                        name: `Paciente Cama ${bedNumber}`,
+                        age: '45',
+                        room: 'Medicina General',
+                        bed_number: bedNumber,
+                        hc_number: 'HC-2024-TEMP',
+                        gender: 'No especificado',
+                        diagnosis: 'Pendiente de evaluación'
+                    };
+                }
+            }
+        }
+        
+        // Enriquecer datos del paciente con información médica adicional
+        const enrichedPatientData = {
+            ...patientData,
+            patientId: patientId,
+            bed_number: bedNumber,
+            timestamp: new Date().toISOString(),
+            session_id: Date.now().toString(),
+            // Información para la nota médica
+            hospital_name: 'Hospital Central San José',
+            hospital_address: 'Av. Angamos Este 2520, Surquillo, Lima',
+            department: patientData.room || 'Medicina General',
+            doctor_info: {
+                name: 'Dr. Alan Cairampoma Carrillo',
+                cmp: '12345',
+                specialty: 'Medicina Interna'
+            }
+        };
+        
+        // Guardar datos en múltiples ubicaciones para asegurar disponibilidad
+        // Usar claves estandarizadas para mejor compatibilidad entre archivos
+        localStorage.setItem('currentPatientData', JSON.stringify(enrichedPatientData));
+        localStorage.setItem('medicalNotePatientData', JSON.stringify(enrichedPatientData));
+        sessionStorage.setItem('patientData', JSON.stringify(enrichedPatientData));
+        sessionStorage.setItem('notePatientData', JSON.stringify(enrichedPatientData));
+        
+        // Definir la misma clave de almacenamiento que se usa en notamedica.js
+        const MEDICAL_NOTE_STORAGE_KEY = 'medical_note_draft';
+        
+        // Limpiar localStorage de notas anteriores si es un paciente diferente
+        const previousNotePatientId = localStorage.getItem('lastNotePatientId');
+        if (previousNotePatientId && previousNotePatientId !== patientId) {
+            console.log('🗑️ Limpiando nota anterior de otro paciente');
+            localStorage.removeItem(MEDICAL_NOTE_STORAGE_KEY);
+        }
+        
+        // Guardar ID del paciente actual para futuras referencias
+        localStorage.setItem('lastNotePatientId', patientId);
+        
+        // También guardarlo en window para acceso inmediato
+        window.currentMedicalNoteData = enrichedPatientData;
+        
+        console.log('💾 Datos guardados para nota médica:', enrichedPatientData);
+        
+        // Crear URL con parámetros para la página de notas médicas
+        const notesUrl = `/medical/notes?patientId=${encodeURIComponent(patientId)}&bedNumber=${encodeURIComponent(bedNumber)}&timestamp=${Date.now()}`;
+        
+        // Abrir en nueva ventana/pestaña
+        const newWindow = window.open(notesUrl, '_blank');
+        
+        // Verificar si se abrió correctamente
+        if (newWindow) {
+            console.log('✅ Página de notas médicas abierta correctamente');
+            
+            // Mostrar confirmación con toast
+            Swal.fire({
+                icon: 'success',
+                title: '📝 Nota Médica',
+                html: `
+                    <div style="text-align: left;">
+                        <p><strong>📋 Abriendo editor de nota médica</strong></p>
+                        <p><strong>👤 Paciente:</strong> ${enrichedPatientData.name}</p>
+                        <p><strong>🛏️ Cama:</strong> ${bedNumber}</p>
+                        <p><strong>🏥 Servicio:</strong> ${enrichedPatientData.department}</p>
+                    </div>
+                `,
+                timer: 3000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end',
+                background: '#f8f9fa',
+                color: '#2c5aa0'
+            });
+        } else {
+            // Si no se pudo abrir, mostrar mensaje de error
+            throw new Error('No se pudo abrir la ventana. Verifique que no esté bloqueada por el navegador.');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error al crear nota médica:', error);
+        
+        // Cerrar cualquier diálogo abierto
+        Swal.close();
+        
+        // Mostrar error detallado
+        Swal.fire({
+            icon: 'error',
+            title: 'Error al abrir nota médica',
+            html: `
+                <div style="text-align: left;">
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Cama:</strong> ${bedNumber}</p>
+                    <p><strong>ID Paciente:</strong> ${patientId}</p>
+                    <br>
+                    <p style="font-size: 12px; color: #666;">
+                        Si el problema persiste, contacte al administrador del sistema.
+                    </p>
+                </div>
+            `,
+            confirmButtonColor: '#e74c3c',
+            confirmButtonText: 'Entendido'
+        });
+    }
+}
 /**
  * SISTEMA DE NOTAS MÉDICAS CON FIRMA DIGITAL INTEGRADA
  * Archivo: notamedica.js
