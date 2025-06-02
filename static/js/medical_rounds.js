@@ -287,6 +287,18 @@ function medicalRounds() {
                 this.hideLoading();
                 this.showError('Error cargando datos del paciente');
             }
+
+            // 🆕 AGREGAR ESTO AL FINAL:
+            if (bed.status === 'occupied') {
+                // Llamar al sistema de notas médicas
+                openMedicalNoteWithSignature(bed.bed_number, bed.patient_id);
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Cama vacía',
+                    text: 'Esta cama no tiene paciente asignado'
+                });
+            }
         },
 
         // 🆕 FUNCIÓN COMPLETAMENTE REESCRITA PARA USAR EL JSON
@@ -572,7 +584,7 @@ function medicalRounds() {
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                                 
                                 <!-- FILA 1 -->
-                                <button onclick="openMedicalNote('${bed.bed_number}', '${bed.patient_id}')" 
+                                <button onclick="openMedicalNoteWithSignature('${bed.bed_number}', '${bed.patient_id}')" 
                                         style="background: #2c5aa0; color: white; border: none; padding: 1rem; border-radius: 10px; cursor: pointer; font-size: 1rem;">
                                     <i class="fas fa-edit"></i><br>Nota<br><small>Evolución</small>
                                 </button>
