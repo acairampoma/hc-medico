@@ -1400,7 +1400,8 @@ window.insertPlanTemplate = insertPlanTemplate;
 window.toggleSpeechRecognition = toggleSpeechRecognition;
 window.insertImageInNote = insertImageInNote;
 window.clearSignature = clearSignature;
+window.formatText = formatText;
+window.alignText = alignText;
 
 console.log('📋 notamedica.js cargado correctamente - Versión con alineación de texto');
-
 
