@@ -27,7 +27,8 @@ function inicializarNotasMedicas() {
     setupImageUpload();
     setupImageTable();
     setupEditorActions();
-    setupVoiceDictation()
+    setupVoiceDictation();
+    setupImagePaint();
 }
 
 // ===== FUNCIÓN: ACTUALIZAR DATOS DEL PACIENTE =====
@@ -617,6 +618,546 @@ function setupImageTable() {
         
         setTimeout(() => textCell.focus(), 100);
     }
+}
+
+// ===== FUNCIÓN: PINTAR IMÁGEN =====
+function setupImagePaint() {
+    const paintBtn = document.getElementById('imagePaintBtn');
+    if (!paintBtn) return;
+    
+    let paintMode = false;
+    let selectedColor = '#e74c3c';
+    let brushSize = 3;
+    let currentTool = 'brush'; // brush, circle, square, eraser
+    let canvasHistory = []; // Para deshacer
+    
+    // Toggle modo pintura
+    paintBtn.addEventListener('click', () => {
+        paintMode = !paintMode;
+        
+        if (paintMode) {
+            activatePaintMode();
+        } else {
+            deactivatePaintMode();
+        }
+    });
+    
+    function activatePaintMode() {
+        // Cambiar apariencia del botón
+        paintBtn.style.backgroundColor = '#e74c3c';
+        paintBtn.style.color = '#fff';
+        paintBtn.title = 'Modo pintura ACTIVO - Clic en imagen para pintar';
+        
+        // Crear paleta flotante
+        createFloatingPalette();
+        
+        // Cambiar cursor de las imágenes
+        updateImagesCursor();
+        
+        // Agregar eventos a imágenes existentes
+        addPaintEventsToImages();
+        
+        console.log('🎨 Modo pintura ACTIVADO');
+    }
+    
+    function deactivatePaintMode() {
+        // Restaurar botón
+        paintBtn.style.backgroundColor = '';
+        paintBtn.style.color = '';
+        paintBtn.title = 'Activar modo pintura';
+        
+        // Remover paleta
+        const palette = document.getElementById('floatingPalette');
+        if (palette) palette.remove();
+        
+        // Restaurar cursores de imágenes
+        const images = document.querySelectorAll('#medicalNoteEditor img');
+        images.forEach(img => {
+            img.style.cursor = '';
+        });
+        
+        // DESACTIVAR CANVAS ACTIVOS (SIN BORRAR CONTENIDO)
+        const canvases = document.querySelectorAll('#medicalNoteEditor canvas');
+        canvases.forEach(canvas => {
+            // Cambiar cursor a normal
+            canvas.style.cursor = 'default';
+            canvas.style.border = '1px solid #ddd';
+            
+            // Remover event listeners específicos SIN clonar
+            canvas.removeEventListener('mousedown', canvas._startDrawing);
+            canvas.removeEventListener('mousemove', canvas._draw);
+            canvas.removeEventListener('mouseup', canvas._stopDrawing);
+            canvas.removeEventListener('mouseout', canvas._stopDrawing);
+            canvas.removeEventListener('touchstart', canvas._handleTouch);
+            canvas.removeEventListener('touchmove', canvas._handleTouch);
+            canvas.removeEventListener('touchend', canvas._stopDrawing);
+        });
+        
+        // Limpiar referencias globales
+        window.currentCanvas = null;
+        window.currentCanvasCtx = null;
+        
+        console.log('🎨 Modo pintura DESACTIVADO - Canvas preservados');
+    }
+    
+    function createFloatingPalette() {
+        // Remover paleta existente
+        const existingPalette = document.getElementById('floatingPalette');
+        if (existingPalette) existingPalette.remove();
+        
+        const palette = document.createElement('div');
+        palette.id = 'floatingPalette';
+        Object.assign(palette.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            backgroundColor: '#fff',
+            border: '2px solid #2c5aa0',
+            borderRadius: '10px',
+            padding: '10px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            zIndex: '1000',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            minWidth: '140px'
+        });
+        
+        // Título
+        const title = document.createElement('div');
+        title.textContent = '🎨 Paleta';
+        Object.assign(title.style, {
+            fontSize: '12px',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            color: '#2c5aa0',
+            marginBottom: '5px'
+        });
+        palette.appendChild(title);
+        
+        // Colores médicos
+        const colors = [
+            { color: '#e74c3c', name: 'Rojo', emoji: '🔴' },
+            { color: '#3498db', name: 'Azul', emoji: '🔵' },
+            { color: '#27ae60', name: 'Verde', emoji: '🟢' },
+            { color: '#f39c12', name: 'Amarillo', emoji: '🟡' },
+            { color: '#9b59b6', name: 'Morado', emoji: '🟣' },
+            { color: '#2c3e50', name: 'Negro', emoji: '⚫' }
+        ];
+        
+        const colorContainer = document.createElement('div');
+        colorContainer.style.display = 'grid';
+        colorContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        colorContainer.style.gap = '5px';
+        
+        colors.forEach(colorObj => {
+            const colorBtn = document.createElement('button');
+            Object.assign(colorBtn.style, {
+                width: '30px',
+                height: '30px',
+                backgroundColor: colorObj.color,
+                border: '2px solid #ddd',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                fontSize: '12px'
+            });
+            
+            colorBtn.title = colorObj.name;
+            colorBtn.textContent = colorObj.emoji;
+            
+            colorBtn.addEventListener('click', () => {
+                selectedColor = colorObj.color;
+                // Resaltar seleccionado
+                colorContainer.querySelectorAll('button').forEach(btn => {
+                    btn.style.boxShadow = '';
+                });
+                colorBtn.style.boxShadow = '0 0 0 2px #2c5aa0';
+            });
+            
+            colorContainer.appendChild(colorBtn);
+        });
+        
+        palette.appendChild(colorContainer);
+        
+        // Selector de grosor
+        const sizeContainer = document.createElement('div');
+        sizeContainer.style.textAlign = 'center';
+        
+        const sizeLabel = document.createElement('div');
+        sizeLabel.textContent = 'Grosor';
+        sizeLabel.style.fontSize = '10px';
+        sizeLabel.style.color = '#666';
+        
+        const sizeSlider = document.createElement('input');
+        sizeSlider.type = 'range';
+        sizeSlider.min = '2';
+        sizeSlider.max = '15';
+        sizeSlider.value = '3';
+        Object.assign(sizeSlider.style, {
+            width: '100%',
+            marginTop: '3px'
+        });
+        
+        sizeSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+        });
+        
+        sizeContainer.appendChild(sizeLabel);
+        sizeContainer.appendChild(sizeSlider);
+        palette.appendChild(sizeContainer);
+        
+        // Herramientas y formas
+        const toolsContainer = document.createElement('div');
+        toolsContainer.style.display = 'grid';
+        toolsContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        toolsContainer.style.gap = '5px';
+        toolsContainer.style.marginTop = '5px';
+        
+        // Botón pincel libre
+        const brushTool = document.createElement('button');
+        brushTool.innerHTML = '🖌️';
+        brushTool.title = 'Pincel libre';
+        Object.assign(brushTool.style, {
+            width: '30px',
+            height: '30px',
+            backgroundColor: '#2c5aa0',
+            color: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '12px'
+        });
+        
+        // Botón círculo
+        const circleTool = document.createElement('button');
+        circleTool.innerHTML = '⭕';
+        circleTool.title = 'Círculo';
+        Object.assign(circleTool.style, {
+            width: '30px',
+            height: '30px',
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #ddd',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '12px'
+        });
+        
+        // Botón cuadrado
+        const squareTool = document.createElement('button');
+        squareTool.innerHTML = '🟩';
+        squareTool.title = 'Cuadrado';
+        Object.assign(squareTool.style, {
+            width: '30px',
+            height: '30px',
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #ddd',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '12px'
+        });
+        
+        // Botón goma
+        const eraser = document.createElement('button');
+        eraser.innerHTML = '🧽';
+        eraser.title = 'Goma';
+        Object.assign(eraser.style, {
+            width: '30px',
+            height: '30px',
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #ddd',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '12px'
+        });
+        
+        toolsContainer.appendChild(brushTool);
+        toolsContainer.appendChild(circleTool);
+        toolsContainer.appendChild(squareTool);
+        toolsContainer.appendChild(eraser);
+        
+        palette.appendChild(toolsContainer);
+        
+        // Botón deshacer
+        const undoBtn = document.createElement('button');
+        undoBtn.innerHTML = '↶ Deshacer';
+        Object.assign(undoBtn.style, {
+            padding: '5px',
+            backgroundColor: '#3498db',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '10px',
+            marginTop: '5px'
+        });
+        
+        palette.appendChild(undoBtn);
+        
+        // Eventos de herramientas
+        brushTool.addEventListener('click', () => {
+            currentTool = 'brush';
+            updateToolSelection(toolsContainer, brushTool);
+        });
+        
+        circleTool.addEventListener('click', () => {
+            currentTool = 'circle';
+            updateToolSelection(toolsContainer, circleTool);
+        });
+        
+        squareTool.addEventListener('click', () => {
+            currentTool = 'square';
+            updateToolSelection(toolsContainer, squareTool);
+        });
+        
+        eraser.addEventListener('click', () => {
+            currentTool = 'eraser';
+            updateToolSelection(toolsContainer, eraser);
+        });
+        
+        // Evento deshacer
+        undoBtn.addEventListener('click', () => {
+            if (canvasHistory.length > 0) {
+                const lastState = canvasHistory.pop();
+                if (window.currentCanvas && window.currentCanvasCtx) {
+                    window.currentCanvasCtx.putImageData(lastState, 0, 0);
+                }
+            }
+        });
+        
+        function updateToolSelection(container, selectedBtn) {
+            container.querySelectorAll('button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.color = '#000';
+            });
+            selectedBtn.style.backgroundColor = '#2c5aa0';
+            selectedBtn.style.color = '#fff';
+        }
+        
+        document.body.appendChild(palette);
+        
+        // Seleccionar primer color y herramienta por defecto
+        colorContainer.children[0].click();
+        brushTool.click();
+    }
+    
+    function updateImagesCursor() {
+        const images = document.querySelectorAll('#medicalNoteEditor img');
+        const canvases = document.querySelectorAll('#medicalNoteEditor canvas');
+        
+        images.forEach(img => {
+            if (paintMode) {
+                img.style.cursor = 'crosshair';
+            } else {
+                img.style.cursor = '';
+            }
+        });
+        
+        // También actualizar cursores de canvas existentes
+        canvases.forEach(canvas => {
+            if (paintMode) {
+                canvas.style.cursor = 'crosshair';
+                canvas.style.border = '2px solid #e74c3c';
+            } else {
+                canvas.style.cursor = 'default';
+                canvas.style.border = '1px solid #ddd';
+            }
+        });
+    }
+    
+    function addPaintEventsToImages() {
+        const images = document.querySelectorAll('#medicalNoteEditor img');
+        
+        images.forEach(img => {
+            // Remover eventos previos
+            img.removeEventListener('click', handleImageClick);
+            
+            if (paintMode) {
+                img.addEventListener('click', handleImageClick);
+            }
+        });
+    }
+    
+    function handleImageClick(e) {
+        if (!paintMode) return;
+        
+        const img = e.target;
+        convertImageToCanvas(img);
+    }
+    
+    function convertImageToCanvas(img) {
+        // Crear canvas del mismo tamaño que la imagen
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configurar canvas
+        canvas.width = img.offsetWidth;
+        canvas.height = img.offsetHeight;
+        
+        Object.assign(canvas.style, {
+            maxWidth: '100%',
+            height: 'auto',
+            cursor: 'crosshair',
+            border: '2px solid #e74c3c'
+        });
+        
+        // Dibujar imagen en canvas
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Configurar pincel
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Guardar referencia global para deshacer
+        window.currentCanvas = canvas;
+        window.currentCanvasCtx = ctx;
+        
+        // Guardar estado inicial
+        saveCanvasState(ctx);
+        
+        // Variables de dibujo
+        let isDrawing = false;
+        let startX, startY;
+        
+        // Eventos de dibujo
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Touch para tablets
+        canvas.addEventListener('touchstart', handleTouch);
+        canvas.addEventListener('touchmove', handleTouch);
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        // Guardar referencias de funciones para poder removerlas después
+        canvas._startDrawing = startDrawing;
+        canvas._draw = draw;
+        canvas._stopDrawing = stopDrawing;
+        canvas._handleTouch = handleTouch;
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                draw(e);
+            }
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (currentTool === 'brush') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = selectedColor;
+                ctx.lineWidth = brushSize;
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            } else if (currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth = brushSize * 2;
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+        }
+        
+        function stopDrawing(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            if (currentTool === 'circle' || currentTool === 'square') {
+                const rect = canvas.getBoundingClientRect();
+                const endX = e.clientX - rect.left;
+                const endY = e.clientY - rect.top;
+                
+                drawShape(startX, startY, endX, endY);
+            }
+            
+            ctx.beginPath();
+            saveCanvasState(ctx);
+        }
+        
+        function drawShape(x1, y1, x2, y2) {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = selectedColor;
+            ctx.fillStyle = selectedColor;
+            ctx.lineWidth = brushSize;
+            
+            const width = x2 - x1;
+            const height = y2 - y1;
+            
+            if (currentTool === 'circle') {
+                const centerX = x1 + width / 2;
+                const centerY = y1 + height / 2;
+                const radius = Math.sqrt(width * width + height * height) / 2;
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+            } else if (currentTool === 'square') {
+                ctx.beginPath();
+                ctx.rect(x1, y1, width, height);
+                ctx.stroke();
+            }
+        }
+        
+        function saveCanvasState(ctx) {
+            if (canvasHistory.length >= 10) {
+                canvasHistory.shift(); // Mantener máximo 10 estados
+            }
+            canvasHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        }
+        
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                             e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+        
+        // Reemplazar imagen con canvas
+        img.parentNode.replaceChild(canvas, img);
+        
+        // Agregar párrafo después del canvas para poder hacer Enter
+        const nextElement = canvas.nextSibling;
+        if (!nextElement || nextElement.nodeType !== Node.TEXT_NODE) {
+            const spacer = document.createElement('p');
+            spacer.innerHTML = '<br>';
+            spacer.style.minHeight = '20px';
+            canvas.parentNode.insertBefore(spacer, canvas.nextSibling);
+        }
+        
+        console.log('🖼️ Imagen convertida a canvas para pintar');
+    }
+    
+    // Observer para nuevas imágenes
+    const observer = new MutationObserver(() => {
+        if (paintMode) {
+            updateImagesCursor();
+            addPaintEventsToImages();
+        }
+    });
+    
+    const editor = document.getElementById('medicalNoteEditor');
+    if (editor) {
+        observer.observe(editor, { childList: true, subtree: true });
+    }
+    
+    console.log('✅ Sistema de pintura sobre imágenes configurado');
 }
 
 // ===== FUNCIÓN: DICTADO POR VOZ =====
