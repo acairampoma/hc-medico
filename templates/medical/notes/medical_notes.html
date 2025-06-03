@@ -107,9 +107,7 @@
                 <button type="button" class="tool-btn" title="Lista con viñetas">
                     <i class="fas fa-list-ul"></i>
                 </button>
-                <button type="button" class="tool-btn" title="Lista numerada">
-                    <i class="fas fa-list-ol"></i>
-                </button>
+            
                 <button type="button" class="tool-btn" title="Insertar línea divisoria">
                     <i class="fas fa-minus"></i>
                 </button>
@@ -133,19 +131,10 @@
                 <input type="file" id="imageInput" accept="image/*" style="display: none;">
             </div>
 
-            <!-- PLANTILLAS MÉDICAS -->
             <div class="tools-group">
-                <button type="button" class="tool-btn template-btn" title="Plantilla SOAP">
-                    <i class="fas fa-notes-medical"></i>
-                    SOAP
-                </button>
-                <button type="button" class="tool-btn template-btn" title="Examen físico">
-                    <i class="fas fa-stethoscope"></i>
-                    Examen
-                </button>
-                <button type="button" class="tool-btn template-btn" title="Plan médico">
-                    <i class="fas fa-clipboard-list"></i>
-                    Plan
+                <button type="button" class="tool-btn table-btn" id="imageTableBtn" title="Imagen + Texto en tabla">
+                    <i class="fas fa-table"></i>
+                    Tabla Img
                 </button>
             </div>
 
@@ -208,34 +197,6 @@
     <!-- Script de navegación común para manejar botones de volver -->
     <script src="/static/js/common_navigation.js"></script>
     <script src="/static/js/notamedica.js"></script>
-    <script>
-        // Script de inicialización para cargar datos desde parámetros URL
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                console.log('Inicializando página de notas médicas...');
-                
-                // Cargar datos del paciente desde URL o localStorage
-                cargarDatosDesdeURL();
-                
-                // Configurar evento para guardar contenido antes de cerrar la ventana
-                window.addEventListener('beforeunload', handleWindowClose);
-                
-                // Configurar guardado automático
-                setInterval(function() {
-                    saveEditorContent();
-                }, AUTO_SAVE_INTERVAL);
-                
-                console.log('✅ Página de notas médicas inicializada correctamente');
-            } catch (error) {
-                console.error('Error en inicialización:', error);
-            }
-        });
-        
-        // Función para manejar el cierre de la ventana
-        function handleWindowClose(event) {
-            console.log('Guardando contenido antes de cerrar la ventana...');
-            saveEditorContent();
-        }
-    </script>
+
 </body>
 </html>
