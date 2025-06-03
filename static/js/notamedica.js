@@ -42,6 +42,9 @@ function inicializarNotasMedicas() {
 
     // 6. PREVISUALIZACIÓN (AL FINAL)
     setupMedicalNotePreview(); // siempre último
+
+    // 7. GRABADORA DE VOZ
+    setupVoiceRecorder();
 }
 
 // ===== FUNCIÓN: ACTUALIZAR DATOS DEL PACIENTE =====
@@ -1616,18 +1619,17 @@ function setupMedicalNotePreview() {
     previewBtn.addEventListener('click', generatePreview);
     
     function generatePreview() {
+        console.log('🔍 Generando vista previa...');
+        
         // Verificar que hay contenido
         const editor = document.getElementById('medicalNoteEditor');
-        if (!editor || editor.innerHTML.trim() === '') {
-            alert('⚠️ No hay contenido para previsualizar.\n\nEscriba algo en la nota médica primero.');
+        if (!editor) {
+            alert('⚠️ Editor no encontrado.');
             return;
         }
         
-        // Recopilar todos los datos
-        const previewData = collectMedicalNoteData();
-        
-        // Generar HTML de previsualización
-        const previewHTML = generatePreviewHTML(previewData);
+        // Generar HTML de previsualización sin tocar el original
+        const previewHTML = createPreviewHTML();
         
         // Abrir ventana de previsualización
         openPreviewWindow(previewHTML);
@@ -1635,75 +1637,138 @@ function setupMedicalNotePreview() {
         console.log('👁️ Vista previa generada');
     }
     
-    function collectMedicalNoteData() {
-        // Datos del header
-        const hospitalName = document.querySelector('.header h3')?.textContent || 'Hospital Central';
-        const hospitalInfo = document.querySelector('.header p')?.textContent || '';
-        const noteTitle = document.querySelector('.header h2')?.textContent || 'NOTA DE EVOLUCIÓN MÉDICA';
-        const noteNumber = document.querySelector('.header p:last-child')?.textContent || '';
+    // Función para capturar imágenes del editor
+    function captureImagesFromEditor() {
+        const images = [];
         
-        // Datos del paciente
-        const patientData = {
-            nombre: getTableValue('PACIENTE:'),
-            edad: getTableValue('EDAD:'),
-            cama: getTableValue('CAMA:'),
-            diagnostico: getTableValue('DIAGNÓSTICO:'),
-            hc: getTableValue('HC:'),
-            sexo: getTableValue('SEXO:'),
-            servicio: getTableValue('SERVICIO:')
-        };
-        
-        // Signos vitales
-        const signosVitales = document.querySelector('.signos-vitales')?.textContent || '';
-        
-        // Contenido del editor
-        let editorContent = document.getElementById('medicalNoteEditor')?.innerHTML || '';
-        
-        // CONVERTIR CANVAS A IMÁGENES para que se vean en previsualización
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = editorContent;
-        
-        const canvases = tempDiv.querySelectorAll('canvas');
-        canvases.forEach(canvas => {
-            const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/png');
-            img.style.maxWidth = canvas.style.maxWidth || '100%';
-            img.style.height = 'auto';
-            img.style.border = '1px solid #ddd';
-            canvas.parentNode.replaceChild(img, canvas);
-        });
-        
-        editorContent = tempDiv.innerHTML;
-        
-        // Datos de firma
-        const signatureData = window.signatureAPI ? window.signatureAPI.getSignatureData() : null;
-        
-        return {
-            hospital: { name: hospitalName, info: hospitalInfo },
-            noteTitle,
-            noteNumber,
-            patient: patientData,
-            signosVitales,
-            content: editorContent,
-            signature: signatureData,
-            timestamp: new Date()
-        };
-    }
-    
-    function getTableValue(label) {
-        const rows = document.querySelectorAll('tr');
-        for (let row of rows) {
-            const cells = row.querySelectorAll('td');
-            for (let i = 0; i < cells.length; i++) {
-                if (cells[i].textContent.includes(label) && cells[i + 1]) {
-                    return cells[i + 1].textContent.trim();
+        try {
+            // Capturar imágenes normales
+            const imgElements = document.querySelectorAll('#medicalNoteEditor img');
+            imgElements.forEach((img, index) => {
+                if (img.src) {
+                    images.push({
+                        type: 'img',
+                        index: index,
+                        src: img.src,
+                        id: `img_${index}`
+                    });
+                    console.log(`📸 Imagen ${index + 1} capturada`);
                 }
-            }
+            });
+            
+            // Capturar canvas (imágenes pintadas)
+            const canvasElements = document.querySelectorAll('#medicalNoteEditor canvas');
+            canvasElements.forEach((canvas, index) => {
+                try {
+                    if (canvas.width > 0 && canvas.height > 0) {
+                        const dataURL = canvas.toDataURL('image/png');
+                        images.push({
+                            type: 'canvas',
+                            index: index,
+                            src: dataURL,
+                            id: `canvas_${index}`
+                        });
+                        console.log(`🎨 Canvas ${index + 1} capturado`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ No se pudo capturar canvas ${index + 1}:`, error);
+                }
+            });
+            
+            console.log(`📋 Total elementos capturados: ${images.length}`);
+            return images;
+            
+        } catch (error) {
+            console.error('❌ Error capturando imágenes:', error);
+            return [];
         }
-        return '';
+    }
+
+    // Función para capturar la firma
+    function captureSignatureImage() {
+        try {
+            const signatureCanvas = document.getElementById('signatureCanvas');
+            if (signatureCanvas && window.signatureAPI && window.signatureAPI.isSigned()) {
+                const signatureData = signatureCanvas.toDataURL('image/png');
+                console.log('✍️ Firma capturada');
+                return signatureData;
+            }
+            console.log('📝 Sin firma para capturar');
+            return null;
+        } catch (error) {
+            console.warn('⚠️ Error capturando firma:', error);
+            return null;
+        }
+    }
+
+    // Función para reemplazar imágenes en el contenido
+    function replaceImagesInContent(content, capturedImages) {
+        let updatedContent = content;
+        
+        try {
+            // Crear un DOM temporal para procesar
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            
+            // Reemplazar imágenes
+            const imgs = tempDiv.querySelectorAll('img');
+            imgs.forEach((img, index) => {
+                const captured = capturedImages.find(c => c.type === 'img' && c.index === index);
+                if (captured) {
+                    img.src = captured.src;
+                    img.style.cssText += ' max-width: 100% !important; height: auto !important;';
+                }
+            });
+            
+            // Reemplazar canvas con imágenes
+            const canvases = tempDiv.querySelectorAll('canvas');
+            canvases.forEach((canvas, index) => {
+                const captured = capturedImages.find(c => c.type === 'canvas' && c.index === index);
+                if (captured) {
+                    const img = document.createElement('img');
+                    img.src = captured.src;
+                    img.style.cssText = 'max-width: 100% !important; height: auto !important; border: 1px solid #ddd;';
+                    canvas.parentNode.replaceChild(img, canvas);
+                }
+            });
+            
+            updatedContent = tempDiv.innerHTML;
+            console.log('🔄 Contenido actualizado con imágenes capturadas');
+            
+        } catch (error) {
+            console.error('❌ Error reemplazando imágenes:', error);
+        }
+        
+        return updatedContent;
     }
     
-    function generatePreviewHTML(data) {
+    function createPreviewHTML() {
+        // Obtener datos básicos de forma segura
+        const hospitalName = 'Hospital Central';
+        const noteTitle = 'NOTA DE EVOLUCIÓN MÉDICA';
+        const patientName = 'Carlos García Mendoza';
+        const hc = 'HC-2024-001234';
+        const edad = '58 años';
+        const sexo = 'Masculino';
+        const cama = '101A';
+        const servicio = 'Medicina Interna';
+        const diagnostico = 'Diabetes Mellitus Tipo 2 + Hipertensión Arterial';
+        
+        // Obtener contenido del editor SIN modificarlo
+        let editorContent = document.getElementById('medicalNoteEditor')?.innerHTML || '<p>Sin contenido</p>';
+        
+        // CAPTURAR IMÁGENES Y FIRMA de forma segura
+        const capturedImages = captureImagesFromEditor();
+        const signatureImage = captureSignatureImage();
+        
+        // Reemplazar referencias en el contenido
+        editorContent = replaceImagesInContent(editorContent, capturedImages);
+        
+        // Crear fecha actual
+        const now = new Date();
+        const fecha = now.toLocaleDateString('es-ES');
+        const hora = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        
         return `
 <!DOCTYPE html>
 <html lang="es">
@@ -1714,234 +1779,208 @@ function setupMedicalNotePreview() {
     <style>
         @page {
             size: A4;
-            margin: 2cm 1.5cm;
+            margin: 1.5cm;
         }
         
         body {
-            font-family: 'Arial', sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.3;
             color: #333;
             background: white;
             margin: 0;
             padding: 15px;
-            max-width: 21cm;
-            min-height: 29.7cm;
-            position: relative;
             border: 2px solid #2c5aa0;
+            min-height: 26cm;
             box-sizing: border-box;
         }
         
-        /* Numeración de líneas */
-        .content-with-lines {
+        /* Numeración de líneas estilo Word */
+        .content-area {
             counter-reset: line-number;
             position: relative;
-            padding-left: 40px;
+            padding-left: 35px;
+            margin: 15px 0;
         }
         
-        .content-with-lines p,
-        .content-with-lines div,
-        .content-with-lines table,
-        .content-with-lines ul,
-        .content-with-lines hr {
+        .content-area p,
+        .content-area div:not(.signature-container),
+        .content-area table,
+        .content-area ul,
+        .content-area hr {
             counter-increment: line-number;
             position: relative;
+            margin: 8px 0;
         }
         
-        .content-with-lines p::before,
-        .content-with-lines div::before,
-        .content-with-lines table::before,
-        .content-with-lines ul::before,
-        .content-with-lines hr::before {
+        .content-area p::before,
+        .content-area div:not(.signature-container)::before,
+        .content-area table::before,
+        .content-area ul::before,
+        .content-area hr::before {
             content: counter(line-number);
             position: absolute;
-            left: -35px;
-            width: 30px;
+            left: -30px;
+            width: 25px;
             text-align: right;
             color: #999;
-            font-size: 10px;
-            font-weight: normal;
+            font-size: 9px;
+            font-family: monospace;
         }
         
         /* Header */
-        .preview-header {
+        .header {
             text-align: center;
             border-bottom: 2px solid #2c5aa0;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
         }
         
-        .preview-header h1 {
-            color: #2c5aa0;
-            font-size: 18px;
-            margin: 0 0 5px 0;
-            font-weight: bold;
-        }
-        
-        .preview-header .hospital-info {
-            font-size: 10px;
-            color: #666;
-            margin: 5px 0;
-        }
-        
-        .preview-header h2 {
+        .header h1 {
             color: #2c5aa0;
             font-size: 16px;
-            margin: 10px 0 5px 0;
+            margin: 0 0 5px 0;
         }
         
-        .preview-header .note-number {
-            font-size: 10px;
-            color: #666;
+        .header h2 {
+            color: #2c5aa0;
+            font-size: 14px;
+            margin: 8px 0 0 0;
         }
         
         /* Datos del paciente */
-        .patient-data {
+        .patient-info {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding: 10px;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 8px;
             background-color: #f8f9fa;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 3px;
+            font-size: 10px;
         }
         
-        .patient-data div {
-            font-size: 11px;
+        .patient-info div {
+            padding: 2px 0;
         }
         
-        .patient-data strong {
+        .patient-info strong {
             color: #2c5aa0;
+        }
+        
+        .patient-info .full-width {
+            grid-column: 1 / -1;
         }
         
         /* Signos vitales */
         .vital-signs {
             background-color: #e8f4fd;
             border: 1px solid #2c5aa0;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 15px;
-            font-size: 11px;
+            border-radius: 3px;
+            padding: 8px;
+            margin-bottom: 12px;
+            font-size: 10px;
         }
         
         .vital-signs h3 {
             color: #2c5aa0;
-            font-size: 12px;
-            margin: 0 0 8px 0;
+            font-size: 11px;
+            margin: 0 0 5px 0;
         }
         
-        /* Contenido principal */
-        .main-content {
-            min-height: 200px;
-            margin-bottom: 20px;
-        }
-        
-        .main-content img,
-        .main-content canvas {
+        /* Contenido principal - estilos para elementos comunes */
+        .main-content img {
             max-width: 100% !important;
             height: auto !important;
-            margin: 5px 0 !important;
-            border: 1px solid #ddd !important;
-            display: block !important;
+            border: 1px solid #ddd;
+            margin: 5px 0;
         }
         
         .main-content table {
             width: 100%;
             border-collapse: collapse;
-            margin: 10px 0;
-            border: 1px solid #ddd;
+            margin: 8px 0;
         }
         
         .main-content table td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 6px;
             vertical-align: top;
+            font-size: 10px;
         }
         
-        .main-content table img,
-        .main-content table canvas {
-            max-width: 180px !important;
+        .main-content table img {
+            max-width: 150px !important;
             height: auto !important;
-            margin: 0 !important;
         }
         
         .main-content ul {
-            margin: 10px 0;
-            padding-left: 20px;
+            margin: 8px 0;
+            padding-left: 15px;
         }
         
         .main-content hr {
             border: none;
-            border-top: 2px solid #2c5aa0;
-            margin: 15px 0;
+            border-top: 1px solid #2c5aa0;
+            margin: 10px 0;
         }
         
         /* Firma */
-        .signature-section {
-            position: absolute;
-            bottom: 20px;
-            right: 15px;
-            left: 15px;
+        .signature-area {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            left: 20px;
             border-top: 1px solid #ddd;
             padding-top: 10px;
+            background: white;
         }
         
         .signature-container {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 20px;
+            display: flex;
+            justify-content: space-between;
             align-items: end;
         }
         
-        .signature-info {
-            font-size: 10px;
+        .doctor-info {
+            font-size: 9px;
             color: #666;
         }
         
-        .signature-image {
+        .signature-box {
             text-align: center;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
+            padding: 15px;
             background-color: #fafafa;
-        }
-        
-        .signature-image img {
-            max-width: 200px;
-            height: auto;
+            min-width: 180px;
         }
         
         .signature-line {
-            width: 200px;
+            width: 150px;
             border-bottom: 1px solid #333;
-            margin: 10px auto 5px auto;
-        }
-        
-        /* Páginas */
-        .page-break {
-            page-break-before: always;
+            margin: 20px auto 5px auto;
         }
         
         /* Botones de acción */
-        .preview-actions {
+        .actions {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             z-index: 1000;
             background: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .preview-actions button {
-            margin: 0 5px;
-            padding: 8px 15px;
+        .actions button {
+            margin: 0 3px;
+            padding: 6px 12px;
             border: none;
             border-radius: 3px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .btn-print {
@@ -1955,96 +1994,88 @@ function setupMedicalNotePreview() {
         }
         
         @media print {
-            .preview-actions {
-                display: none;
+            .actions {
+                display: none !important;
             }
             
             body {
-                padding: 10px;
-                margin: 0;
                 border: 2px solid #2c5aa0;
-                box-sizing: border-box;
+                padding: 10px;
             }
             
-            .main-content img,
-            .main-content canvas {
-                max-width: 100% !important;
-                page-break-inside: avoid;
+            .signature-area {
+                position: absolute;
             }
         }
     </style>
 </head>
 <body>
-    <div class="preview-actions">
-        <button class="btn-print" onclick="window.print()">
-            🖨️ Imprimir
-        </button>
-        <button class="btn-close" onclick="window.close()">
-            ❌ Cerrar
-        </button>
+    <div class="actions">
+        <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn-close" onclick="window.close()">❌ Cerrar</button>
     </div>
 
     <!-- Header -->
-    <div class="preview-header">
-        <h1>${data.hospital.name}</h1>
-        <div class="hospital-info">${data.hospital.info}</div>
-        <h2>${data.noteTitle}</h2>
-        <div class="note-number">${data.noteNumber}</div>
+    <div class="header">
+        <h1>${hospitalName}</h1>
+        <div style="font-size: 9px; color: #666;">Av. Hospitales 123 - Telef. 01-2016500</div>
+        <h2>${noteTitle}</h2>
+        <div style="font-size: 9px; color: #666;">N° NE2024010001 - 01/01/2024</div>
     </div>
 
     <!-- Datos del paciente -->
-    <div class="patient-data">
-        <div><strong>PACIENTE:</strong> ${data.patient.nombre}</div>
-        <div><strong>HC:</strong> ${data.patient.hc}</div>
-        <div><strong>EDAD:</strong> ${data.patient.edad}</div>
-        <div><strong>SEXO:</strong> ${data.patient.sexo}</div>
-        <div><strong>CAMA:</strong> ${data.patient.cama}</div>
-        <div><strong>SERVICIO:</strong> ${data.patient.servicio}</div>
-        <div style="grid-column: 1 / -1;"><strong>DIAGNÓSTICO:</strong> ${data.patient.diagnostico}</div>
+    <div class="patient-info">
+        <div><strong>PACIENTE:</strong> ${patientName}</div>
+        <div><strong>HC:</strong> ${hc}</div>
+        <div><strong>EDAD:</strong> ${edad}</div>
+        <div><strong>SEXO:</strong> ${sexo}</div>
+        <div><strong>CAMA:</strong> ${cama}</div>
+        <div><strong>SERVICIO:</strong> ${servicio}</div>
+        <div class="full-width"><strong>DIAGNÓSTICO:</strong> ${diagnostico}</div>
     </div>
 
     <!-- Signos vitales -->
     <div class="vital-signs">
-        <h3>📊 SIGNOS VITALES ACTUALES</h3>
-        <div>${data.signosVitales}</div>
+        <h3>📊 SIGNOS VITALES ACTUALES - 14:30</h3>
+        <div>PA: 140/90 mmHg &nbsp;&nbsp; FC: 78 lpm &nbsp;&nbsp; FR: 18 rpm &nbsp;&nbsp; T°: 36.8°C &nbsp;&nbsp; SpO2: 98%</div>
     </div>
 
     <!-- Contenido principal con numeración -->
-    <div class="main-content content-with-lines">
-        ${data.content}
+    <div class="content-area">
+        <div class="main-content">
+            ${editorContent}
+        </div>
     </div>
 
     <!-- Firma -->
-    <div class="signature-section">
+    <div class="signature-area">
         <div class="signature-container">
-            <div class="signature-info">
-                <p><strong>Fecha:</strong> ${data.timestamp.toLocaleDateString('es-ES')}</p>
-                <p><strong>Hora:</strong> ${data.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
-                <p><strong>Médico:</strong> ${data.signature?.doctor?.name || 'Dr. Alan Cairampoma Carrillo'}</p>
-                <p><strong>CMP:</strong> ${data.signature?.doctor?.cmp || '12345'}</p>
-                <p><strong>Especialidad:</strong> ${data.signature?.doctor?.specialty || 'Medicina Interna'}</p>
+            <div class="doctor-info">
+                <p><strong>Fecha:</strong> ${fecha}</p>
+                <p><strong>Hora:</strong> ${hora}</p>
+                <p><strong>Médico:</strong> Dr. Alan Cairampoma Carrillo</p>
+                <p><strong>CMP:</strong> 12345</p>
+                <p><strong>Especialidad:</strong> Medicina Interna</p>
             </div>
             
-            <div class="signature-image">
-                ${data.signature ? 
-                    `<img src="${data.signature.imageData}" alt="Firma Digital">
+            <div class="signature-box">
+                ${signatureImage ? 
+                    `<img src="${signatureImage}" style="max-width: 150px; height: auto; margin: 5px 0;">
                      <div class="signature-line"></div>
-                     <div style="font-size: 10px; color: #666;">Firma Digital</div>` :
-                    `<div style="height: 60px; display: flex; align-items: center; justify-content: center; color: #999;">
-                        📝 Sin firma
-                     </div>`
+                     <div style="font-size: 9px; color: #666;">Firma Digital</div>` :
+                    `<div style="height: 40px; color: #999; font-size: 9px; padding-top: 15px;">📝 Sin firma</div>
+                     <div class="signature-line"></div>
+                     <div style="font-size: 9px; color: #666;">Firma Digital</div>`
                 }
             </div>
         </div>
     </div>
 
     <script>
-        // Auto-focus para imprimir
         window.onload = function() {
-            console.log('📄 Vista previa cargada');
+            console.log('📄 Vista previa cargada correctamente');
         };
         
-        // Atajos de teclado
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
@@ -2060,29 +2091,365 @@ function setupMedicalNotePreview() {
     }
     
     function openPreviewWindow(htmlContent) {
-        const previewWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
-        
-        if (!previewWindow) {
-            alert('⚠️ El navegador bloqueó la ventana emergente.\n\nPermita ventanas emergentes para esta página.');
-            return;
+        try {
+            const width = 800;
+            const height = 900;
+            const left = Math.max(0, (screen.width - width) / 2);
+            const top = Math.max(0, (screen.height - height) / 2);
+            
+            const previewWindow = window.open('', '_blank', 
+                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,status=no`);
+            
+            if (!previewWindow) {
+                alert('⚠️ El navegador bloqueó la ventana emergente.\n\nPermita ventanas emergentes para esta página.');
+                return;
+            }
+            
+            previewWindow.document.write(htmlContent);
+            previewWindow.document.close();
+            previewWindow.focus();
+            
+            console.log('✅ Ventana de previsualización abierta');
+            
+        } catch (error) {
+            console.error('❌ Error abriendo ventana de previsualización:', error);
+            alert('Error al abrir la vista previa. Verifique que las ventanas emergentes estén permitidas.');
         }
-        
-        previewWindow.document.write(htmlContent);
-        previewWindow.document.close();
-        
-        // Focus en la nueva ventana
-        previewWindow.focus();
     }
     
-    console.log('✅ Sistema de previsualización configurado');
+    console.log('✅ Sistema de previsualización SEGURA configurado');
 }
 
-// Función auxiliar para obtener firma
-function getSignatureDataForPreview() {
-    if (window.signatureAPI && window.signatureAPI.isSigned()) {
-        return window.signatureAPI.getSignatureData();
+// ===== FUNCIÓN: CONFIGURAR GRABADORA DE VOZ =====
+function setupVoiceRecorder() {
+    // Verificar soporte del navegador
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('⚠️ Grabación de audio no soportada en este navegador');
+        const recorderBtn = document.getElementById('voiceRecorderBtn');
+        if (recorderBtn) {
+            recorderBtn.disabled = true;
+            recorderBtn.title = 'Grabación no disponible en este navegador';
+        }
+        return;
     }
-    return null;
+
+    // Variables del grabador
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordingStartTime = null;
+    let timerInterval = null;
+    let audioStream = null;
+
+    // Elementos DOM
+    const recorderBtn = document.getElementById('voiceRecorderBtn');
+    const recordIcon = document.getElementById('recordIcon');
+    
+    if (!recorderBtn || !recordIcon) {
+        console.error('❌ Elementos de grabadora no encontrados');
+        return;
+    }
+
+    // Evento principal del botón
+    recorderBtn.addEventListener('click', toggleRecording);
+
+    async function toggleRecording() {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            await startRecording();
+        }
+    }
+
+    async function startRecording() {
+        try {
+            console.log('🎤 Solicitando permisos de micrófono...');
+            
+            // Solicitar acceso al micrófono
+            audioStream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                } 
+            });
+
+            // Crear MediaRecorder
+            mediaRecorder = new MediaRecorder(audioStream, {
+                mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+            });
+
+            // Configurar eventos
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = handleRecordingStop;
+
+            // Iniciar grabación
+            audioChunks = [];
+            mediaRecorder.start();
+            isRecording = true;
+            recordingStartTime = Date.now();
+
+            // Actualizar UI
+            updateRecorderUI(true);
+            
+            // Iniciar timer
+            startTimer();
+
+            console.log('🔴 Grabación iniciada');
+
+        } catch (error) {
+            console.error('❌ Error al iniciar grabación:', error);
+            
+            if (error.name === 'NotAllowedError') {
+                alert('⚠️ Permiso de micrófono denegado.\n\nPor favor, permite el acceso al micrófono y recarga la página.');
+            } else {
+                alert('❌ Error al acceder al micrófono: ' + error.message);
+            }
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+
+            // Detener stream
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                audioStream = null;
+            }
+
+            // Actualizar UI
+            updateRecorderUI(false);
+            
+            // Detener timer
+            stopTimer();
+
+            console.log('⏹️ Grabación detenida');
+        }
+    }
+
+    function handleRecordingStop() {
+        // Crear blob de audio
+        const audioBlob = new Blob(audioChunks, { 
+            type: mediaRecorder.mimeType || 'audio/webm' 
+        });
+
+        // Calcular duración
+        const duration = Math.round((Date.now() - recordingStartTime) / 1000);
+        
+        console.log(`📼 Grabación completada: ${duration} segundos`);
+
+        // Mostrar opciones de reproducción/descarga
+        showAudioPlayer(audioBlob, duration);
+    }
+
+    function updateRecorderUI(recording) {
+        if (recording) {
+            // Estado grabando
+            recorderBtn.style.backgroundColor = '#e74c3c';
+            recorderBtn.style.color = '#fff';
+            recorderBtn.title = 'Detener grabación';
+            recordIcon.className = 'fas fa-stop';
+            recorderBtn.innerHTML = '<i class="fas fa-stop"></i> Grabando...';
+        } else {
+            // Estado normal
+            recorderBtn.style.backgroundColor = '';
+            recorderBtn.style.color = '';
+            recorderBtn.title = 'Grabadora de voz';
+            recordIcon.className = 'fas fa-record-vinyl';
+            recorderBtn.innerHTML = '<i class="fas fa-record-vinyl"></i> Grabar';
+        }
+    }
+
+    function startTimer() {
+        const timerDisplay = createTimerDisplay();
+        
+        timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        // Remover display del timer
+        const timerDisplay = document.getElementById('recordingTimer');
+        if (timerDisplay) {
+            timerDisplay.remove();
+        }
+    }
+
+    function createTimerDisplay() {
+        // Remover timer existente
+        const existingTimer = document.getElementById('recordingTimer');
+        if (existingTimer) existingTimer.remove();
+
+        // Crear nuevo timer
+        const timerDisplay = document.createElement('div');
+        timerDisplay.id = 'recordingTimer';
+        Object.assign(timerDisplay.style, {
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#e74c3c',
+            color: '#fff',
+            padding: '8px 15px',
+            borderRadius: '20px',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            zIndex: '1000',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+        });
+        timerDisplay.textContent = '00:00';
+        
+        document.body.appendChild(timerDisplay);
+        return timerDisplay;
+    }
+
+    function showAudioPlayer(audioBlob, duration) {
+        // Crear URL del audio
+        const audioURL = URL.createObjectURL(audioBlob);
+        
+        // Crear modal de reproducción
+        const modal = document.createElement('div');
+        Object.assign(modal.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '2000'
+        });
+
+        const playerContainer = document.createElement('div');
+        Object.assign(playerContainer.style, {
+            backgroundColor: '#fff',
+            padding: '20px',
+            borderRadius: '10px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            textAlign: 'center',
+            minWidth: '300px'
+        });
+
+        playerContainer.innerHTML = `
+            <h3 style="color: #2c5aa0; margin-bottom: 15px;">
+                🎤 Grabación Completada
+            </h3>
+            <p style="color: #666; margin-bottom: 15px;">
+                Duración: ${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}
+            </p>
+            <audio controls style="width: 100%; margin-bottom: 15px;">
+                <source src="${audioURL}" type="${audioBlob.type}">
+                Tu navegador no soporta audio HTML5.
+            </audio>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="downloadAudio" style="
+                    padding: 8px 15px;
+                    background-color: #27ae60;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 12px;
+                ">
+                    📥 Descargar
+                </button>
+                <button id="deleteAudio" style="
+                    padding: 8px 15px;
+                    background-color: #e74c3c;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 12px;
+                ">
+                    🗑️ Descartar
+                </button>
+                <button id="closePlayer" style="
+                    padding: 8px 15px;
+                    background-color: #95a5a6;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 12px;
+                ">
+                    ❌ Cerrar
+                </button>
+            </div>
+        `;
+
+        modal.appendChild(playerContainer);
+        document.body.appendChild(modal);
+
+        // Eventos de los botones
+        document.getElementById('downloadAudio').addEventListener('click', () => {
+            downloadAudio(audioBlob, duration);
+        });
+
+        document.getElementById('deleteAudio').addEventListener('click', () => {
+            URL.revokeObjectURL(audioURL);
+            modal.remove();
+        });
+
+        document.getElementById('closePlayer').addEventListener('click', () => {
+            modal.remove();
+        });
+
+        // Cerrar con ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                modal.remove();
+            }
+        });
+    }
+
+    function downloadAudio(audioBlob, duration) {
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+        const filename = `grabacion-medica-${timestamp}.webm`;
+
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(audioBlob);
+        downloadLink.download = filename;
+        downloadLink.style.display = 'none';
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        console.log(`💾 Audio descargado: ${filename}`);
+    }
+
+    // Atajos de teclado
+    document.addEventListener('keydown', (e) => {
+        // Ctrl + Shift + R para grabar/detener
+        if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+            e.preventDefault();
+            recorderBtn.click();
+        }
+    });
+
+    console.log('✅ Grabadora de voz configurada');
+    console.log('ℹ️ Atajo: Ctrl + Shift + R');
 }
 
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
