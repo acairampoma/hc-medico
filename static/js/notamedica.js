@@ -1338,53 +1338,115 @@ function setupDigitalSignature() {
         return;
     }
     
+    console.log('🔍 Canvas encontrado:', canvas);
+    console.log('📏 Dimensiones canvas:', canvas.width, 'x', canvas.height);
+    
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
     let signatureData = [];
     
+    // FORZAR configuración del canvas
+    canvas.width = 400;
+    canvas.height = 150;
+    
     // Configuración inicial del canvas
     setupCanvas();
     
     function setupCanvas() {
+        console.log('⚙️ Configurando canvas...');
+        
+        // REDIMENSIONAR CANVAS - más pequeño y compacto
+        canvas.width = 300;  // era 400
+        canvas.height = 100; // era 150
+        
+        // Ajustar estilos del canvas también
+        canvas.style.cssText = `
+            border: 2px dashed #bdc3c7 !important;
+            border-radius: 5px !important;
+            cursor: crosshair !important;
+            background-color: #ffffff !important;
+            touch-action: none !important;
+            user-select: none !important;
+            position: relative !important;
+            z-index: 10 !important;
+            display: block !important;
+            max-width: 100% !important;
+            height: auto !important;
+        `;
+        
+        // Limpiar eventos previos
+        canvas.removeEventListener('mousedown', startDrawing);
+        canvas.removeEventListener('mousemove', draw);
+        canvas.removeEventListener('mouseup', stopDrawing);
+        canvas.removeEventListener('mouseout', stopDrawing);
+        
         // Configurar canvas para firma
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#2c3e50';
         
-        // Fondo blanco
+        // Fondo blanco FORZADO
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Estilo del canvas
-        Object.assign(canvas.style, {
-            border: '2px dashed #bdc3c7',
-            borderRadius: '5px',
-            cursor: 'crosshair',
-            backgroundColor: '#ffffff',
-            touchAction: 'none' // Prevenir scroll en móviles
-        });
-        
-        // Agregar texto guía
+        // Agregar texto guía más pequeño
         drawPlaceholder();
+        
+        console.log(`✅ Canvas redimensionado a ${canvas.width}x${canvas.height}`);
     }
     
     function drawPlaceholder() {
         ctx.save();
         ctx.fillStyle = '#95a5a6';
-        ctx.font = '14px Arial';
+        ctx.font = '10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('✍️ Firme aquí con el mouse o dedo', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('✍️ MANTÉN PRESIONADO y arrastra para firmar', canvas.width / 2, canvas.height / 2 - 5);
+        ctx.fillText('(Firma compacta)', canvas.width / 2, canvas.height / 2 + 8);
         ctx.restore();
     }
     
-    // Eventos del mouse
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
+    // Eventos del mouse CON DEBUGGING
+    canvas.addEventListener('mousedown', function(e) {
+        console.log('🖱️ MOUSEDOWN detectado en:', e.clientX, e.clientY);
+        startDrawing(e);
+    });
+    
+    canvas.addEventListener('mousemove', function(e) {
+        if (isDrawing) {
+            console.log('🖱️ MOUSEMOVE dibujando:', e.clientX, e.clientY);
+        }
+        draw(e);
+    });
+    
+    canvas.addEventListener('mouseup', function(e) {
+        console.log('🖱️ MOUSEUP detectado');
+        stopDrawing();
+    });
+    
+    canvas.addEventListener('mouseout', function(e) {
+        console.log('🖱️ MOUSEOUT detectado');
+        stopDrawing();
+    });
+    
+    // TEST: Agregar click simple para verificar
+    canvas.addEventListener('click', function(e) {
+        console.log('👆 CLICK detectado en canvas');
+        
+        // Dibujar punto de prueba
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        console.log('🔴 Punto rojo dibujado en:', x, y);
+    });
     
     // Eventos touch para tablets/móviles
     canvas.addEventListener('touchstart', handleTouch);
@@ -1392,24 +1454,49 @@ function setupDigitalSignature() {
     canvas.addEventListener('touchend', stopDrawing);
     
     function startDrawing(e) {
+        console.log('🖋️ START DRAWING llamado');
+        e.preventDefault();
+        e.stopPropagation();
+        
         isDrawing = true;
         [lastX, lastY] = getCoordinates(e);
+        
+        console.log('📍 Coordenadas iniciales:', lastX, lastY);
+        
+        // Cambiar cursor para indicar que está dibujando
+        canvas.style.cursor = 'grabbing';
         
         // Limpiar placeholder al empezar a firmar
         if (signatureData.length === 0) {
             clearCanvas(false);
+            console.log('🧹 Placeholder limpiado');
         }
+        
+        // Dibujar punto inicial
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, 2, 0, 2 * Math.PI);
+        ctx.fill();
         
         // Guardar punto inicial
         signatureData.push({ x: lastX, y: lastY, drawing: true });
+        
+        console.log('🖋️ Firma iniciada en:', lastX, lastY);
     }
     
     function draw(e) {
         if (!isDrawing) return;
         
+        e.preventDefault();
+        e.stopPropagation();
+        
         const [currentX, currentY] = getCoordinates(e);
         
-        // Dibujar línea
+        console.log('✏️ Dibujando línea de', lastX, lastY, 'a', currentX, currentY);
+        
+        // Dibujar línea MÁS VISIBLE
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(currentX, currentY);
@@ -1425,12 +1512,16 @@ function setupDigitalSignature() {
         if (!isDrawing) return;
         isDrawing = false;
         
+        // Restaurar cursor
+        canvas.style.cursor = 'crosshair';
+        
         // Marcar fin de trazo
         signatureData.push({ drawing: false });
         
         // Actualizar estado si hay firma
         if (signatureData.length > 1) {
             updateSignatureStatus('signed');
+            console.log('✅ Trazo completado');
         }
     }
     
@@ -3061,6 +3152,8 @@ function setupMedicalNotePrint() {
     
     console.log('✅ Sistema de impresión PDF configurado');
 }
+
+
 
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
 document.addEventListener('DOMContentLoaded', inicializarNotasMedicas);

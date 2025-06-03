@@ -177,3 +177,117 @@ function checkShowPatientModalOnLoad() {
 document.addEventListener('DOMContentLoaded', function() {
     checkShowPatientModalOnLoad();
 });
+
+// ARREGLO ESPECÍFICO PARA MÓVILES
+function fixMobileButtons() {
+    console.log('🔧 Arreglando botones para móvil...');
+    
+    // Detectar si estamos en móvil
+    const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (!isMobile) {
+        console.log('📱 No es móvil, no se necesitan arreglos');
+        return;
+    }
+    
+    console.log('📱 Dispositivo móvil detectado, aplicando arreglos...');
+    
+    // ARREGLAR TODOS LOS BOTONES
+    const allButtons = document.querySelectorAll('button, .tool-btn, .btn-clear-signature, .btn-preview-note, .btn-print-note');
+    
+    allButtons.forEach((button, index) => {
+        // Arreglos específicos para móvil
+        button.style.touchAction = 'manipulation';
+        button.style.webkitTapHighlightColor = 'rgba(0,0,0,0.1)';
+        button.style.userSelect = 'none';
+        button.style.webkitUserSelect = 'none';
+        button.style.position = 'relative';
+        button.style.zIndex = '100';
+        
+        // Área de toque más grande
+        const currentHeight = parseInt(getComputedStyle(button).height);
+        if (currentHeight < 44) {
+            button.style.minHeight = '44px';
+            button.style.minWidth = '44px';
+        }
+        
+        // Remover y re-agregar eventos para evitar conflictos
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        // Re-asignar eventos específicos según el tipo de botón
+        if (newButton.id === 'imageTableBtn') {
+            setupImageTable();
+        } else if (newButton.id === 'imagePaintBtn') {
+            setupImagePaint();
+        } else if (newButton.classList.contains('btn-clear-signature')) {
+            setupDigitalSignature();
+        } else if (newButton.classList.contains('btn-preview-note')) {
+            setupMedicalNotePreview();
+        } else if (newButton.classList.contains('btn-print-note')) {
+            setupMedicalNotePrint();
+        } else if (newButton.id === 'voiceRecorderBtn') {
+            setupVoiceRecorder();
+        }
+        
+        console.log(`✅ Botón ${index + 1} arreglado para móvil`);
+    });
+    
+    // ARREGLAR CANVAS DE FIRMA ESPECÍFICAMENTE
+    const signatureCanvas = document.getElementById('signatureCanvas');
+    if (signatureCanvas) {
+        signatureCanvas.style.touchAction = 'none';
+        signatureCanvas.style.msTouchAction = 'none';
+        signatureCanvas.style.webkitUserSelect = 'none';
+        signatureCanvas.style.userSelect = 'none';
+        
+        console.log('✅ Canvas de firma arreglado para móvil');
+    }
+    
+    // ARREGLAR EDITOR PRINCIPAL
+    const editor = document.getElementById('medicalNoteEditor');
+    if (editor) {
+        editor.style.touchAction = 'manipulation';
+        editor.style.webkitUserSelect = 'text';
+        editor.style.userSelect = 'text';
+        
+        console.log('✅ Editor principal arreglado para móvil');
+    }
+    
+    // FORZAR RE-INICIALIZACIÓN DE TODOS LOS SISTEMAS
+    setTimeout(() => {
+        console.log('🔄 Re-inicializando sistemas para móvil...');
+        
+        // Re-llamar todos los setups después del arreglo
+        if (typeof setupTextFormatting === 'function') setupTextFormatting();
+        if (typeof setupEditorActions === 'function') setupEditorActions();
+        if (typeof setupImageTable === 'function') setupImageTable();
+        if (typeof setupImagePaint === 'function') setupImagePaint();
+        if (typeof setupDigitalSignature === 'function') setupDigitalSignature();
+        if (typeof setupMedicalNotePreview === 'function') setupMedicalNotePreview();
+        if (typeof setupMedicalNotePrint === 'function') setupMedicalNotePrint();
+        if (typeof setupVoiceRecorder === 'function') setupVoiceRecorder();
+        
+        console.log('✅ Todos los sistemas re-inicializados para móvil');
+    }, 500);
+}
+
+// EJECUTAR ARREGLO MÓVIL DESPUÉS DE QUE TODO ESTÉ CARGADO
+document.addEventListener('DOMContentLoaded', function() {
+    // Esperar un poco más para que todo esté listo
+    setTimeout(fixMobileButtons, 1000);
+});
+
+// TAMBIÉN EJECUTAR EN RESIZE POR SI ACASO
+window.addEventListener('resize', function() {
+    const wasMobile = window.isMobileDevice;
+    const isMobileNow = window.innerWidth < 768;
+    
+    if (!wasMobile && isMobileNow) {
+        // Se cambió a móvil
+        setTimeout(fixMobileButtons, 300);
+    }
+});
+
+// FUNCIÓN PARA LLAMAR MANUALMENTE SI ES NECESARIO
+window.fixMobileButtonsManual = fixMobileButtons;

@@ -2547,7 +2547,76 @@ function medicalRounds() {
 
 
 /**
- * 📋 CREAR NOTA MÉDICA - CON DATOS GARANTIZADOS
+ * 🔧 MÉTODO REUTILIZABLE PARA MANEJAR APERTURA EN MÓVIL Y DESKTOP
+ */
+async function openMedicalWindow(enrichedData, url, config) {
+    // 🔍 DETECCIÓN SIMPLE: HASTA 1180px = MÓVIL/TABLET, MÁS DE 1180px = DESKTOP
+    const isMobileOrTablet = window.innerWidth <= 1180;
+    
+    console.log(`📏 Ancho detectado: ${window.innerWidth}px - ${isMobileOrTablet ? 'MÓVIL/TABLET' : 'DESKTOP'}`);
+    
+    if (isMobileOrTablet) {
+        console.log(`📱 Dispositivo móvil/tablet detectado - ${config.action}`);
+        
+        // En móvil: mostrar popup de confirmación antes de navegar
+        const result = await Swal.fire({
+            title: config.title,
+            html: `
+                <div style="text-align: left; margin: 20px 0;">
+                    <p><strong>Paciente:</strong> ${enrichedData.fullName}</p>
+                    <p><strong>Cama:</strong> ${enrichedData.bedNumber}</p>
+                    <p><strong>HC:</strong> ${enrichedData.hcNumber || 'No disponible'}</p>
+                </div>
+                <p style="color: #666; font-size: 14px;">
+                    <i class="fas fa-info-circle"></i> 
+                    Se abrirá en la misma ventana. Use el botón "Volver" para regresar.
+                </p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: config.confirmButton,
+            cancelButtonText: '❌ Cancelar',
+            confirmButtonColor: '#2c5aa0',
+            cancelButtonColor: '#6c757d',
+            width: '90%',
+            padding: '1rem'
+        });
+        
+        if (result.isConfirmed) {
+            // Navegar directamente en móvil
+            window.location.href = url;
+            return true;
+        } else {
+            console.log(`❌ Usuario canceló ${config.action}`);
+            return false;
+        }
+        
+    } else {
+        console.log(`💻 Desktop detectado - abriendo ventana directamente sin popup`);
+        
+        // En desktop: abrir nueva ventana directamente SIN popup
+        const newWindow = window.open(url, '_blank');
+        
+        if (newWindow) {
+            console.log(`✅ ${config.action} completada directamente`);
+            return true;
+        } else {
+            // Si el popup está bloqueado, mostrar mensaje
+            Swal.fire({
+                icon: 'warning',
+                title: 'Pop-up Bloqueado',
+                text: 'Por favor, permite las ventanas emergentes para este sitio y vuelve a intentar.',
+                confirmButtonColor: '#2c5aa0'
+            });
+            return false;
+        }
+    }
+}
+
+
+
+/**
+ * 📋 CREAR NOTA MÉDICA - ADAPTADA PARA MÓVIL Y DESKTOP
  */
 async function createMedicalNoteDirect(bedNumber, patientId) {
     console.log('📋 createMedicalNoteDirect() - CON DATOS');
@@ -2562,15 +2631,12 @@ async function createMedicalNoteDirect(bedNumber, patientId) {
         // 🔥 PASO 3: CONSTRUIR URL CON PARÁMETROS
         const url = `/medical/notes?patientId=${enrichedData.patientId}&bedNumber=${enrichedData.bedNumber}&patientName=${encodeURIComponent(enrichedData.fullName)}&from=rounds&timestamp=${Date.now()}`;
         
-        // 🔥 PASO 4: ABRIR VENTANA
-        const newWindow = window.open(url, '_blank');
-        
-        if (newWindow) {
-            console.log('✅ Nota médica abierta con datos completos');
-            return true;
-        } else {
-            throw new Error('Pop-up bloqueado');
-        }
+        // 🔥 PASO 4: USAR MÉTODO REUTILIZABLE
+        return await openMedicalWindow(enrichedData, url, {
+            title: '📋 Abrir Nota Médica',
+            confirmButton: '📝 Abrir Nota',
+            action: 'apertura de nota médica'
+        });
         
     } catch (error) {
         console.error('❌ Error:', error);
@@ -2585,7 +2651,7 @@ async function createMedicalNoteDirect(bedNumber, patientId) {
 }
 
 /**
- * 💊 CREAR RECETA - CON DATOS GARANTIZADOS
+ * 💊 CREAR RECETA - ADAPTADA PARA MÓVIL Y DESKTOP
  */
 async function createPrescriptionDirect(bedNumber, patientId) {
     console.log('💊 createPrescriptionDirect() - CON DATOS');
@@ -2596,14 +2662,11 @@ async function createPrescriptionDirect(bedNumber, patientId) {
         
         const url = `/medical/prescriptions?patientId=${enrichedData.patientId}&bedNumber=${enrichedData.bedNumber}&patientName=${encodeURIComponent(enrichedData.fullName)}&from=rounds&timestamp=${Date.now()}`;
         
-        const newWindow = window.open(url, '_blank');
-        
-        if (newWindow) {
-            console.log('✅ Receta abierta con datos completos');
-            return true;
-        } else {
-            throw new Error('Pop-up bloqueado');
-        }
+        return await openMedicalWindow(enrichedData, url, {
+            title: '💊 Crear Receta Médica',
+            confirmButton: '💉 Abrir Receta',
+            action: 'apertura de receta médica'
+        });
         
     } catch (error) {
         console.error('❌ Error:', error);
@@ -2618,7 +2681,7 @@ async function createPrescriptionDirect(bedNumber, patientId) {
 }
 
 /**
- * 🧪 CREAR ORDEN EXÁMENES - CON DATOS GARANTIZADOS
+ * 🧪 CREAR ORDEN EXÁMENES - ADAPTADA PARA MÓVIL Y DESKTOP
  */
 async function createExamOrderDirect(bedNumber, patientId) {
     console.log('🧪 createExamOrderDirect() - CON DATOS');
@@ -2629,14 +2692,11 @@ async function createExamOrderDirect(bedNumber, patientId) {
         
         const url = `/medical/orders/exams?patientId=${enrichedData.patientId}&bedNumber=${enrichedData.bedNumber}&patientName=${encodeURIComponent(enrichedData.fullName)}&from=rounds&timestamp=${Date.now()}`;
         
-        const newWindow = window.open(url, '_blank');
-        
-        if (newWindow) {
-            console.log('✅ Orden de exámenes abierta con datos completos');
-            return true;
-        } else {
-            throw new Error('Pop-up bloqueado');
-        }
+        return await openMedicalWindow(enrichedData, url, {
+            title: '🧪 Crear Orden de Exámenes',
+            confirmButton: '🔬 Abrir Orden',
+            action: 'apertura de orden de exámenes'
+        });
         
     } catch (error) {
         console.error('❌ Error:', error);
@@ -2651,7 +2711,7 @@ async function createExamOrderDirect(bedNumber, patientId) {
 }
 
 /**
- * 🩻 VER PACS - CON DATOS GARANTIZADOS
+ * 🩻 VER PACS - ADAPTADA PARA MÓVIL Y DESKTOP
  */
 async function viewPACS(bedNumber, patientId) {
     console.log('🩻 viewPACS() - CON DATOS');
@@ -2662,14 +2722,11 @@ async function viewPACS(bedNumber, patientId) {
         
         const url = `/medical/dicom?patientId=${enrichedData.patientId}&bedNumber=${enrichedData.bedNumber}&patientName=${encodeURIComponent(enrichedData.fullName)}&from=rounds&timestamp=${Date.now()}`;
         
-        const newWindow = window.open(url, '_blank');
-        
-        if (newWindow) {
-            console.log('✅ Visor PACS abierto con datos completos');
-            return true;
-        } else {
-            throw new Error('Pop-up bloqueado');
-        }
+        return await openMedicalWindow(enrichedData, url, {
+            title: '🩻 Abrir Visor PACS',
+            confirmButton: '🖼️ Ver Imágenes',
+            action: 'apertura del visor PACS'
+        });
         
     } catch (error) {
         console.error('❌ Error:', error);
@@ -2684,7 +2741,7 @@ async function viewPACS(bedNumber, patientId) {
 }
 
 /**
- * 💓 VER SIGNOS VITALES - CON DATOS GARANTIZADOS
+ * 💓 VER SIGNOS VITALES - ADAPTADA PARA MÓVIL Y DESKTOP
  */
 async function viewVitalSigns(bedNumber, patientId) {
     console.log('💓 viewVitalSigns() - CON DATOS');
@@ -2695,14 +2752,11 @@ async function viewVitalSigns(bedNumber, patientId) {
         
         const url = `/medical/vital-signs?patientId=${enrichedData.patientId}&bedNumber=${enrichedData.bedNumber}&patientName=${encodeURIComponent(enrichedData.fullName)}&from=rounds&timestamp=${Date.now()}`;
         
-        const newWindow = window.open(url, '_blank');
-        
-        if (newWindow) {
-            console.log('✅ Signos vitales abiertos con datos completos');
-            return true;
-        } else {
-            throw new Error('Pop-up bloqueado');
-        }
+        return await openMedicalWindow(enrichedData, url, {
+            title: '💓 Ver Signos Vitales',
+            confirmButton: '📊 Ver Signos',
+            action: 'apertura de signos vitales'
+        });
         
     } catch (error) {
         console.error('❌ Error:', error);
@@ -2715,7 +2769,6 @@ async function viewVitalSigns(bedNumber, patientId) {
         return false;
     }
 }
-
 /**
  * 🏥 PREPARAR DATOS DEL PACIENTE ANTES DE ABRIR
  */

@@ -1,13 +1,15 @@
-/* Variables de colores para uniformidad */
-:root {
-    --primary-color: #2c5aa0;     /* Azul principal para cabeceras */
-    --secondary-color: #e8f4ff;   /* Azul claro para fondos */
-    --accent-color: #4caf50;      /* Verde para botones de acción */
-    --danger-color: #f44336;      /* Rojo para botones de peligro */
-    --text-color: #333;           /* Color de texto principal */
-    --light-bg: #f9f9f9;          /* Fondo claro para secciones */
-    --border-color: #ddd;         /* Color de bordes */
-    --highlight-color: #fff9c4;   /* Color para resaltados */
+/* ========================================
+   VARIABLES GLOBALES
+   ======================================== */
+   :root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #e8f4ff;
+    --accent-color: #4caf50;
+    --danger-color: #f44336;
+    --text-color: #333;
+    --light-bg: #f9f9f9;
+    --border-color: #ddd;
+    --highlight-color: #fff9c4;
     --medical-blue: #2c5aa0;
     --medical-green: #00a86b;
     --medical-red: #e74c3c;
@@ -19,76 +21,101 @@
     --gradient-background: linear-gradient(135deg, #74b9ff 0%, #0984e3 25%, #00b894 75%, #00cec9 100%);
 }
 
-/* Estilos mejorados para el botón Volver a Rondas */
-.back-to-rounds-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 15px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    margin: 15px 0 15px 25px;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+/* ========================================
+   ESTILOS BASE
+   ======================================== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--gradient-background);
+    min-height: 100vh;
+    overflow-x: hidden;
     position: relative;
-    z-index: 100;
 }
 
-.back-to-rounds-btn:hover {
-    background-color: #1e4785;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
+        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 50px 50px, 30px 30px;
+    pointer-events: none;
+    z-index: -1;
 }
 
-.back-to-rounds-btn i {
-    font-size: 16px;
-}
-
-.medical-note-with-signature {
+/* ========================================
+   CONTENEDOR PRINCIPAL
+   ======================================== */
+   .medical-note-with-signature {
     max-width: 1000px;
     margin: 20px auto;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.4;
     padding: 25px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     border-radius: 10px;
     background-color: var(--secondary-color);
+    
+    /* CAMBIO CLAVE: Sin altura fija, crece según contenido */
+    min-height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 80px) !important;
+    overflow-y: auto !important;
+    
+    display: block !important; /* Cambiar de flex a block */
+}
+/* SI HAY MUCHO CONTENIDO, EL SCROLL FUNCIONA PERFECTO */
+.medical-note-with-signature::-webkit-scrollbar {
+    width: 8px;
 }
 
+.medical-note-with-signature::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.medical-note-with-signature::-webkit-scrollbar-thumb {
+    background: #2c5aa0;
+    border-radius: 4px;
+}
+/* ========================================
+   HEADER OFICIAL
+   ======================================== */
 .official-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 2px solid var(--primary-color);
-    margin-bottom: 20px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    align-items: flex-start;
+    padding: 8px 15px;
+    min-height: 50px;
 }
 
 .hospital-logo {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
+}
+
+.hospital-logo img {
+    height: 35px;
+}
+
+.hospital-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .hospital-text h2 {
-    color: var(--primary-color);
-    margin: 0;
     font-size: 16px;
-    font-weight: bold;
+    margin: 0;
+    line-height: 1.1;
 }
 
 .hospital-text p {
-    margin: 2px 0;
-    font-size: 12px;
+    font-size: 9px;
+    margin: 0;
+    line-height: 1.0;
     color: #666;
 }
 
@@ -96,50 +123,56 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 5px;
+    gap: 8px;
 }
 
 .document-info {
     text-align: right;
+    margin-bottom: 0;
+}
+
+.note-type {
+    font-size: 13px;
+    font-weight: bold;
+    color: #2c5aa0;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.note-id, .note-date {
+    font-size: 9px;
+    color: #666;
+    margin: 0;
+    line-height: 1.0;
 }
 
 .back-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    background: var(--medical-blue);
-    color: white;
-    padding: 8px 15px;
-    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 11px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    color: #666;
     text-decoration: none;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-bottom: 5px;
+    transition: all 0.2s ease;
 }
 
 .back-btn:hover {
-    background: var(--medical-green);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border-color: #2c5aa0;
+    background-color: #e8f4fd;
+    color: #2c5aa0;
 }
 
 .back-btn i {
     margin-right: 5px;
+    font-size: 10px;
 }
 
-.note-type {
-    font-weight: bold;
-    color: var(--primary-color);
-    font-size: 14px;
-}
-
-.note-id, .note-date {
-    font-size: 12px;
-    color: #666;
-    margin: 2px 0;
-}
-
+/* ========================================
+   DATOS DEL PACIENTE
+   ======================================== */
 .patient-data-table {
     width: 100%;
     border-collapse: collapse;
@@ -162,6 +195,9 @@
     background-color: white;
 }
 
+/* ========================================
+   SIGNOS VITALES
+   ======================================== */
 .current-vitals {
     background-color: var(--light-bg);
     padding: 10px;
@@ -183,6 +219,9 @@
     font-size: 12px;
 }
 
+/* ========================================
+   HERRAMIENTAS DEL EDITOR
+   ======================================== */
 .editor-tools {
     display: flex;
     flex-wrap: wrap;
@@ -245,21 +284,25 @@
     100% { transform: scale(1); }
 }
 
-.note-content-area {
-    border: 2px solid #ddd;
-    border-radius: 5px;
-    margin-bottom: 15px;
+/* ========================================
+   ÁREA DE ESCRITURA (EXPANDIDA)
+   ======================================== */
+   .note-content-area {
+    width: 100%;
+    margin-bottom: 20px; /* Separación con la firma */
 }
 
 .note-editor {
-    min-height: 350px;
-    padding: 20px;
+    min-height: 300px !important;
+    max-height: none !important; /* Sin límite de altura */
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
     outline: none;
     font-size: 14px;
     line-height: 1.6;
     background: white;
-    border-radius: 8px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    overflow: visible !important; /* El contenido puede crecer */
 }
 
 .note-editor:empty:before {
@@ -268,45 +311,41 @@
     font-style: italic;
 }
 
+.note-editor * {
+    position: static !important; /* Evitar elementos flotantes */
+}
+
+
+/* ========================================
+   SECCIÓN DE FIRMA (COMPACTA)
+   ======================================== */
+/* LA FIRMA SIEMPRE VISIBLE AL HACER SCROLL */
 .digital-signature-section {
-    border: 2px solid var(--accent-color);
-    border-radius: 10px;
-    padding: 20px;
-    background-color: #f8fff9;
-    box-shadow: 0 3px 10px rgba(40, 167, 69, 0.1);
-    margin-top: 25px;
-}
-
-.back-to-rounds-btn {
-    display: inline-block;
-    padding: 8px 15px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-bottom: 15px;
-    transition: all 0.2s;
-    text-decoration: none;
-}
-
-.back-to-rounds-btn:hover {
-    background-color: #1e4785;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 20px !important; /* Separación del contenido */
+    width: 100%;
+    box-sizing: border-box;
+    
+    /* IMPORTANTE: La firma va al final, no flotante */
+    position: static !important;
+    clear: both !important;
 }
 
 .signature-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .signature-header h4 {
-    margin: 0;
-    color: #28a745;
-    font-size: 16px;
+    font-size: 14px;
+    margin: 0 0 5px 0;
+    color: #2c5aa0;
+}
+
+.signature-status {
+    font-size: 11px;
 }
 
 .status-pending {
@@ -321,82 +360,86 @@
 
 .signature-area {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     align-items: flex-start;
+    width: 100% !important; /* Asegurar que no se desborde */
+    overflow: hidden !important; /* Prevenir desbordamiento */
 }
 
 .signature-info {
     flex: 1;
-    font-size: 12px;
+    font-size: 11px;
+}
+
+.signature-info p {
+    margin: 2px 0;
+    line-height: 1.2;
 }
 
 .doctor-info, .signature-datetime {
-    margin-bottom: 10px;
-}
-
-.doctor-info p, .signature-datetime p {
-    margin: 2px 0;
+    margin-bottom: 5px;
 }
 
 .signature-canvas-container {
-    border: 2px dashed #28a745;
-    border-radius: 5px;
-    padding: 10px;
-    background: white;
+    flex-shrink: 0;
+    max-width: 280px !important; /* Limitar ancho máximo */
 }
 
 #signatureCanvas {
-    border: 1px solid #ddd;
+    width: 250px !important;
+    max-width: 100% !important; /* No exceder el contenedor */
+    height: 80px;
+    border: 1px dashed #ccc;
+    background-color: white;
     border-radius: 3px;
     cursor: crosshair;
     display: block;
 }
 
 .signature-actions {
-    margin-top: 10px;
-    text-align: center;
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.signature-actions button {
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
 }
 
 .btn-clear-signature {
     background: #dc3545;
     color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
 }
 
 .btn-clear-signature:hover {
     background: #c82333;
 }
 
-/* === FONDO PRINCIPAL === */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--gradient-background);
-    min-height: 100vh;
-    overflow-x: hidden;
-    position: relative;
+.btn-preview-note {
+    background: #17a2b8;
+    color: white;
 }
 
-/* === PATRÓN DE PUNTOS === */
-body::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
-        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 50px 50px, 30px 30px;
-    pointer-events: none;
-    z-index: -1; /* Para que esté detrás del contenido */
+.btn-preview-note:hover {
+    background: #138496;
 }
 
-/* Responsive */
+.btn-print-note {
+    background: #28a745;
+    color: white;
+}
+
+.btn-print-note:hover {
+    background: #218838;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
 @media (max-width: 768px) {
     .official-header {
         flex-direction: column;
@@ -414,6 +457,18 @@ body::before {
     
     #signatureCanvas {
         width: 100%;
-        height: 120px;
+        max-width: 300px;
+        height: 80px;
+    }
+}
+
+@media screen and (max-height: 700px) {
+    .note-editor {
+        min-height: 300px;
+        max-height: 50vh;
+    }
+    
+    .signature-area {
+        flex-direction: column;
     }
 }
