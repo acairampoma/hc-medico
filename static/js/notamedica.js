@@ -1308,6 +1308,288 @@ function setupVoiceDictation() {
     console.log('ℹ️ Atajo: Ctrl + Shift + M');
 }
 
+function setupDigitalSignature() {
+    const canvas = document.getElementById('signatureCanvas');
+    const clearBtn = document.querySelector('.btn-clear-signature');
+    const statusElement = document.getElementById('signatureStatus');
+    
+    if (!canvas || !clearBtn || !statusElement) {
+        console.error('❌ Elementos de firma no encontrados');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let signatureData = [];
+    
+    // Configuración inicial del canvas
+    setupCanvas();
+    
+    function setupCanvas() {
+        // Configurar canvas para firma
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#2c3e50';
+        
+        // Fondo blanco
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Estilo del canvas
+        Object.assign(canvas.style, {
+            border: '2px dashed #bdc3c7',
+            borderRadius: '5px',
+            cursor: 'crosshair',
+            backgroundColor: '#ffffff',
+            touchAction: 'none' // Prevenir scroll en móviles
+        });
+        
+        // Agregar texto guía
+        drawPlaceholder();
+    }
+    
+    function drawPlaceholder() {
+        ctx.save();
+        ctx.fillStyle = '#95a5a6';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('✍️ Firme aquí con el mouse o dedo', canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+    }
+    
+    // Eventos del mouse
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Eventos touch para tablets/móviles
+    canvas.addEventListener('touchstart', handleTouch);
+    canvas.addEventListener('touchmove', handleTouch);
+    canvas.addEventListener('touchend', stopDrawing);
+    
+    function startDrawing(e) {
+        isDrawing = true;
+        [lastX, lastY] = getCoordinates(e);
+        
+        // Limpiar placeholder al empezar a firmar
+        if (signatureData.length === 0) {
+            clearCanvas(false);
+        }
+        
+        // Guardar punto inicial
+        signatureData.push({ x: lastX, y: lastY, drawing: true });
+    }
+    
+    function draw(e) {
+        if (!isDrawing) return;
+        
+        const [currentX, currentY] = getCoordinates(e);
+        
+        // Dibujar línea
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        // Guardar punto
+        signatureData.push({ x: currentX, y: currentY, drawing: true });
+        
+        [lastX, lastY] = [currentX, currentY];
+    }
+    
+    function stopDrawing() {
+        if (!isDrawing) return;
+        isDrawing = false;
+        
+        // Marcar fin de trazo
+        signatureData.push({ drawing: false });
+        
+        // Actualizar estado si hay firma
+        if (signatureData.length > 1) {
+            updateSignatureStatus('signed');
+        }
+    }
+    
+    function getCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        if (e.touches && e.touches[0]) {
+            // Touch event
+            return [
+                (e.touches[0].clientX - rect.left) * scaleX,
+                (e.touches[0].clientY - rect.top) * scaleY
+            ];
+        } else {
+            // Mouse event
+            return [
+                (e.clientX - rect.left) * scaleX,
+                (e.clientY - rect.top) * scaleY
+            ];
+        }
+    }
+    
+    function handleTouch(e) {
+        e.preventDefault(); // Prevenir scroll
+        
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                         e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+    
+    function clearCanvas(showPlaceholder = true) {
+        // Limpiar canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Restablecer datos
+        signatureData = [];
+        
+        // Mostrar placeholder si se requiere
+        if (showPlaceholder) {
+            drawPlaceholder();
+        }
+        
+        // Actualizar estado
+        updateSignatureStatus('pending');
+    }
+    
+    function updateSignatureStatus(status) {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-ES');
+        const timeStr = now.toLocaleTimeString('es-ES', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        // Actualizar fecha y hora en tiempo real
+        const dateElement = document.querySelector('.signature-datetime p:first-child');
+        const timeElement = document.querySelector('.signature-datetime p:last-child');
+        
+        if (dateElement) dateElement.innerHTML = `<strong>FECHA:</strong> ${dateStr}`;
+        if (timeElement) timeElement.innerHTML = `<strong>HORA:</strong> ${timeStr}`;
+        
+        if (status === 'signed') {
+            statusElement.innerHTML = `
+                <span class="status-signed" style="color: #27ae60; font-weight: bold;">
+                    ✅ Firmado el ${dateStr} a las ${timeStr}
+                </span>
+            `;
+            
+            // Cambiar borde del canvas
+            canvas.style.border = '2px solid #27ae60';
+            
+            console.log('✍️ Documento firmado digitalmente');
+        } else {
+            statusElement.innerHTML = `
+                <span class="status-pending" style="color: #e67e22; font-weight: bold;">
+                    📝 Pendiente de firma
+                </span>
+            `;
+            
+            // Restablecer borde
+            canvas.style.border = '2px dashed #bdc3c7';
+        }
+    }
+    
+    // Evento del botón limpiar
+    clearBtn.addEventListener('click', () => {
+        if (signatureData.length > 0) {
+            if (confirm('¿Está seguro de limpiar la firma?\n\nEsta acción no se puede deshacer.')) {
+                clearCanvas(true);
+                console.log('🧹 Firma limpiada');
+            }
+        }
+    });
+    
+    // Funciones públicas para integración
+    window.signatureAPI = {
+        // Obtener datos de la firma
+        getSignatureData: function() {
+            if (signatureData.length === 0) {
+                return null;
+            }
+            
+            return {
+                imageData: canvas.toDataURL('image/png'),
+                vectorData: signatureData,
+                timestamp: new Date().toISOString(),
+                doctor: {
+                    name: document.querySelector('.doctor-info p:first-child')?.textContent?.replace('MÉDICO: ', '') || '',
+                    cmp: document.querySelector('.doctor-info p:nth-child(2)')?.textContent?.replace('CMP: ', '') || '',
+                    specialty: document.querySelector('.doctor-info p:last-child')?.textContent?.replace('ESPECIALIDAD: ', '') || ''
+                }
+            };
+        },
+        
+        // Verificar si está firmado
+        isSigned: function() {
+            return signatureData.length > 1;
+        },
+        
+        // Limpiar firma programáticamente
+        clearSignature: function() {
+            clearCanvas(true);
+        },
+        
+        // Cargar firma existente (para edición)
+        loadSignature: function(vectorData) {
+            if (!vectorData || !Array.isArray(vectorData)) return;
+            
+            clearCanvas(false);
+            signatureData = [...vectorData];
+            
+            // Redibujar firma
+            let isCurrentlyDrawing = false;
+            let lastPoint = null;
+            
+            signatureData.forEach(point => {
+                if (point.drawing) {
+                    if (!isCurrentlyDrawing) {
+                        isCurrentlyDrawing = true;
+                        lastPoint = point;
+                    } else if (lastPoint) {
+                        ctx.beginPath();
+                        ctx.moveTo(lastPoint.x, lastPoint.y);
+                        ctx.lineTo(point.x, point.y);
+                        ctx.stroke();
+                        lastPoint = point;
+                    }
+                } else {
+                    isCurrentlyDrawing = false;
+                    lastPoint = null;
+                }
+            });
+            
+            updateSignatureStatus('signed');
+        }
+    };
+    
+    // Validación antes de envío/guardado
+    function validateSignature() {
+        if (!window.signatureAPI.isSigned()) {
+            alert('⚠️ La nota médica debe estar firmada antes de guardar.');
+            return false;
+        }
+        return true;
+    }
+    
+    // Hacer validación disponible globalmente
+    window.validateMedicalNote = validateSignature;
+    
+    console.log('✅ Sistema de firma digital configurado');
+    console.log('📋 API disponible en window.signatureAPI');
+}
+
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
 document.addEventListener('DOMContentLoaded', inicializarNotasMedicas);
 
