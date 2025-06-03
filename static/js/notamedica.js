@@ -29,6 +29,7 @@ function inicializarNotasMedicas() {
     setupEditorActions();
     setupVoiceDictation();
     setupImagePaint();
+    setupDigitalSignature();
 }
 
 // ===== FUNCIÓN: ACTUALIZAR DATOS DEL PACIENTE =====
