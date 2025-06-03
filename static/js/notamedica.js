@@ -45,6 +45,9 @@ function inicializarNotasMedicas() {
 
     // 7. GRABADORA DE VOZ
     setupVoiceRecorder();
+
+    // 8. IMPRESIÓN PDF
+    setupMedicalNotePrint();
 }
 
 // ===== FUNCIÓN: ACTUALIZAR DATOS DEL PACIENTE =====
@@ -2450,6 +2453,613 @@ function setupVoiceRecorder() {
 
     console.log('✅ Grabadora de voz configurada');
     console.log('ℹ️ Atajo: Ctrl + Shift + R');
+}
+
+// ===== FUNCIÓN: IMPRESIÓN PDF =====
+function setupMedicalNotePrint() {
+    const printBtn = document.querySelector('.btn-print-note');
+    
+    if (!printBtn) {
+        console.error('❌ Botón de impresión no encontrado');
+        return;
+    }
+    
+    printBtn.addEventListener('click', generatePrintView);
+    
+    function generatePrintView() {
+        console.log('🖨️ Generando vista de impresión...');
+        
+        // Verificar que hay contenido
+        const editor = document.getElementById('medicalNoteEditor');
+        if (!editor) {
+            alert('⚠️ Editor no encontrado.');
+            return;
+        }
+        
+        // Verificar que esté firmado
+        if (window.validateMedicalNote && !window.validateMedicalNote()) {
+            return; // validateMedicalNote ya muestra el alert
+        }
+        
+        // Generar HTML optimizado para impresión
+        const printHTML = createPrintHTML();
+        
+        // Abrir ventana de impresión
+        openPrintWindow(printHTML);
+        
+        console.log('📄 Vista de impresión generada');
+    }
+    
+    function createPrintHTML() {
+        // Obtener datos de la nota médica
+        const hospitalName = 'Hospital Central';
+        const noteTitle = 'NOTA DE EVOLUCIÓN MÉDICA';
+        const patientName = 'Carlos García Mendoza';
+        const hc = 'HC-2024-001234';
+        const edad = '58 años';
+        const sexo = 'Masculino';
+        const cama = '101A';
+        const servicio = 'Medicina Interna';
+        const diagnostico = 'Diabetes Mellitus Tipo 2 + Hipertensión Arterial';
+        
+        // Capturar todo el contenido visual
+        const contentData = captureAllContent();
+        
+        // Crear fecha y hora actual
+        const now = new Date();
+        const fecha = now.toLocaleDateString('es-ES');
+        const hora = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        
+        return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota Médica - ${patientName}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm 1cm;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .page-container {
+            width: 100%;
+            min-height: 100vh;
+            border: 2px solid #2c5aa0;
+            padding: 15px;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2c5aa0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        
+        .header h1 {
+            color: #2c5aa0;
+            font-size: 16px;
+            margin: 0 0 2px 0;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        
+        .header .hospital-info {
+            font-size: 8px;
+            color: #666;
+            margin: 2px 0 8px 0;
+            line-height: 1.1;
+        }
+        
+        .header h2 {
+            color: #2c5aa0;
+            font-size: 14px;
+            margin: 5px 0 2px 0;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        
+        .header .note-info {
+            font-size: 8px;
+            color: #666;
+            margin: 2px 0 0 0;
+            line-height: 1.1;
+        }
+        
+        /* Datos del paciente */
+        .patient-section {
+            display: table;
+            width: 100%;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        
+        .patient-row {
+            display: table-row;
+        }
+        
+        .patient-cell {
+            display: table-cell;
+            padding: 4px 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 10px;
+            vertical-align: top;
+        }
+        
+        .patient-cell:nth-child(even) {
+            border-left: 1px solid #eee;
+        }
+        
+        .patient-cell strong {
+            color: #2c5aa0;
+            font-weight: bold;
+        }
+        
+        .patient-full {
+            display: table-row;
+        }
+        
+        .patient-full .patient-cell {
+            display: table-cell;
+            width: 100%;
+        }
+        
+        /* Signos vitales */
+        .vital-signs {
+            background-color: #e8f4fd;
+            border: 1px solid #2c5aa0;
+            border-radius: 3px;
+            padding: 8px;
+            margin-bottom: 12px;
+            font-size: 10px;
+        }
+        
+        .vital-signs h3 {
+            color: #2c5aa0;
+            font-size: 11px;
+            margin: 0 0 5px 0;
+            font-weight: bold;
+        }
+        
+        /* Contenido principal con numeración */
+        .content-section {
+            counter-reset: line-number;
+            position: relative;
+            margin: 12px 0;
+            min-height: 300px;
+        }
+        
+        .line-numbered {
+            counter-increment: line-number;
+            position: relative;
+            margin: 6px 0 6px 30px;
+            padding-left: 5px;
+        }
+        
+        .line-numbered::before {
+            content: counter(line-number);
+            position: absolute;
+            left: -35px;
+            width: 25px;
+            text-align: right;
+            color: #999;
+            font-size: 8px;
+            font-family: 'Courier New', monospace;
+            font-weight: normal;
+        }
+        
+        /* Estilos para el contenido */
+        .main-content img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #ddd;
+            margin: 3px 0;
+            page-break-inside: avoid;
+        }
+        
+        .main-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6px 0;
+            page-break-inside: avoid;
+        }
+        
+        .main-content table td {
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            vertical-align: top;
+            font-size: 10px;
+        }
+        
+        .main-content table img {
+            max-width: 150px !important;
+            height: auto !important;
+            margin: 0;
+        }
+        
+        .main-content ul {
+            margin: 6px 0;
+            padding-left: 15px;
+        }
+        
+        .main-content ul li {
+            margin: 2px 0;
+        }
+        
+        .main-content hr {
+            border: none;
+            border-top: 1px solid #2c5aa0;
+            margin: 8px 0;
+        }
+        
+        .main-content p {
+            margin: 4px 0;
+        }
+        
+        .main-content strong {
+            font-weight: bold;
+        }
+        
+        .main-content em {
+            font-style: italic;
+        }
+        
+        .main-content u {
+            text-decoration: underline;
+        }
+        
+        /* Firma */
+        .signature-section {
+            position: absolute;
+            bottom: 20px;
+            left: 15px;
+            right: 15px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            display: table;
+            width: calc(100% - 30px);
+        }
+        
+        .signature-info {
+            display: table-cell;
+            vertical-align: bottom;
+            font-size: 9px;
+            color: #666;
+            width: 60%;
+        }
+        
+        .signature-box {
+            display: table-cell;
+            vertical-align: bottom;
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 8px;
+            background-color: #fafafa;
+            width: 40%;
+        }
+        
+        .signature-image {
+            max-width: 180px;
+            height: auto;
+            margin: 0 auto 5px auto;
+            display: block;
+        }
+        
+        .signature-line {
+            width: 150px;
+            border-bottom: 1px solid #333;
+            margin: 15px auto 3px auto;
+            height: 1px;
+        }
+        
+        .signature-label {
+            font-size: 8px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        /* Estilos de impresión */
+        @media print {
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .page-container {
+                border: 2px solid #2c5aa0 !important;
+                min-height: 100vh;
+            }
+            
+            .main-content img,
+            .signature-image {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        
+        /* Botones de acción */
+        .print-actions {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            background: white;
+            padding: 8px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .print-actions button {
+            margin: 0 3px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .btn-print-pdf {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-print-paper {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-close-print {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        @media print {
+            .print-actions {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-actions no-print">
+        <button class="btn-print-pdf" onclick="window.print()">
+            📄 Imprimir PDF
+        </button>
+        <button class="btn-print-paper" onclick="window.print()">
+            🖨️ Impresora
+        </button>
+        <button class="btn-close-print" onclick="window.close()">
+            ❌ Cerrar
+        </button>
+    </div>
+
+    <div class="page-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>${hospitalName}</h1>
+            <div class="hospital-info">Av. Hospitales 123 - Telef. 01-2016500</div>
+            <h2>${noteTitle}</h2>
+            <div class="note-info">N° NE2024010001 - ${fecha}</div>
+        </div>
+
+        <!-- Datos del paciente -->
+        <div class="patient-section">
+            <div class="patient-row">
+                <div class="patient-cell"><strong>PACIENTE:</strong> ${patientName}</div>
+                <div class="patient-cell"><strong>HC:</strong> ${hc}</div>
+            </div>
+            <div class="patient-row">
+                <div class="patient-cell"><strong>EDAD:</strong> ${edad}</div>
+                <div class="patient-cell"><strong>SEXO:</strong> ${sexo}</div>
+            </div>
+            <div class="patient-row">
+                <div class="patient-cell"><strong>CAMA:</strong> ${cama}</div>
+                <div class="patient-cell"><strong>SERVICIO:</strong> ${servicio}</div>
+            </div>
+            <div class="patient-full">
+                <div class="patient-cell" style="width: 100%;"><strong>DIAGNÓSTICO:</strong> ${diagnostico}</div>
+            </div>
+        </div>
+
+        <!-- Signos vitales -->
+        <div class="vital-signs">
+            <h3>📊 SIGNOS VITALES ACTUALES - 14:30</h3>
+            <div>PA: 140/90 mmHg &nbsp;&nbsp; FC: 78 lpm &nbsp;&nbsp; FR: 18 rpm &nbsp;&nbsp; T°: 36.8°C &nbsp;&nbsp; SpO2: 98%</div>
+        </div>
+
+        <!-- Contenido principal con numeración -->
+        <div class="content-section">
+            ${contentData.content}
+        </div>
+
+        <!-- Firma -->
+        <div class="signature-section">
+            <div class="signature-info">
+                <div><strong>Fecha:</strong> ${fecha}</div>
+                <div><strong>Hora:</strong> ${hora}</div>
+                <div><strong>Médico:</strong> Dr. Alan Cairampoma Carrillo</div>
+                <div><strong>CMP:</strong> 12345</div>
+                <div><strong>Especialidad:</strong> Medicina Interna</div>
+            </div>
+            
+            <div class="signature-box">
+                ${contentData.signature ? 
+                    `<img src="${contentData.signature}" class="signature-image" alt="Firma Digital">
+                     <div class="signature-line"></div>
+                     <div class="signature-label">Firma Digital</div>` :
+                    `<div style="height: 40px; line-height: 40px; color: #999;">Sin firma</div>
+                     <div class="signature-line"></div>
+                     <div class="signature-label">Firma Digital</div>`
+                }
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            console.log('📄 Vista de impresión cargada');
+            
+            // Auto-focus para imprimir
+            setTimeout(() => {
+                // window.print(); // Descomenta para auto-imprimir
+            }, 1000);
+        };
+        
+        // Atajos de teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>`;
+    }
+    
+    function captureAllContent() {
+        const result = { content: '', signature: null };
+        
+        try {
+            // Capturar contenido del editor
+            const editor = document.getElementById('medicalNoteEditor');
+            if (editor) {
+                let editorHTML = editor.innerHTML;
+                
+                // Procesar contenido para impresión
+                result.content = processContentForPrint(editorHTML);
+            }
+            
+            // Capturar firma
+            result.signature = captureSignatureForPrint();
+            
+            console.log('📸 Contenido capturado para impresión');
+            
+        } catch (error) {
+            console.error('❌ Error capturando contenido:', error);
+            result.content = '<div class="line-numbered">Error al cargar contenido</div>';
+        }
+        
+        return result;
+    }
+    
+    function processContentForPrint(html) {
+        try {
+            // Crear DOM temporal
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Convertir canvas a imágenes
+            const canvases = tempDiv.querySelectorAll('canvas');
+            canvases.forEach((canvas, index) => {
+                try {
+                    // Buscar canvas original
+                    const originalCanvases = document.querySelectorAll('#medicalNoteEditor canvas');
+                    const originalCanvas = originalCanvases[index];
+                    
+                    if (originalCanvas && originalCanvas.width > 0 && originalCanvas.height > 0) {
+                        const img = document.createElement('img');
+                        img.src = originalCanvas.toDataURL('image/png');
+                        img.className = 'printed-canvas';
+                        canvas.parentNode.replaceChild(img, canvas);
+                        console.log(`🖼️ Canvas ${index + 1} convertido para impresión`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ Error procesando canvas ${index + 1}:`, error);
+                }
+            });
+            
+            // Agregar numeración de líneas a elementos principales
+            const elements = tempDiv.querySelectorAll('p, div:not(table div), table, ul, hr');
+            elements.forEach(element => {
+                if (!element.closest('table') || element.tagName === 'TABLE') {
+                    element.classList.add('line-numbered');
+                }
+            });
+            
+            // Si no hay elementos, crear uno por defecto
+            if (elements.length === 0) {
+                tempDiv.innerHTML = '<div class="line-numbered">Sin contenido</div>';
+            }
+            
+            return tempDiv.innerHTML;
+            
+        } catch (error) {
+            console.error('❌ Error procesando contenido:', error);
+            return '<div class="line-numbered">Error al procesar contenido</div>';
+        }
+    }
+    
+    function captureSignatureForPrint() {
+        try {
+            const signatureCanvas = document.getElementById('signatureCanvas');
+            if (signatureCanvas && window.signatureAPI && window.signatureAPI.isSigned()) {
+                const signatureData = signatureCanvas.toDataURL('image/png');
+                console.log('✍️ Firma capturada para impresión');
+                return signatureData;
+            }
+            console.log('📝 Sin firma para imprimir');
+            return null;
+        } catch (error) {
+            console.warn('⚠️ Error capturando firma para impresión:', error);
+            return null;
+        }
+    }
+    
+    function openPrintWindow(htmlContent) {
+        try {
+            const printWindow = window.open('', '_blank', 'width=900,height=1100,scrollbars=yes,resizable=yes');
+            
+            if (!printWindow) {
+                alert('⚠️ El navegador bloqueó la ventana emergente.\n\nPermita ventanas emergentes para esta página.');
+                return;
+            }
+            
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            printWindow.focus();
+            
+            console.log('🖨️ Ventana de impresión abierta');
+            
+        } catch (error) {
+            console.error('❌ Error abriendo ventana de impresión:', error);
+            alert('Error al abrir la vista de impresión.');
+        }
+    }
+    
+    console.log('✅ Sistema de impresión PDF configurado');
 }
 
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
