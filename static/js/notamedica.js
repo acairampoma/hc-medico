@@ -19,17 +19,29 @@ function inicializarNotasMedicas() {
     console.log('📋 Datos:', nombre, cama);
     
     // 2. LLAMAR A TODAS LAS FUNCIONES
+    // 1. CONFIGURACIÓN BÁSICA (primero)
     actualizarCamposPaciente(nombre, cama, id);
     configurarEditor();
     actualizarFechaHora();
+
+    // 2. FORMATO DE TEXTO (segundo)
     setupAlineacion();
-    setupTextFormatting()
+    setupTextFormatting();
+    setupEditorActions(); // deshacer/rehacer antes que contenido
+
+    // 3. CONTENIDO E IMÁGENES (tercero)
     setupImageUpload();
     setupImageTable();
-    setupEditorActions();
+
+    // 4. HERRAMIENTAS AVANZADAS (cuarto)
     setupVoiceDictation();
-    setupImagePaint();
+    setupImagePaint(); // después de las imágenes
+
+    // 5. FIRMA DIGITAL (quinto)
     setupDigitalSignature();
+
+    // 6. PREVISUALIZACIÓN (AL FINAL)
+    setupMedicalNotePreview(); // siempre último
 }
 
 // ===== FUNCIÓN: ACTUALIZAR DATOS DEL PACIENTE =====
@@ -1309,6 +1321,7 @@ function setupVoiceDictation() {
     console.log('ℹ️ Atajo: Ctrl + Shift + M');
 }
 
+// ===== FUNCIÓN: FIRMA DIGITAL =====
 function setupDigitalSignature() {
     const canvas = document.getElementById('signatureCanvas');
     const clearBtn = document.querySelector('.btn-clear-signature');
@@ -1589,6 +1602,487 @@ function setupDigitalSignature() {
     
     console.log('✅ Sistema de firma digital configurado');
     console.log('📋 API disponible en window.signatureAPI');
+}
+
+// ===== FUNCIÓN: CONFIGURAR PREVISUALIZACIÓN =====
+function setupMedicalNotePreview() {
+    const previewBtn = document.querySelector('.btn-preview-note');
+    
+    if (!previewBtn) {
+        console.error('❌ Botón de previsualización no encontrado');
+        return;
+    }
+    
+    previewBtn.addEventListener('click', generatePreview);
+    
+    function generatePreview() {
+        // Verificar que hay contenido
+        const editor = document.getElementById('medicalNoteEditor');
+        if (!editor || editor.innerHTML.trim() === '') {
+            alert('⚠️ No hay contenido para previsualizar.\n\nEscriba algo en la nota médica primero.');
+            return;
+        }
+        
+        // Recopilar todos los datos
+        const previewData = collectMedicalNoteData();
+        
+        // Generar HTML de previsualización
+        const previewHTML = generatePreviewHTML(previewData);
+        
+        // Abrir ventana de previsualización
+        openPreviewWindow(previewHTML);
+        
+        console.log('👁️ Vista previa generada');
+    }
+    
+    function collectMedicalNoteData() {
+        // Datos del header
+        const hospitalName = document.querySelector('.header h3')?.textContent || 'Hospital Central';
+        const hospitalInfo = document.querySelector('.header p')?.textContent || '';
+        const noteTitle = document.querySelector('.header h2')?.textContent || 'NOTA DE EVOLUCIÓN MÉDICA';
+        const noteNumber = document.querySelector('.header p:last-child')?.textContent || '';
+        
+        // Datos del paciente
+        const patientData = {
+            nombre: getTableValue('PACIENTE:'),
+            edad: getTableValue('EDAD:'),
+            cama: getTableValue('CAMA:'),
+            diagnostico: getTableValue('DIAGNÓSTICO:'),
+            hc: getTableValue('HC:'),
+            sexo: getTableValue('SEXO:'),
+            servicio: getTableValue('SERVICIO:')
+        };
+        
+        // Signos vitales
+        const signosVitales = document.querySelector('.signos-vitales')?.textContent || '';
+        
+        // Contenido del editor
+        let editorContent = document.getElementById('medicalNoteEditor')?.innerHTML || '';
+        
+        // CONVERTIR CANVAS A IMÁGENES para que se vean en previsualización
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = editorContent;
+        
+        const canvases = tempDiv.querySelectorAll('canvas');
+        canvases.forEach(canvas => {
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.style.maxWidth = canvas.style.maxWidth || '100%';
+            img.style.height = 'auto';
+            img.style.border = '1px solid #ddd';
+            canvas.parentNode.replaceChild(img, canvas);
+        });
+        
+        editorContent = tempDiv.innerHTML;
+        
+        // Datos de firma
+        const signatureData = window.signatureAPI ? window.signatureAPI.getSignatureData() : null;
+        
+        return {
+            hospital: { name: hospitalName, info: hospitalInfo },
+            noteTitle,
+            noteNumber,
+            patient: patientData,
+            signosVitales,
+            content: editorContent,
+            signature: signatureData,
+            timestamp: new Date()
+        };
+    }
+    
+    function getTableValue(label) {
+        const rows = document.querySelectorAll('tr');
+        for (let row of rows) {
+            const cells = row.querySelectorAll('td');
+            for (let i = 0; i < cells.length; i++) {
+                if (cells[i].textContent.includes(label) && cells[i + 1]) {
+                    return cells[i + 1].textContent.trim();
+                }
+            }
+        }
+        return '';
+    }
+    
+    function generatePreviewHTML(data) {
+        return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vista Previa - Nota Médica</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            margin: 0;
+            padding: 15px;
+            max-width: 21cm;
+            min-height: 29.7cm;
+            position: relative;
+            border: 2px solid #2c5aa0;
+            box-sizing: border-box;
+        }
+        
+        /* Numeración de líneas */
+        .content-with-lines {
+            counter-reset: line-number;
+            position: relative;
+            padding-left: 40px;
+        }
+        
+        .content-with-lines p,
+        .content-with-lines div,
+        .content-with-lines table,
+        .content-with-lines ul,
+        .content-with-lines hr {
+            counter-increment: line-number;
+            position: relative;
+        }
+        
+        .content-with-lines p::before,
+        .content-with-lines div::before,
+        .content-with-lines table::before,
+        .content-with-lines ul::before,
+        .content-with-lines hr::before {
+            content: counter(line-number);
+            position: absolute;
+            left: -35px;
+            width: 30px;
+            text-align: right;
+            color: #999;
+            font-size: 10px;
+            font-weight: normal;
+        }
+        
+        /* Header */
+        .preview-header {
+            text-align: center;
+            border-bottom: 2px solid #2c5aa0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .preview-header h1 {
+            color: #2c5aa0;
+            font-size: 18px;
+            margin: 0 0 5px 0;
+            font-weight: bold;
+        }
+        
+        .preview-header .hospital-info {
+            font-size: 10px;
+            color: #666;
+            margin: 5px 0;
+        }
+        
+        .preview-header h2 {
+            color: #2c5aa0;
+            font-size: 16px;
+            margin: 10px 0 5px 0;
+        }
+        
+        .preview-header .note-number {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        /* Datos del paciente */
+        .patient-data {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .patient-data div {
+            font-size: 11px;
+        }
+        
+        .patient-data strong {
+            color: #2c5aa0;
+        }
+        
+        /* Signos vitales */
+        .vital-signs {
+            background-color: #e8f4fd;
+            border: 1px solid #2c5aa0;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        
+        .vital-signs h3 {
+            color: #2c5aa0;
+            font-size: 12px;
+            margin: 0 0 8px 0;
+        }
+        
+        /* Contenido principal */
+        .main-content {
+            min-height: 200px;
+            margin-bottom: 20px;
+        }
+        
+        .main-content img,
+        .main-content canvas {
+            max-width: 100% !important;
+            height: auto !important;
+            margin: 5px 0 !important;
+            border: 1px solid #ddd !important;
+            display: block !important;
+        }
+        
+        .main-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .main-content table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            vertical-align: top;
+        }
+        
+        .main-content table img,
+        .main-content table canvas {
+            max-width: 180px !important;
+            height: auto !important;
+            margin: 0 !important;
+        }
+        
+        .main-content ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .main-content hr {
+            border: none;
+            border-top: 2px solid #2c5aa0;
+            margin: 15px 0;
+        }
+        
+        /* Firma */
+        .signature-section {
+            position: absolute;
+            bottom: 20px;
+            right: 15px;
+            left: 15px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        
+        .signature-container {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            align-items: end;
+        }
+        
+        .signature-info {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .signature-image {
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #fafafa;
+        }
+        
+        .signature-image img {
+            max-width: 200px;
+            height: auto;
+        }
+        
+        .signature-line {
+            width: 200px;
+            border-bottom: 1px solid #333;
+            margin: 10px auto 5px auto;
+        }
+        
+        /* Páginas */
+        .page-break {
+            page-break-before: always;
+        }
+        
+        /* Botones de acción */
+        .preview-actions {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .preview-actions button {
+            margin: 0 5px;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn-print {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-close {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        @media print {
+            .preview-actions {
+                display: none;
+            }
+            
+            body {
+                padding: 10px;
+                margin: 0;
+                border: 2px solid #2c5aa0;
+                box-sizing: border-box;
+            }
+            
+            .main-content img,
+            .main-content canvas {
+                max-width: 100% !important;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-actions">
+        <button class="btn-print" onclick="window.print()">
+            🖨️ Imprimir
+        </button>
+        <button class="btn-close" onclick="window.close()">
+            ❌ Cerrar
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="preview-header">
+        <h1>${data.hospital.name}</h1>
+        <div class="hospital-info">${data.hospital.info}</div>
+        <h2>${data.noteTitle}</h2>
+        <div class="note-number">${data.noteNumber}</div>
+    </div>
+
+    <!-- Datos del paciente -->
+    <div class="patient-data">
+        <div><strong>PACIENTE:</strong> ${data.patient.nombre}</div>
+        <div><strong>HC:</strong> ${data.patient.hc}</div>
+        <div><strong>EDAD:</strong> ${data.patient.edad}</div>
+        <div><strong>SEXO:</strong> ${data.patient.sexo}</div>
+        <div><strong>CAMA:</strong> ${data.patient.cama}</div>
+        <div><strong>SERVICIO:</strong> ${data.patient.servicio}</div>
+        <div style="grid-column: 1 / -1;"><strong>DIAGNÓSTICO:</strong> ${data.patient.diagnostico}</div>
+    </div>
+
+    <!-- Signos vitales -->
+    <div class="vital-signs">
+        <h3>📊 SIGNOS VITALES ACTUALES</h3>
+        <div>${data.signosVitales}</div>
+    </div>
+
+    <!-- Contenido principal con numeración -->
+    <div class="main-content content-with-lines">
+        ${data.content}
+    </div>
+
+    <!-- Firma -->
+    <div class="signature-section">
+        <div class="signature-container">
+            <div class="signature-info">
+                <p><strong>Fecha:</strong> ${data.timestamp.toLocaleDateString('es-ES')}</p>
+                <p><strong>Hora:</strong> ${data.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p><strong>Médico:</strong> ${data.signature?.doctor?.name || 'Dr. Alan Cairampoma Carrillo'}</p>
+                <p><strong>CMP:</strong> ${data.signature?.doctor?.cmp || '12345'}</p>
+                <p><strong>Especialidad:</strong> ${data.signature?.doctor?.specialty || 'Medicina Interna'}</p>
+            </div>
+            
+            <div class="signature-image">
+                ${data.signature ? 
+                    `<img src="${data.signature.imageData}" alt="Firma Digital">
+                     <div class="signature-line"></div>
+                     <div style="font-size: 10px; color: #666;">Firma Digital</div>` :
+                    `<div style="height: 60px; display: flex; align-items: center; justify-content: center; color: #999;">
+                        📝 Sin firma
+                     </div>`
+                }
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-focus para imprimir
+        window.onload = function() {
+            console.log('📄 Vista previa cargada');
+        };
+        
+        // Atajos de teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>`;
+    }
+    
+    function openPreviewWindow(htmlContent) {
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
+        
+        if (!previewWindow) {
+            alert('⚠️ El navegador bloqueó la ventana emergente.\n\nPermita ventanas emergentes para esta página.');
+            return;
+        }
+        
+        previewWindow.document.write(htmlContent);
+        previewWindow.document.close();
+        
+        // Focus en la nueva ventana
+        previewWindow.focus();
+    }
+    
+    console.log('✅ Sistema de previsualización configurado');
+}
+
+// Función auxiliar para obtener firma
+function getSignatureDataForPreview() {
+    if (window.signatureAPI && window.signatureAPI.isSigned()) {
+        return window.signatureAPI.getSignatureData();
+    }
+    return null;
 }
 
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
