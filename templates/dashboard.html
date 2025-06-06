@@ -797,8 +797,7 @@
                 </div>
             </div>
         </main>
-    </div>
-    
+    </div> 
     <script>
         // Variables globales para el usuario
         let currentUser = null;
@@ -1052,6 +1051,22 @@
                     console.log('Mostrando notificaciones...');
                 });
             });
+        }
+    </script>
+
+    <script>
+        function transferToken() {
+            // Asegurar que el token se transfiera
+            const token = localStorage.getItem('access_token') || 
+                        sessionStorage.getItem('access_token') ||
+                        localStorage.getItem('token');
+            
+            if (token) {
+                localStorage.setItem('access_token', token);
+                sessionStorage.setItem('access_token', token);
+                window.authToken = token;
+                console.log('✅ Token transferido para medical rounds');
+            }
         }
     </script>
 

@@ -145,6 +145,18 @@
                 const result = await response.json();
                 
                 if (result.success) {
+
+
+                    if (result.token) {
+                        localStorage.setItem('access_token', result.token);
+                        sessionStorage.setItem('access_token', result.token);
+                        window.authToken = result.token;
+                        console.log('✅ Token guardado:', result.token.substring(0, 20) + '...');
+                    }
+                    
+
+
+
                     // Login exitoso con celebración personalizada
                     const userName = result.user ? 
                         `${result.user.firstName || ''} ${result.user.lastName || ''}`.trim() || result.user.name :

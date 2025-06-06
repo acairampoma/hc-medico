@@ -88,6 +88,94 @@ class MedicalOrder(BaseModel):
     timestamp: str
     doctor_id: str
 
+
+
+@app.api_route("/api/proxy/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def proxy_to_gateway(path: str, request: Request):
+    """
+    🌐 Proxy hacia el API Gateway - VERSIÓN CORREGIDA
+    """
+    try:
+        # URL completa del gateway
+        gateway_url = f"http://localhost:8090/api/{path}"
+        
+        # Headers básicos
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        
+        # Agregar Authorization si está disponible
+        auth_header = request.headers.get('authorization')
+        if auth_header:
+            headers['Authorization'] = auth_header
+        
+        print(f"🌐 PROXY: {request.method} {gateway_url}")
+        print(f"🔑 Headers: {headers}")
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            if request.method == "GET":
+                response = await client.get(
+                    gateway_url,
+                    headers=headers,
+                    params=request.query_params
+                )
+            elif request.method == "POST":
+                body = await request.body()
+                response = await client.post(
+                    gateway_url,
+                    headers=headers,
+                    content=body
+                )
+            else:
+                response = await client.request(
+                    method=request.method,
+                    url=gateway_url,
+                    headers=headers
+                )
+            
+            print(f"✅ PROXY Response: {response.status_code}")
+            
+            # Retornar respuesta
+            try:
+                response_data = response.json()
+            except:
+                response_data = {"data": response.text}
+            
+            return JSONResponse(
+                content=response_data,
+                status_code=response.status_code
+            )
+            
+    except httpx.ConnectError as e:
+        print(f"❌ PROXY ConnectError: {str(e)}")
+        return JSONResponse(
+            {"error": f"No se pudo conectar al gateway: {str(e)}"}, 
+            status_code=503
+        )
+    except httpx.TimeoutException as e:
+        print(f"❌ PROXY Timeout: {str(e)}")
+        return JSONResponse(
+            {"error": f"Timeout conectando al gateway: {str(e)}"}, 
+            status_code=504
+        )
+    except Exception as e:
+        print(f"❌ PROXY Error: {str(e)}")
+        return JSONResponse(
+            {"error": f"Error en proxy: {str(e)}"}, 
+            status_code=500
+        )
+
+# ===============================================================================
+# 🧪 ENDPOINT DE TEST SIMPLE
+# ===============================================================================
+
+@app.get("/api/proxy/test")
+async def test_proxy():
+    """Test simple del proxy"""
+    return {"message": "Proxy funcionando", "status": "OK"}
+
+
 # ===== TUS RUTAS EXISTENTES (CONSERVAMOS TODO) =====
 
 @app.get("/", response_class=HTMLResponse)
