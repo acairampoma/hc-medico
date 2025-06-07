@@ -380,31 +380,61 @@ const DebugTools = {
 // ===============================================================================
 
 function preparePatientDataForModule(bedNumber, patientId) {
+    console.log('🔍 INICIO preparePatientDataForModule()');
+    console.log('📥 Parámetros recibidos:', { bedNumber, patientId });
+    
     const currentData = window.currentPatientData;
+    
+    console.log('🌐 window.currentPatientData completo:', currentData);
+    console.log('🔍 Tipo de currentData:', typeof currentData);
+    console.log('🔍 ¿Es null/undefined?:', currentData == null);
     
     if (currentData) {
         console.log('✅ Usando datos del contexto global:', currentData.patientName);
         
-        return {
+        // *** LOGS DETALLADOS DE EXTRACCIÓN ***
+        console.log('🔍 Buscando hospitalizacion_id en:');
+        console.log('   - currentData.hospitalizacion_id:', currentData.hospitalizacion_id);
+        console.log('   - currentData.patient_data:', currentData.patient_data);
+        
+        if (currentData.patient_data) {
+            console.log('   - currentData.patient_data.hospitalizacion_id:', currentData.patient_data.hospitalizacion_id);
+        }
+        
+        console.log('🔍 Buscando otros campos clave:');
+        console.log('   - currentData.paciente_id:', currentData.paciente_id);
+        console.log('   - currentData.patient_data?.paciente_id:', currentData.patient_data?.paciente_id);
+        console.log('   - currentData.medico_tratante_id:', currentData.medico_tratante_id);
+        console.log('   - currentData.numero_cuenta:', currentData.numero_cuenta);
+        console.log('   - currentData.patient_data?.numero_cuenta:', currentData.patient_data?.numero_cuenta);
+        
+        const patientData = {
             // IDs básicos
             patientId: currentData.patientId || `SAFE_${bedNumber}_${Date.now()}`,
             bedNumber: currentData.bedNumber || bedNumber,
+            
+            // *** CAMPOS NUEVOS PARA NOTAS MÉDICAS CON LOGS ***
+            hospitalizacion_id: currentData.hospitalizacion_id || currentData.patient_data?.hospitalizacion_id || null,
+            numero_cuenta: currentData.numero_cuenta || currentData.patient_data?.numero_cuenta || `CTA${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}${String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0')}`,
+            paciente_id: currentData.paciente_id || currentData.patient_data?.paciente_id || parseInt(currentData.patientId?.replace(/\D/g, '')) || null,
+            medico_tratante_id: currentData.medico_tratante_id || currentData.patient_data?.medico_tratante_id || null,
+            especialidad_id: currentData.especialidad_id || currentData.patient_data?.especialidad_id || null,
             
             // Información personal
             firstName: currentData.patientName ? currentData.patientName.split(' ')[0] : 'Paciente',
             lastName: currentData.patientName ? currentData.patientName.split(' ').slice(1).join(' ') : 'Desconocido',
             fullName: currentData.patientName || `Paciente Cama ${bedNumber}`,
-            age: currentData.patientAge || 'N/A',
-            gender: currentData.gender || 'No especificado',
-            dni: currentData.patientId || 'No registrado',
+            age: currentData.patientAge || currentData.patient_data?.personal_info?.age || 'N/A',
+            gender: currentData.gender || currentData.patient_data?.personal_info?.gender || 'No especificado',
+            dni: currentData.patientId || currentData.patient_data?.personal_info?.dni || 'No registrado',
             
             // Información médica
-            primaryDiagnosis: currentData.diagnosis || 'Diagnóstico pendiente',
-            diagnosisCode: currentData.diagnosisCode || '',
-            attendingPhysician: currentData.doctor || 'Dr. Sistema',
-            medicalRecord: currentData.medicalRecord || 'No disponible',
-            admissionDate: currentData.admissionDate || new Date().toISOString().split('T')[0],
-            allergies: currentData.allergies || 'Ninguna conocida',
+            primaryDiagnosis: currentData.diagnosis || currentData.patient_data?.medical_info?.primary_diagnosis || 'Diagnóstico pendiente',
+            diagnosisCode: currentData.diagnosisCode || currentData.patient_data?.medical_info?.primary_diagnosis_code || '',
+            attendingPhysician: currentData.doctor || currentData.patient_data?.medical_info?.attending_physician || 'Dr. Sistema',
+            medicalRecord: currentData.medicalRecord || currentData.patient_data?.personal_info?.medical_record || 'No disponible',
+            admissionDate: currentData.admissionDate || currentData.patient_data?.medical_info?.admission_date || new Date().toISOString().split('T')[0],
+            allergies: currentData.allergies || currentData.patient_data?.medical_info?.allergies || 'Ninguna conocida',
             
             // Contexto hospitalario
             specialty: currentData.specialty || 'Medicina General',
@@ -423,16 +453,45 @@ function preparePatientDataForModule(bedNumber, patientId) {
             // Información del doctor
             doctor: {
                 name: currentData.doctor || 'Dr. Alan Cairampoma Carrillo',
-                specialty: currentData.specialty || 'Medicina Interna'
+                specialty: currentData.specialty || 'Medicina Interna',
+                id: currentData.medico_tratante_id || currentData.patient_data?.medico_tratante_id || null
             }
         };
+        
+        // *** LOGS DEL RESULTADO FINAL ***
+        console.log('📋 PatientData preparado:');
+        console.log('   - hospitalizacion_id final:', patientData.hospitalizacion_id);
+        console.log('   - paciente_id final:', patientData.paciente_id);
+        console.log('   - numero_cuenta final:', patientData.numero_cuenta);
+        console.log('   - medico_tratante_id final:', patientData.medico_tratante_id);
+        console.log('   - especialidad_id final:', patientData.especialidad_id);
+        
+        // *** GUARDAR EN LOCALSTORAGE ***
+        try {
+            localStorage.setItem('currentPatientData', JSON.stringify(patientData));
+            console.log('💾 Datos guardados en localStorage para notas médicas');
+            console.log('💾 localStorage content:', JSON.parse(localStorage.getItem('currentPatientData')));
+        } catch (error) {
+            console.error('❌ Error guardando en localStorage:', error);
+        }
+        
+        return patientData;
     }
     
     // Fallback si no hay contexto
     console.log('⚠️ Sin contexto, usando datos básicos para cama:', bedNumber);
-    return {
+    
+    const fallbackData = {
         patientId: patientId || `SAFE_${bedNumber}_${Date.now()}`,
         bedNumber: bedNumber,
+        
+        // *** CAMPOS PARA NOTAS MÉDICAS (FALLBACK) ***
+        hospitalizacion_id: null,
+        numero_cuenta: `CTA${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}${String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0')}`,
+        paciente_id: null,
+        medico_tratante_id: 105,
+        especialidad_id: null,
+        
         firstName: 'Paciente',
         lastName: 'Temporal',
         fullName: `Paciente Cama ${bedNumber}`,
@@ -448,11 +507,21 @@ function preparePatientDataForModule(bedNumber, patientId) {
             name: 'Hospital Central San José'
         },
         doctor: {
-            name: 'Dr. Sistema'
+            name: 'Dr. Sistema',
+            id: 105
         }
     };
+    
+    // *** GUARDAR FALLBACK EN LOCALSTORAGE ***
+    try {
+        localStorage.setItem('currentPatientData', JSON.stringify(fallbackData));
+        console.log('💾 Datos fallback guardados en localStorage');
+    } catch (error) {
+        console.error('❌ Error guardando fallback en localStorage:', error);
+    }
+    
+    return fallbackData;
 }
-
 // ===============================================================================
 // 📱 DETECTOR DE DISPOSITIVO MÓVIL
 // ===============================================================================
@@ -967,33 +1036,62 @@ function medicalRounds() {
         // Modal de información del paciente
         showPatientInfo(bed, patientData) {
             let safePatientId = patientData?.patient_data?.personal_info?.dni || 
-                    patientData?.personal_info?.dni || 
-                    `SAFE_${bed.bed_number}_${Date.now()}`;
-            if (!safePatientId || safePatientId === 'undefined' || safePatientId === 'null') {
-                safePatientId = `SAFE_${bed.bed_number}_${Date.now()}`;
-                console.log('⚠️ patient_id inválido, usando:', safePatientId);
-            }
-        
-            // Datos globales para otros módulos
-            window.currentPatientData = {
-                bed: bed,
-                patient: patientData,
-                bedNumber: bed.bed_number,
-                patientId: patientData?.patient_data?.personal_info?.dni || `SAFE_${bed.bed_number}_${Date.now()}`,
-                patientName: patientData?.patient_data?.personal_info ? 
-                `${patientData.patient_data.personal_info.first_name} ${patientData.patient_data.personal_info.last_name}` : 
-                'Paciente Desconocido',
-                patientAge: patientData?.patient_data?.personal_info?.age || 'N/A',
-                gender: patientData?.patient_data?.personal_info?.gender === 'M' ? 'Masculino' : 'Femenino',
+            patientData?.personal_info?.dni || 
+            `SAFE_${bed.bed_number}_${Date.now()}`;
+    if (!safePatientId || safePatientId === 'undefined' || safePatientId === 'null') {
+        safePatientId = `SAFE_${bed.bed_number}_${Date.now()}`;
+        console.log('⚠️ patient_id inválido, usando:', safePatientId);
+    }
 
-                // Información médica
-                diagnosis: patientData?.patient_data?.medical_info?.primary_diagnosis || 'Diagnóstico pendiente',
-                diagnosisCode: patientData?.patient_data?.medical_info?.primary_diagnosis_code || '',
-                doctor: patientData?.patient_data?.medical_info?.attending_physician || 'Dr. Sistema',
-                medicalRecord: patientData?.patient_data?.medical_info?.medical_record || 'No disponible',
-                admissionDate: patientData?.patient_data?.medical_info?.admission_date || new Date().toISOString().split('T')[0],
-                allergies: patientData?.patient_data?.medical_info?.allergies || 'Ninguna conocida'
-            };
+    // *** DATOS GLOBALES CORREGIDOS PARA OTROS MÓDULOS ***
+    window.currentPatientData = {
+        // Mantener estructura original para compatibilidad
+        bed: bed,
+        patient: patientData,
+        bedNumber: bed.bed_number,
+        patientId: safePatientId,
+        patientName: patientData?.patient_data?.personal_info ? 
+        `${patientData.patient_data.personal_info.first_name} ${patientData.patient_data.personal_info.last_name}` : 
+        'Paciente Desconocido',
+        patientAge: patientData?.patient_data?.personal_info?.age || 'N/A',
+        gender: patientData?.patient_data?.personal_info?.gender === 'M' ? 'Masculino' : 'Femenino',
+
+        // Información médica
+        diagnosis: patientData?.patient_data?.medical_info?.primary_diagnosis || 'Diagnóstico pendiente',
+        diagnosisCode: patientData?.patient_data?.medical_info?.primary_diagnosis_code || '',
+        doctor: patientData?.patient_data?.medical_info?.attending_physician || 'Dr. Sistema',
+        medicalRecord: patientData?.patient_data?.medical_info?.medical_record || 'No disponible',
+        admissionDate: patientData?.patient_data?.medical_info?.admission_date || new Date().toISOString().split('T')[0],
+        allergies: patientData?.patient_data?.medical_info?.allergies || 'Ninguna conocida',
+
+        // *** NUEVOS CAMPOS AGREGADOS PARA PREPAREPATIENTDATAFORMODULE() ***
+        // Campos directos que busca la función
+        hospitalizacion_id: patientData?.hospitalizacionId || patientData?.hospitalizacion_id || null,
+        numero_cuenta: patientData?.numeroCuenta || patientData?.numero_cuenta || null,
+        paciente_id: patientData?.pacienteId || patientData?.paciente_id || null,
+        medico_tratante_id: null, // No viene en tu API response
+        especialidad_id: null,    // No viene en tu API response
+        
+        // *** ESTRUCTURA PATIENT_DATA COMPLETA ***
+        // Esto permite que preparePatientDataForModule() acceda a patient_data.hospitalizacion_id
+        patient_data: {
+            hospitalizacion_id: patientData?.hospitalizacionId || patientData?.patient_data?.hospitalizacion_id || null,
+            numero_cuenta: patientData?.numeroCuenta || patientData?.patient_data?.numero_cuenta || null,
+            paciente_id: patientData?.pacienteId || patientData?.patient_data?.paciente_id || null,
+            especialidad_id: patientData?.patient_data?.especialidad_id || null,
+            medico_tratante_id: patientData?.patient_data?.medico_tratante_id || null,
+            
+            personal_info: patientData?.patient_data?.personal_info || {},
+            medical_info: patientData?.patient_data?.medical_info || {}
+        }
+    };
+
+    // *** LOG PARA VERIFICAR QUE ESTÁ BIEN ***
+    console.log('🔍 window.currentPatientData asignado:', window.currentPatientData);
+    console.log('🔍 hospitalizacion_id disponible en:', {
+        directo: window.currentPatientData.hospitalizacion_id,
+        anidado: window.currentPatientData.patient_data?.hospitalizacion_id
+    });
         
             // Modal completo
             Swal.fire({

@@ -4,8 +4,641 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nota Médica - HTML Extraído</title>
-    <link rel="stylesheet" href="/static/css/notas_medica.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ========================================
+           CSS COMPLETO - FORZADO CON !important
+           ======================================== */
+        
+        /* Reset básico */
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Variables */
+        :root {
+            --primary-color: #2c5aa0;
+            --secondary-color: #e8f4ff;
+            --medical-blue: #2c5aa0;
+            --medical-green: #00a86b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 25%, #00b894 75%, #00cec9 100%) !important;
+            margin: 0 !important;
+            padding: 20px !important;
+        }
+
+        .medical-note-with-signature {
+            max-width: 1000px !important;
+            margin: 20px auto !important;
+            padding: 25px !important;
+            background-color: var(--secondary-color) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* Header mejorado */
+        .official-header {
+            background: linear-gradient(135deg, var(--medical-blue), var(--medical-green)) !important;
+            color: white !important;
+            padding: 15px 20px !important;
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            align-items: center !important;
+            gap: 25px !important;
+            border-radius: 8px 8px 0 0 !important;
+            margin: 0 0 4px 0 !important;
+        }
+
+        .hospital-logo {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 15px !important;
+        }
+
+        .hospital-logo img {
+            height: 45px !important;
+            filter: brightness(0) invert(1) !important;
+        }
+
+        .hospital-text {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+        }
+
+        .hospital-text h2 {
+            font-size: 22px !important;
+            margin: 0 0 6px 0 !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+            line-height: 1.1 !important;
+        }
+
+        .hospital-text p {
+            font-size: 12px !important;
+            margin: 1px 0 !important;
+            color: rgba(255, 255, 255, 0.95) !important;
+            line-height: 1.3 !important;
+        }
+
+        .header-actions {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 8px !important;
+        }
+
+        .document-info {
+            text-align: right !important;
+        }
+
+        .note-type {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            color: white !important;
+            text-transform: uppercase !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+            margin: 0 0 6px 0 !important;
+            line-height: 1.1 !important;
+        }
+
+        .note-id, .note-date {
+            font-size: 12px !important;
+            color: rgba(255, 255, 255, 0.95) !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+            margin: 2px 0 !important;
+            line-height: 1.3 !important;
+        }
+
+        .back-btn {
+            display: flex !important;
+            align-items: center !important;
+            padding: 4px 10px !important;
+            font-size: 11px !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            border-radius: 4px !important;
+            background-color: rgba(255,255,255,0.1) !important;
+            color: white !important;
+            text-decoration: none !important;
+            transition: all 0.2s ease !important;
+            gap: 5px !important;
+        }
+
+        .back-btn:hover {
+            border-color: rgba(255,255,255,0.6) !important;
+            background-color: rgba(255,255,255,0.2) !important;
+            color: white !important;
+            text-decoration: none !important;
+        }
+
+        .back-btn i {
+            margin-right: 5px !important;
+            font-size: 10px !important;
+        }
+
+        /* Datos del paciente mejorados */
+        .patient-complete-data {
+            background: white !important;
+            border: 1px solid #e5e7eb !important;
+            border-left: 4px solid var(--medical-blue) !important;
+            border-radius: 6px !important;
+            padding: 16px !important;
+            margin: 4px 0 8px 0 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .patient-data-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 13px !important;
+        }
+
+        .patient-data-table td {
+            padding: 8px 12px !important;
+            border: 1px solid #e5e7eb !important;
+            vertical-align: middle !important;
+        }
+
+        .patient-data-table .label {
+            background-color: #f8f9fa !important;
+            font-weight: 600 !important;
+            color: var(--medical-blue) !important;
+            width: 15% !important;
+            text-align: left !important;
+        }
+
+        .patient-data-table .value {
+            background-color: white !important;
+            color: #374151 !important;
+            font-weight: 500 !important;
+        }
+
+        /* Signos vitales mejorados */
+        .current-vitals {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+            border: 1px solid #0ea5e9 !important;
+            border-left: 4px solid var(--medical-green) !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            margin: 8px 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+        }
+
+        .current-vitals h4 {
+            margin: 0 !important;
+            color: var(--medical-blue) !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            white-space: nowrap !important;
+            min-width: fit-content !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 3px !important;
+        }
+
+        .vitals-row {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            font-size: 11px !important;
+            flex: 1 !important;
+        }
+
+        .vitals-row span {
+            background: white !important;
+            padding: 3px 6px !important;
+            border-radius: 3px !important;
+            border: 1px solid #e0f2fe !important;
+            font-size: 11px !important;
+            color: #374151 !important;
+            font-weight: 500 !important;
+        }
+
+        /* BOTONES DE ACCIÓN PRINCIPALES - COMO LOS HABÍAMOS HECHO */
+        .action-buttons-section {
+            background: white !important;
+            border: 1px solid #e5e7eb !important;
+            border-left: 4px solid var(--medical-blue) !important;
+            border-radius: 6px !important;
+            padding: 8px 12px !important;
+            margin: 8px 0 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .action-buttons {
+            display: flex !important;
+            justify-content: flex-end !important;
+            gap: 8px !important;
+        }
+
+        .action-btn {
+            background: white !important;
+            border: 1px solid #d1d5db !important;
+            padding: 6px 12px !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .btn-new-note {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+            color: white !important;
+            border-color: #059669 !important;
+        }
+
+        .btn-new-note:hover {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+            border-color: #047857 !important;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--medical-blue) 0%, #3b82f6 100%) !important;
+            color: white !important;
+            border-color: var(--medical-blue) !important;
+        }
+
+        .btn-save:hover {
+            background: linear-gradient(135deg, #1e40af 0%, var(--medical-blue) 100%) !important;
+            border-color: #1e40af !important;
+        }
+
+        .btn-view {
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%) !important;
+            color: white !important;
+            border-color: #7c3aed !important;
+        }
+
+        .btn-view:hover {
+            background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%) !important;
+            border-color: #6d28d9 !important;
+        }
+
+        .action-btn i {
+            font-size: 12px !important;
+        }
+
+        /* Herramientas del editor mejoradas */
+        .editor-tools {
+            background: white !important;
+            border: 1px solid #e5e7eb !important;
+            border-left: 4px solid var(--medical-green) !important;
+            border-radius: 6px !important;
+            padding: 10px 16px !important;
+            margin: 8px 0 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 12px !important;
+            align-items: center !important;
+        }
+
+        .tools-group {
+            display: flex !important;
+            gap: 4px !important;
+            padding: 4px 8px !important;
+            background: #f8f9fa !important;
+            border-radius: 6px !important;
+            border: 1px solid #e9ecef !important;
+        }
+
+        .tool-btn {
+            background: white !important;
+            border: 1px solid #dee2e6 !important;
+            padding: 6px 8px !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+            color: #495057 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-width: 28px !important;
+            height: 28px !important;
+            transition: all 0.2s ease !important;
+            gap: 4px !important;
+            text-decoration: none !important;
+        }
+
+        .tool-btn:hover {
+            background: #e9ecef !important;
+            border-color: var(--medical-green) !important;
+            color: var(--medical-green) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .tool-btn.danger-btn {
+            color: #dc3545 !important;
+        }
+
+        .tool-btn.danger-btn:hover {
+            background: #dc3545 !important;
+            color: white !important;
+            border-color: #dc3545 !important;
+        }
+
+        /* Editor mejorado */
+        .note-content-area {
+            background: white !important;
+            border: 1px solid #e5e7eb !important;
+            border-left: 4px solid #dc2626 !important;
+            border-radius: 6px !important;
+            padding: 16px !important;
+            margin: 8px 0 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .note-editor {
+            width: 100% !important;
+            min-height: 400px !important;
+            max-height: 500px !important;
+            padding: 16px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 6px !important;
+            outline: none !important;
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+            background: #fdfdfd !important;
+            transition: border-color 0.2s ease !important;
+            resize: vertical !important;
+            box-sizing: border-box !important;
+            overflow-y: auto !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        .note-editor:focus {
+            border-color: var(--medical-blue) !important;
+            box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.1) !important;
+            background: white !important;
+        }
+
+        /* Firma mejorada */
+        .digital-signature-section {
+            background: white !important;
+            border: 1px solid #dee2e6 !important;
+            border-left: 4px solid #6f42c1 !important;
+            border-radius: 6px !important;
+            padding: 12px 16px !important;
+            margin: 8px 0 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .signature-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 8px !important;
+        }
+
+        .signature-header h4 {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            color: #6f42c1 !important;
+            margin: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+        }
+
+        .signature-status {
+            font-size: 10px !important;
+            padding: 2px 8px !important;
+            border-radius: 8px !important;
+            background: #fff3cd !important;
+            color: #856404 !important;
+            font-weight: 500 !important;
+        }
+
+        .signature-area {
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            gap: 16px !important;
+            align-items: center !important;
+        }
+
+        .signature-info {
+            font-size: 11px !important;
+            line-height: 1.4 !important;
+        }
+
+        .signature-info p {
+            margin: 2px 0 !important;
+        }
+
+        .signature-info strong {
+            color: #6f42c1 !important;
+        }
+
+        .signature-canvas-container {
+            background: #f8f9fa !important;
+            border: 1px dashed #dee2e6 !important;
+            border-radius: 6px !important;
+            padding: 12px !important;
+            text-align: center !important;
+        }
+
+        #signatureCanvas {
+            border: 1px solid #dee2e6 !important;
+            border-radius: 4px !important;
+            cursor: crosshair !important;
+            background: white !important;
+            display: block !important;
+            margin: 0 auto !important;
+        }
+
+        .signature-actions {
+            display: flex !important;
+            gap: 6px !important;
+            margin-top: 8px !important;
+            justify-content: center !important;
+        }
+
+        .signature-actions button {
+            padding: 4px 8px !important;
+            border: 1px solid #dee2e6 !important;
+            border-radius: 4px !important;
+            background: white !important;
+            color: #495057 !important;
+            cursor: pointer !important;
+            font-size: 10px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .btn-clear-signature {
+            color: #dc3545 !important;
+            border-color: #dc3545 !important;
+        }
+
+        .btn-clear-signature:hover {
+            background: #dc3545 !important;
+            color: white !important;
+        }
+
+        .btn-preview-note {
+            color: #17a2b8 !important;
+            border-color: #17a2b8 !important;
+        }
+
+        .btn-preview-note:hover {
+            background: #17a2b8 !important;
+            color: white !important;
+        }
+
+        .btn-print-note {
+            color: #28a745 !important;
+            border-color: #28a745 !important;
+        }
+
+        .btn-print-note:hover {
+            background: #28a745 !important;
+            color: white !important;
+        }
+
+        /* Responsive ARREGLADO */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px !important;
+            }
+
+            .medical-note-with-signature {
+                margin: 5px !important;
+                padding: 15px !important;
+            }
+
+            .official-header {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                padding: 15px !important;
+                text-align: left !important;
+            }
+
+            .hospital-logo {
+                justify-content: flex-start !important;
+                gap: 10px !important;
+            }
+
+            .hospital-logo img {
+                height: 40px !important;
+            }
+
+            .hospital-text h2 {
+                font-size: 18px !important;
+                margin-bottom: 4px !important;
+            }
+
+            .hospital-text p {
+                font-size: 11px !important;
+            }
+
+            .header-actions {
+                align-items: flex-start !important;
+                margin-top: 10px !important;
+            }
+
+            .document-info {
+                text-align: left !important;
+            }
+
+            .note-type {
+                font-size: 14px !important;
+            }
+
+            .note-id, .note-date {
+                font-size: 11px !important;
+            }
+
+            .current-vitals {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+                padding: 10px !important;
+            }
+
+            .current-vitals h4 {
+                font-size: 11px !important;
+            }
+
+            .vitals-row {
+                width: 100% !important;
+            }
+
+            .vitals-row span {
+                font-size: 10px !important;
+                padding: 3px 5px !important;
+                flex: 1 !important;
+                text-align: center !important;
+            }
+
+            .action-buttons {
+                flex-direction: column !important;
+                gap: 6px !important;
+            }
+
+            .action-btn {
+                width: 100% !important;
+                justify-content: center !important;
+                font-size: 11px !important;
+            }
+
+            .editor-tools {
+                justify-content: center !important;
+                gap: 8px !important;
+                padding: 8px !important;
+            }
+
+            .tools-group {
+                padding: 3px 6px !important;
+                margin: 2px !important;
+            }
+
+            .tool-btn {
+                min-width: 24px !important;
+                height: 24px !important;
+                font-size: 11px !important;
+            }
+
+            .note-editor {
+                min-height: 250px !important;
+                max-height: 350px !important;
+                font-size: 13px !important;
+                padding: 12px !important;
+            }
+
+            .signature-area {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+
+            .signature-info {
+                text-align: center !important;
+            }
+
+            #signatureCanvas {
+                width: 100% !important;
+                max-width: 300px !important;
+                height: 100px !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="medical-note-with-signature">
@@ -68,6 +701,24 @@
                 <span><strong>FR:</strong> 18 rpm</span>
                 <span><strong>T°:</strong> 36.8°C</span>
                 <span><strong>SpO2:</strong> 98%</span>
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN PRINCIPALES (LOS QUE HABÍAMOS HECHO) -->
+        <div class="action-buttons-section">
+            <div class="action-buttons">
+                <button class="action-btn btn-new-note" id="nuevaNotaBtn">
+                    <i class="fas fa-plus-circle"></i>
+                    Nueva Nota
+                </button>
+                <button class="action-btn btn-save" id="guardarNotaBtn">
+                    <i class="fas fa-save"></i>
+                    Guardar
+                </button>
+                <button class="action-btn btn-view" id="vernotas">
+                    <i class="fas fa-eye"></i>
+                    Ver Notas
+                </button>
             </div>
         </div>
 
@@ -147,7 +798,7 @@
                 </button>
             </div>
 
-            <!-- LIMPIAR Y DESHACER -->
+            <!-- BOTONES DE PRUEBA ELIMINADOS - SOLO LOS NECESARIOS -->
             <div class="tools-group">
                 <button type="button" class="tool-btn" title="Deshacer">
                     <i class="fas fa-undo"></i>
@@ -210,6 +861,8 @@
             </div>
         </div>
     </div>
+
+    
     <!-- Script de navegación común para manejar botones de volver -->
     <script src="/static/js/common_navigation.js"></script>
     <script src="/static/js/notamedica.js"></script>

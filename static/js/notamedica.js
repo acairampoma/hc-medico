@@ -48,6 +48,20 @@ function inicializarNotasMedicas() {
 
     // 8. IMPRESIÓN PDF
     setupMedicalNotePrint();
+    
+    // 9. LOCAL STORAGE
+    setupLocalStorage();
+
+    // 10. BOTÓN TEST
+    setupTestButton();
+
+    // 11. BOTÓN GUARDAR
+    setupSaveButton();
+
+    // 12. BOTÓN VER NOTAS
+    setupVerNotas();
+
+
 }
 
 // ===== FUNCIÓN: ACTUALIZAR DATOS DEL PACIENTE =====
@@ -3152,6 +3166,1706 @@ function setupMedicalNotePrint() {
     
     console.log('✅ Sistema de impresión PDF configurado');
 }
+
+// ===== FUNCIÓN PRINCIPAL =====
+function setupLocalStorage() {
+    console.log('📦 Cargando datos del paciente...');
+    
+    const data = getPatientData();
+    if (!data) return;
+    
+    updatePatientHeader(data);
+    console.log('✅ Datos cargados');
+}
+
+// ===== OBTENER DATOS DEL PACIENTE =====
+function getPatientData() {
+    try {
+        const stored = localStorage.getItem('currentPatientData');
+        if (!stored) {
+            console.warn('⚠️ No hay currentPatientData en localStorage');
+            return null;
+        }
+        
+        const parsed = JSON.parse(stored);
+        console.log('📋 Datos encontrados:', parsed);
+        
+        // DETECTAR ESTRUCTURA: Medical Rounds vs API
+        if (parsed.source === "medical_rounds") {
+            console.log('📦 Usando datos de Medical Rounds');
+            return parsed; // Estructura directa de medical rounds
+        }
+        
+        // Si tiene estructura de respuesta API, extraer data
+        if (parsed.data && parsed.data.patient_data) {
+            console.log('📦 Usando datos de API response');
+            return parsed.data.patient_data;
+        }
+        
+        // Si es directamente patient_data
+        if (parsed.patient_data) {
+            console.log('📦 Usando patient_data directo');
+            return parsed.patient_data;
+        }
+        
+        // Si es el objeto directo con campos conocidos
+        if (parsed.firstName || parsed.fullName || parsed.patientId) {
+            console.log('📦 Usando datos directos (estructura plana)');
+            return parsed;
+        }
+        
+        console.warn('⚠️ Estructura de datos no reconocida');
+        return parsed; // Intentar usar tal como está
+        
+    } catch (error) {
+        console.error('❌ Error leyendo localStorage:', error);
+        return null;
+    }
+}
+
+// ===== ACTUALIZAR CABECERA DEL PACIENTE =====
+function updatePatientHeader(data) {
+    // Detectar estructura de datos
+    let nombre, edad, sexo, servicio, diagnostico, hc;
+    
+    if (data.source === "medical_rounds") {
+        // Estructura de Medical Rounds
+        nombre = data.fullName || `${data.firstName} ${data.lastName}`;
+        edad = data.age ? `${data.age} años` : null;
+        sexo = data.gender;
+        hc = data.medicalRecord || data.patientId;
+        servicio = data.attendingPhysician || data.specialty || 'Medicina Interna';
+        diagnostico = data.primaryDiagnosis;
+    } else if (data.personal_info) {
+        // Estructura nueva (API)
+        nombre = data.personal_info.fullname || `${data.personal_info.first_name} ${data.personal_info.last_name}`;
+        edad = data.personal_info.age ? `${data.personal_info.age} años` : null;
+        sexo = data.personal_info.gender;
+        hc = data.personal_info.medical_record;
+        servicio = data.medical_info?.attending_physician || 'Medicina Interna';
+        diagnostico = data.medical_info?.primary_diagnosis;
+    } else {
+        // Estructura genérica (fallback)
+        nombre = data.fullName || data.fullname || `${data.firstName} ${data.lastName}`;
+        edad = data.age ? `${data.age} años` : null;
+        sexo = data.gender;
+        hc = data.medicalRecord || data.patientId;
+        servicio = data.attendingPhysician || data.specialty || 'Medicina Interna';
+        diagnostico = data.primaryDiagnosis;
+    }
+    
+    const updates = {
+        'PACIENTE:': nombre,
+        'HC:': hc,
+        'EDAD:': edad,
+        'SEXO:': sexo,
+        'SERVICIO:': servicio,
+        'DIAGNÓSTICO:': diagnostico
+    };
+    
+    console.log('📋 Actualizando con:', updates);
+    
+    document.querySelectorAll('.patient-data-table td').forEach(cell => {
+        const label = cell.textContent.trim();
+        if (updates[label] && updates[label] !== null) {
+            const valueCell = cell.nextElementSibling;
+            if (valueCell) {
+                valueCell.textContent = updates[label];
+                console.log(`✅ ${label} → ${updates[label]}`);
+            }
+        }
+    });
+}
+
+
+// ===== FUNCIÓN PRINCIPAL: SETUP BOTÓN TEST =====
+function setupTestButton() {
+    const testBtn = document.getElementById('testJsonBtn');
+    if (testBtn) {
+        testBtn.addEventListener('click', mostrarJsonTest);
+        console.log('✅ Botón Test configurado');
+    }
+}
+
+// ===== FUNCIONES DE APOYO =====
+function mostrarJsonTest() {
+    const jsonData = recolectarDatosNota();
+    const jsonString = JSON.stringify(jsonData, null, 2);
+    
+    // Mostrar en alert por ahora (después podemos hacer modal)
+    alert('JSON PARA SERVICIO:\n\n' + jsonString);
+    
+    // También en consola para fácil copia
+    console.log('📋 JSON COMPLETO:');
+    console.log(jsonData);
+    console.log('📋 JSON STRING:');
+    console.log(jsonString);
+}
+
+function recolectarDatosNota() {
+    console.log('📋 Recolectando datos de la nota...');
+    
+    const patientData = getPatientData(); // Ya tenemos esta función
+    const ahora = new Date();
+    
+    // MAPEAR DATOS CON PRIORIDAD: API > Medical Rounds > Fallback
+    let hospitalizacionId, numeroCuenta, pacienteId, medicoId, especialidadId;
+    
+    if (patientData?.patient_data?.hospitalizacion_id) {
+        // PRIORIDAD 1: Datos del API (más completos y reales)
+        hospitalizacionId = patientData.patient_data.hospitalizacion_id;
+        numeroCuenta = patientData.patient_data.numero_cuenta;
+        pacienteId = patientData.patient_data.paciente_id;
+        medicoId = patientData.patient_data.medico_tratante_id || 105;
+        especialidadId = patientData.patient_data.especialidad_id;
+        
+        console.log('🎯 Usando datos del API (REALES):');
+        console.log('  - hospitalizacion_id:', hospitalizacionId);
+        console.log('  - numero_cuenta:', numeroCuenta);
+        console.log('  - paciente_id:', pacienteId);
+        console.log('  - especialidad_id:', especialidadId);
+        
+    } else if (patientData?.hospitalizacionId || patientData?.hospitalizacion_id) {
+        // PRIORIDAD 2: Datos directos de Medical Rounds
+        hospitalizacionId = patientData.hospitalizacionId || patientData.hospitalizacion_id;
+        numeroCuenta = patientData.numeroCuenta || patientData.numero_cuenta;
+        pacienteId = patientData.pacienteId || patientData.paciente_id;
+        medicoId = patientData.medico_tratante_id || 105;
+        especialidadId = patientData.especialidad_id;
+        
+        console.log('📋 Usando datos de Medical Rounds:');
+        console.log('  - hospitalizacion_id:', hospitalizacionId);
+        console.log('  - numero_cuenta:', numeroCuenta);
+        console.log('  - paciente_id:', pacienteId);
+        
+    } else {
+        // PRIORIDAD 3: Fallback con datos básicos + generados
+        hospitalizacionId = 2; // Temporal
+        numeroCuenta = `CTA${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}${String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0')}`;
+        pacienteId = patientData?.paciente_id || parseInt(patientData?.patientId?.replace(/\D/g, '')) || 999;
+        medicoId = 105;
+        especialidadId = null;
+        
+        console.log('⚠️ Usando datos fallback (generados):');
+        console.log('  - hospitalizacion_id:', hospitalizacionId, '(temporal)');
+        console.log('  - numero_cuenta:', numeroCuenta, '(generado)');
+        console.log('  - paciente_id:', pacienteId);
+    }
+    
+    const notaJson = {
+        // DATOS BÁSICOS DE LA NOTA
+        numero_nota: generarNumeroNota(),
+        hospitalizacion_id: hospitalizacionId,
+        numero_cuenta: numeroCuenta,
+        tipo_nota: "01", // Evolución médica
+        titulo_nota: "Evolución Médica",
+        contenido_nota: obtenerContenidoEditor(),
+        turno: calcularTurno(ahora),
+        
+        // METADATOS
+        estado: "01", // Borrador por defecto
+        creado_por: medicoId,
+        
+        // DATOS CLÍNICOS
+        signos_vitales: obtenerSignosVitales(),
+        firma_digital: obtenerFirmaDigital(),
+        audio_data: obtenerAudioData()
+    };
+    
+    console.log('✅ JSON armado con datos REALES:', notaJson);
+    console.log('📊 Fuente de datos:', patientData?.patient_data ? 'API (REAL)' : patientData?.source || 'fallback');
+    return notaJson;
+}
+
+// ===== OBTENER CONTENIDO DEL EDITOR =====
+function obtenerContenidoEditor() {
+    const editor = document.getElementById('medicalNoteEditor');
+    const contenido = editor ? editor.innerHTML.trim() : '';
+    
+    // Si está vacío, poner datos de prueba
+    if (!contenido || contenido === '') {
+        return `
+<h3>Evolución Post-Procedimiento</h3>
+<p><strong>Paciente estable</strong> post-procedimiento</p>
+<ul>
+<li>Signos vitales estables</li>
+<li>Sin complicaciones</li>
+<li>Tolera vía oral</li>
+</ul>
+<p><strong>Plan:</strong> Continuar observación por 24 horas</p>
+        `.trim();
+    }
+    
+    return contenido;
+}
+
+// ===== OBTENER SIGNOS VITALES =====
+function obtenerSignosVitales() {
+    // Leer de la tabla de signos vitales actuales
+    const vitalsRow = document.querySelector('.vitals-row');
+    const ahora = new Date().toISOString();
+    
+    let signos = {
+        origen: "manual",
+        timestamp: ahora,
+        presion_arterial: { sistolica: 120, diastolica: 80 },
+        frecuencia_cardiaca: 72,
+        temperatura: 36.5,
+        saturacion_oxigeno: 98,
+        frecuencia_respiratoria: 16
+    };
+    
+    // Si hay datos en la UI, extraerlos
+    if (vitalsRow) {
+        const spans = vitalsRow.querySelectorAll('span');
+        spans.forEach(span => {
+            const texto = span.textContent;
+            
+            if (texto.includes('PA:')) {
+                const match = texto.match(/(\d+)\/(\d+)/);
+                if (match) {
+                    signos.presion_arterial.sistolica = parseInt(match[1]);
+                    signos.presion_arterial.diastolica = parseInt(match[2]);
+                }
+            } else if (texto.includes('FC:')) {
+                const match = texto.match(/(\d+)/);
+                if (match) signos.frecuencia_cardiaca = parseInt(match[1]);
+            } else if (texto.includes('T°:')) {
+                const match = texto.match(/(\d+\.?\d*)/);
+                if (match) signos.temperatura = parseFloat(match[1]);
+            } else if (texto.includes('SpO2:')) {
+                const match = texto.match(/(\d+)/);
+                if (match) signos.saturacion_oxigeno = parseInt(match[1]);
+            } else if (texto.includes('FR:')) {
+                const match = texto.match(/(\d+)/);
+                if (match) signos.frecuencia_respiratoria = parseInt(match[1]);
+            }
+        });
+    }
+    
+    return signos;
+}
+
+// ===== OBTENER FIRMA DIGITAL =====
+function obtenerFirmaDigital() {
+    const canvas = document.getElementById('signatureCanvas');
+    
+    if (!canvas) {
+        return {
+            tiene_firma: false,
+            requerida: true,
+            firma_base64: null,
+            fecha_firma: null
+        };
+    }
+    
+    // Verificar si hay algo dibujado en el canvas
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const hasDrawing = imageData.data.some((channel, index) => 
+        index % 4 !== 3 && channel !== 0
+    );
+    
+    if (hasDrawing) {
+        return {
+            tiene_firma: true,
+            requerida: true,
+            firma_base64: canvas.toDataURL('image/png'),
+            fecha_firma: new Date().toISOString(),
+            medico_cmp: "12345" // TODO: Obtener del localStorage
+        };
+    } else {
+        return {
+            tiene_firma: false,
+            requerida: true,
+            firma_base64: null,
+            fecha_firma: null
+        };
+    }
+}
+
+// ===== OBTENER DATOS DE AUDIO =====
+function obtenerAudioData() {
+    // Por ahora datos de prueba, después integraremos la grabadora
+    return {
+        tiene_audio: false,
+        duracion_segundos: 0,
+        transcrito: false,
+        audio_eliminado: false,
+        fecha_grabacion: null,
+        calidad_audio: "buena",
+        audio_base64: null
+    };
+}
+
+// ===== FUNCIONES AUXILIARES =====
+function generarNumeroNota() {
+    const ahora = new Date();
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    const hora = String(ahora.getHours()).padStart(2, '0');
+    const min = String(ahora.getMinutes()).padStart(2, '0');
+    
+    return `NE${año}${mes}${dia}${hora}${min}`;
+}
+
+function calcularTurno(fecha) {
+    const hora = fecha.getHours();
+    
+    if (hora >= 7 && hora < 13) return "01"; // Mañana
+    if (hora >= 13 && hora < 19) return "02"; // Tarde  
+    return "03"; // Noche
+}
+
+
+
+// =GRABAR NOTA MEDICA
+
+// 1. INICIALIZACIÓN
+function setupSaveButton() {
+    console.log('🔥 Iniciando sistema de notas médicas...');
+    
+    const saveBtn = document.getElementById('guardarNotaBtn');
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', guardarNota);
+        console.log('✅ Botón guardar configurado');
+    }
+}
+
+// 2. GUARDAR NOTA - FLUJO OPTIMIZADO
+async function guardarNota() {
+    console.log('💾 Iniciando proceso de guardado...');
+    
+    // PASO 1: VALIDAR CONTENIDO TEXTO
+    console.log('📝 Paso 1: Validando contenido...');
+    const contenido = obtenerContenidoEditor();
+    if (!validarContenido(contenido)) {
+        alert('❌ Debe escribir el contenido de la nota');
+        return;
+    }
+    console.log('✅ Contenido válido');
+    
+    // PASO 2: VALIDAR FIRMA
+    console.log('✍️ Paso 2: Validando firma...');
+    const firma = obtenerFirmaDigital();
+    if (!validarFirma(firma)) {
+        alert('❌ Debe firmar la nota médica');
+        return;
+    }
+    console.log('✅ Firma válida');
+    
+    // PASO 3: VALIDAR DATOS DEL PACIENTE Y TOKEN
+    console.log('👤 Paso 3: Validando datos del paciente...');
+    const pacienteData = obtenerDatosPaciente();
+    const token = localStorage.getItem('access_token');
+    
+    if (!validarDatosPaciente(pacienteData)) {
+        alert('❌ No hay datos del paciente disponibles');
+        return;
+    }
+    
+    if (!validarToken(token)) {
+        alert('❌ No hay token de autenticación válido');
+        return;
+    }
+    console.log('✅ Datos del paciente y token válidos');
+    
+    // PASO 4: RECOLECTAR INFORMACIÓN
+    console.log('📋 Paso 4: Recolectando información...');
+    const notaData = recolectarDatos(pacienteData, contenido, firma);
+    console.log('✅ Información recolectada:', notaData);
+    
+    // PASO 5: LLAMAR AL API
+    console.log('🌐 Paso 5: Enviando al servidor...');
+    const resultado = await enviarAlServidor(notaData, token);
+    
+    // PASO 6: PROCESAR RESPUESTA Y MOSTRAR MENSAJES
+    console.log('📱 Paso 6: Procesando respuesta...');
+    if (resultado.exito) {
+        console.log('✅ Nota guardada exitosamente en servidor');
+        
+        // 🔥 NUEVO: GUARDAR EN LOCALSTORAGE TAMBIÉN
+        console.log('💾 Guardando en localStorage...');
+        try {
+            // Crear objeto completo para localStorage incluyendo la firma
+            const contenidoParaLocalStorage = {
+                ...contenido,  // Todo el contenido capturado
+                firmaBase64: firma.firma_base64 ? firma.firma_base64.split(',')[1] : null,  // Solo la parte base64
+                numeroNota: notaData.numero_nota,
+                fechaGuardado: new Date().toISOString(),
+                metadatos: {
+                    ...contenido.metadatos,
+                    numeroNota: notaData.numero_nota,
+                    numeroCuenta: notaData.numero_cuenta,
+                    hospitalizacionId: notaData.hospitalizacion_id
+                }
+            };
+            
+            // Key usando el número de nota
+            const keyLocalStorage = `nota_${notaData.numero_nota}`;
+            
+            // Guardar en localStorage
+            localStorage.setItem(keyLocalStorage, JSON.stringify(contenidoParaLocalStorage));
+            
+            console.log(`✅ Guardado en localStorage con key: ${keyLocalStorage}`);
+            console.log('📄 Contenido guardado:', contenidoParaLocalStorage);
+            
+        } catch (errorLocal) {
+            console.error('❌ Error al guardar en localStorage:', errorLocal);
+            // No fallar por esto, solo advertir
+        }
+        
+        alert('✅ Nota guardada correctamente');
+        
+        // PASO 7: LIMPIAR FORMULARIO
+        console.log('🧹 Paso 7: Limpiando formulario...');
+        limpiarFormulario();
+        console.log('✅ Proceso completado exitosamente');
+        
+    } else {
+        console.error('❌ Error al guardar:', resultado.error);
+        alert(`❌ Error al guardar: ${resultado.mensaje}`);
+    }
+}
+
+// 🔧 FUNCIÓN AUXILIAR PARA VER QUE SE GUARDÓ
+function verificarNotasGuardadas() {
+    console.log('🔍 =================== NOTAS EN LOCALSTORAGE ===================');
+    
+    const todasLasKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('nota_')) {
+            todasLasKeys.push(key);
+        }
+    }
+    
+    console.log('📋 Keys de notas encontradas:', todasLasKeys);
+    
+    todasLasKeys.forEach(key => {
+        try {
+            const contenido = JSON.parse(localStorage.getItem(key));
+            console.log(`📄 ${key}:`, {
+                numeroNota: contenido.numeroNota,
+                fechaGuardado: contenido.fechaGuardado,
+                tieneTexto: contenido.texto ? contenido.texto.length > 0 : false,
+                tieneFirma: !!contenido.firmaBase64,
+                tieneDibujos: contenido.dibujos ? contenido.dibujos.length : 0
+            });
+        } catch (e) {
+            console.error(`❌ Error al parsear ${key}:`, e);
+        }
+    });
+}
+
+// 🔧 FUNCIÓN PARA PROBAR GUARDADO Y RECUPERACIÓN
+async function pruebaCompleta() {
+    console.log('🧪 =================== PRUEBA COMPLETA ===================');
+    
+    // 1. Guardar nota
+    console.log('💾 Guardando nota...');
+    await guardarNota();
+    
+    // 2. Verificar que se guardó
+    console.log('🔍 Verificando guardado...');
+    verificarNotasGuardadas();
+    
+    // 3. Simular ver notas
+    console.log('👁️ Simulando ver notas...');
+    setTimeout(() => {
+        verTodasLasNotas();
+    }, 1000);
+}
+
+// 3. FUNCIONES DE VALIDACIÓN
+function validarContenido(contenido) {
+    return contenido && (
+        (contenido.texto && contenido.texto.trim() !== '') || 
+        (contenido.dibujos && contenido.dibujos.some(d => d.tieneContenido)) ||
+        (contenido.imagenes && contenido.imagenes.length > 0)
+    );
+}
+
+function validarFirma(firma) {
+    return firma && firma.tiene_firma === true;
+}
+
+function validarDatosPaciente(pacienteData) {
+    return pacienteData !== null && pacienteData !== undefined;
+}
+
+function validarToken(token) {
+    return token && token.trim() !== '';
+}
+
+// 4. ENVÍO AL SERVIDOR
+async function enviarAlServidor(notaData, token) {
+    try {
+        const response = await fetch('http://localhost:8090/api/notas/crear', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(notaData)
+        });
+        
+        if (response.ok || response.status === 201) {
+            return { 
+                exito: true, 
+                status: response.status,
+                mensaje: 'Guardado exitoso'
+            };
+        } else {
+            return { 
+                exito: false, 
+                status: response.status,
+                error: 'Error del servidor',
+                mensaje: `Error ${response.status}: No se pudo guardar la nota`
+            };
+        }
+        
+    } catch (error) {
+        console.error('❌ Error de conexión:', error);
+        return { 
+            exito: false, 
+            error: error.message,
+            mensaje: 'Error de conexión con el servidor'
+        };
+    }
+}
+
+// 5. RECOLECTAR DATOS
+function recolectarDatos(pacienteData, contenido, firma) {
+    const ahora = new Date();
+    
+    return {
+        numero_nota: generarNumeroNota(),
+        hospitalizacion_id: extraerHospitalizacionId(pacienteData),
+        numero_cuenta: extraerNumeroCuenta(pacienteData),
+        tipo_nota: "01",
+        titulo_nota: "Evolución Médica",
+        contenido_nota: JSON.stringify(contenido),
+        turno: calcularTurno(ahora),
+        estado: "02",
+        creado_por: extraerMedicoId(pacienteData),
+        signos_vitales: obtenerSignosVitales(),
+        firma_digital: firma,
+        audio_data: { tiene_audio: false }
+    };
+}
+
+// 6. EXTRAER DATOS ESPECÍFICOS
+function extraerHospitalizacionId(pacienteData) {
+    return pacienteData.hospitalizacion_id || 
+           pacienteData.patient_data?.hospitalizacion_id || 
+           2; // Fallback
+}
+
+function extraerNumeroCuenta(pacienteData) {
+    return pacienteData.numero_cuenta || 
+           pacienteData.patient_data?.numero_cuenta || 
+           generarNumeroCuenta();
+}
+
+function extraerMedicoId(pacienteData) {
+    return pacienteData.medico_tratante_id || 
+           pacienteData.patient_data?.medico_tratante_id || 
+           105; // Fallback
+}
+
+// 7. OBTENER DATOS DEL FORMULARIO
+function obtenerContenidoEditor() {
+    try {
+        const contenidoCompleto = {
+            texto: '',
+            html: '',
+            dibujos: [],
+            imagenes: [],
+            metadatos: {
+                timestamp: new Date().toISOString(),
+                fecha: new Date().toLocaleDateString('es-ES'),
+                hora: new Date().toLocaleTimeString('es-ES')
+            },
+            resumen: ''
+        };
+
+        // 1. OBTENER CONTENIDO DEL EDITOR PRINCIPAL
+        const editor = document.getElementById('medicalNoteEditor');
+        if (editor) {
+            // TEXTO PLANO (para búsquedas)
+            contenidoCompleto.texto = editor.textContent || editor.innerText || '';
+            
+            // HTML FORMATEADO (para reconstruir con formato)
+            contenidoCompleto.html = editor.innerHTML || '';
+            
+            console.log('📝 Editor encontrado:', {
+                textoLength: contenidoCompleto.texto.length,
+                htmlLength: contenidoCompleto.html.length,
+                tieneFormato: contenidoCompleto.html !== contenidoCompleto.texto
+            });
+        } else {
+            console.warn('❌ Editor #medicalNoteEditor no encontrado');
+        }
+
+        // 2. PROCESAR CANVAS (DIBUJOS Y FIRMA)
+        const todosLosCanvas = document.querySelectorAll('canvas');
+        console.log(`🎨 Procesando ${todosLosCanvas.length} canvas...`);
+        
+        todosLosCanvas.forEach((canvas, index) => {
+            try {
+                const context = canvas.getContext('2d');
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Verificar si hay contenido real
+                let tieneContenido = false;
+                for (let i = 3; i < imageData.data.length; i += 4) {
+                    if (imageData.data[i] > 0) {
+                        tieneContenido = true;
+                        break;
+                    }
+                }
+                
+                if (tieneContenido) {
+                    const dibujoInfo = {
+                        id: canvas.id || `canvas_${index}`,
+                        indice: index,
+                        dimensiones: {
+                            width: canvas.width,
+                            height: canvas.height
+                        },
+                        datos: {
+                            imageData: canvas.toDataURL('image/png')
+                        },
+                        tieneContenido: true,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    contenidoCompleto.dibujos.push(dibujoInfo);
+                    console.log(`✅ Canvas ${canvas.id || index} procesado`);
+                }
+            } catch (error) {
+                console.warn(`⚠️ Error procesando canvas ${index}:`, error);
+            }
+        });
+
+        // 3. PROCESAR IMÁGENES (si las hay en el editor)
+        const imagenesEnEditor = editor ? editor.querySelectorAll('img') : [];
+        imagenesEnEditor.forEach((img, index) => {
+            if (img.src && img.src !== window.location.href) {
+                const imagenInfo = {
+                    id: img.id || `imagen_${index}`,
+                    indice: index,
+                    src: img.src,
+                    alt: img.alt || '',
+                    dimensiones: {
+                        width: img.width || img.naturalWidth,
+                        height: img.height || img.naturalHeight
+                    }
+                };
+                
+                if (img.src.startsWith('data:')) {
+                    imagenInfo.esBase64 = true;
+                    imagenInfo.base64 = img.src.split(',')[1];
+                    imagenInfo.mimeType = img.src.split(',')[0].split(':')[1].split(';')[0];
+                }
+                
+                contenidoCompleto.imagenes.push(imagenInfo);
+            }
+        });
+
+        // 4. CREAR RESUMEN
+        const resumen = `Contenido capturado el ${contenidoCompleto.metadatos.fecha} a las ${contenidoCompleto.metadatos.hora}
+- Texto: ${contenidoCompleto.texto.length} caracteres
+- Dibujos: ${contenidoCompleto.dibujos.length} canvas con contenido
+- Imágenes: ${contenidoCompleto.imagenes.length} imágenes
+- HTML: ${contenidoCompleto.html.length} caracteres`;
+        
+        contenidoCompleto.resumen = resumen;
+
+        // 5. VALIDAR QUE HAY CONTENIDO
+        const hayContenido = 
+            contenidoCompleto.texto.trim().length > 0 ||
+            contenidoCompleto.dibujos.length > 0 ||
+            contenidoCompleto.imagenes.length > 0;
+
+        if (!hayContenido) {
+            console.warn('⚠️ No se encontró contenido significativo');
+            contenidoCompleto.advertencia = 'No se encontró contenido significativo';
+        }
+
+        // 6. LOG PARA DEBUGGING
+        console.log('📊 Contenido final capturado:', {
+            textoLength: contenidoCompleto.texto.length,
+            htmlLength: contenidoCompleto.html.length,
+            dibujosCount: contenidoCompleto.dibujos.length,
+            imagenesCount: contenidoCompleto.imagenes.length,
+            hayContenido: hayContenido
+        });
+
+        return contenidoCompleto;
+
+    } catch (error) {
+        console.error('❌ Error en obtenerContenidoEditor:', error);
+        return {
+            error: error.message,
+            timestamp: new Date().toISOString(),
+            texto: '',
+            html: '',
+            dibujos: [],
+            imagenes: []
+        };
+    }
+}
+
+// FUNCIONES DE UTILIDAD ADICIONALES QUE PUEDES USAR:
+
+// Función para obtener solo el texto (compatibilidad con tu función original)
+function obtenerSoloTexto() {
+    const contenido = obtenerContenidoEditor();
+    return contenido.texto || '';
+}
+
+// Función para verificar si hay dibujos
+function hayDibujos() {
+    const contenido = obtenerContenidoEditor();
+    return contenido.dibujos.some(d => d.tieneContenido);
+}
+
+// Función para obtener solo los dibujos
+function obtenerSoloDibujos() {
+    const contenido = obtenerContenidoEditor();
+    return contenido.dibujos.filter(d => d.tieneContenido);
+}
+
+// Función para crear un resumen rápido
+function obtenerResumen() {
+    const contenido = obtenerContenidoEditor();
+    return contenido.resumen;
+}
+
+// EJEMPLO DE USO:
+/*
+// Uso básico (reemplaza tu función actual)
+const contenido = obtenerContenidoEditor();
+console.log(contenido);
+
+// Uso específico
+const soloTexto = obtenerSoloTexto();
+const soloResumen = obtenerResumen();
+const tieneEsbozos = hayDibujos();
+
+// Para enviar al servidor
+const datosParaServidor = {
+    texto: contenido.texto,
+    dibujos: contenido.dibujos.map(d => ({
+        imagen: d.datos.base64,
+        dimensiones: d.dimensiones
+    })),
+    html: contenido.html,
+    fecha: contenido.metadatos.timestamp
+};
+*/
+
+function obtenerFirmaDigital() {
+    const canvas = document.getElementById('signatureCanvas');
+    if (!canvas) return { tiene_firma: false };
+    
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const hasDrawing = imageData.data.some((channel, index) => index % 4 !== 3 && channel !== 0);
+    
+    return {
+        tiene_firma: hasDrawing,
+        requerida: true,
+        firma_base64: hasDrawing ? canvas.toDataURL('image/png') : null,
+        fecha_firma: hasDrawing ? new Date().toISOString() : null,
+        medico_cmp: "12345"
+    };
+}
+
+function obtenerDatosPaciente() {
+    try {
+        return window.currentPatientData || 
+               JSON.parse(localStorage.getItem('currentPatientData') || 'null');
+    } catch (e) {
+        console.error('❌ Error al obtener datos del paciente:', e);
+        return null;
+    }
+}
+
+function obtenerSignosVitales() {
+    return {
+        origen: "manual",
+        timestamp: new Date().toISOString(),
+        presion_arterial: { sistolica: 140, diastolica: 90 },
+        frecuencia_cardiaca: 78,
+        temperatura: 36.8,
+        saturacion_oxigeno: 98,
+        frecuencia_respiratoria: 18
+    };
+}
+
+// 8. FUNCIONES AUXILIARES
+function generarNumeroNota() {
+    const ahora = new Date();
+    return `NE${ahora.getFullYear()}${(ahora.getMonth() + 1).toString().padStart(2, '0')}${ahora.getDate().toString().padStart(2, '0')}${ahora.getHours().toString().padStart(2, '0')}${ahora.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function generarNumeroCuenta() {
+    const ahora = new Date();
+    const random = Math.floor(Math.random() * 9999) + 1;
+    return `CTA${ahora.getFullYear()}${(ahora.getMonth() + 1).toString().padStart(2, '0')}${ahora.getDate().toString().padStart(2, '0')}${random.toString().padStart(4, '0')}`;
+}
+
+function calcularTurno(fecha) {
+    const hora = fecha.getHours();
+    if (hora >= 7 && hora < 13) return "01";
+    if (hora >= 13 && hora < 19) return "02";
+    return "03";
+}
+
+function limpiarFormulario() {
+    const editor = document.getElementById('medicalNoteEditor');
+    const canvas = document.getElementById('signatureCanvas');
+    
+    if (editor) {
+        editor.value = '';
+        editor.innerHTML = '';
+        editor.textContent = '';
+    }
+    
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    console.log('✅ Formulario limpiado correctamente');
+}
+
+
+
+// =========================================
+// SETUP VER NOTAS-AC
+// =========================================
+
+function detectarFormatoNotas(respuesta) {
+    console.log('🔍 Analizando formato de respuesta:', respuesta);
+    console.log('🔍 Tipo de respuesta:', typeof respuesta);
+    
+    // CASO 1: Tu API devuelve UN OBJETO (una sola nota)
+    if (typeof respuesta === 'object' && respuesta !== null) {
+        
+        // Si la respuesta tiene .data (como tu ejemplo JSON)
+        if (respuesta.data) {
+            console.log('✅ Detectado: Nota en .data');
+            // Si .data es un objeto, lo convertimos a array
+            if (typeof respuesta.data === 'object' && !Array.isArray(respuesta.data)) {
+                return [respuesta.data]; // Convertir objeto a array
+            }
+            return Array.isArray(respuesta.data) ? respuesta.data : [respuesta.data];
+        }
+        
+        // Si es directamente una nota (tiene id o numero_nota)
+        if (respuesta.id || respuesta.numero_nota) {
+            console.log('✅ Detectado: Una sola nota directa');
+            return [respuesta]; // Convertir a array
+        }
+        
+        // Otras propiedades comunes
+        if (respuesta.notas) {
+            console.log('✅ Detectado: Propiedad .notas');
+            return Array.isArray(respuesta.notas) ? respuesta.notas : [respuesta.notas];
+        }
+        
+        if (respuesta.items) {
+            console.log('✅ Detectado: Propiedad .items');
+            return Array.isArray(respuesta.items) ? respuesta.items : [respuesta.items];
+        }
+        
+        if (respuesta.results) {
+            console.log('✅ Detectado: Propiedad .results');
+            return Array.isArray(respuesta.results) ? respuesta.results : [respuesta.results];
+        }
+        
+        // Si no encontramos nada específico, pero es un objeto que parece una nota
+        // Buscar propiedades que indiquen que es una nota
+        const propiedadesNota = ['numero_nota', 'titulo_nota', 'contenido_nota', 'fecha_nota', 'creado_en'];
+        const tienePropsNota = propiedadesNota.some(prop => respuesta.hasOwnProperty(prop));
+        
+        if (tienePropsNota) {
+            console.log('✅ Detectado: Objeto que parece una nota');
+            return [respuesta]; // Convertir a array
+        }
+    }
+    
+    // CASO 2: Si es un array directamente
+    if (Array.isArray(respuesta)) {
+        console.log('✅ Detectado: Array directo');
+        return respuesta;
+    }
+    
+    // CASO 3: No se pudo detectar el formato
+    console.warn('⚠️ No se pudo detectar el formato de notas');
+    return [];
+}// =============================================================================================
+// SISTEMA VER NOTAS MEJORADO - BASADO EN LA LÓGICA DEL PREVISUALIZADOR
+// =============================================================================================
+
+const VER_NOTAS_CONFIG = {
+    endpoints: {
+        base: 'http://localhost:8090/api',
+        listaNotas: '/notas/hospitalizacion',
+        notaIndividual: '/notas'
+    },
+    elementos: {
+        editor: 'medicalNoteEditor',
+        canvasFirma: 'signatureCanvas',
+        statusFirma: 'signatureStatus',
+        botonVerNotas: 'vernotas'
+    }
+};
+
+// =============================================================================================
+// 1. 🚀 INICIALIZACIÓN DEL SISTEMA
+// =============================================================================================
+
+function setupVerNotas() {
+    console.log('👁️ Configurando sistema Ver Notas...');
+    
+    setTimeout(() => {
+        const verNotasBtn = document.getElementById(VER_NOTAS_CONFIG.elementos.botonVerNotas);
+        if (verNotasBtn) {
+            verNotasBtn.removeEventListener('click', abrirGrillaNotas);
+            verNotasBtn.addEventListener('click', abrirGrillaNotas);
+            console.log('✅ Sistema Ver Notas configurado');
+        } else {
+            console.error(`❌ Botón #${VER_NOTAS_CONFIG.elementos.botonVerNotas} no encontrado`);
+        }
+    }, 200);
+}
+
+// =============================================================================================
+// 2. 📊 ABRIR GRILLA DE NOTAS
+// =============================================================================================
+
+async function abrirGrillaNotas() {
+    try {
+        mostrarLoading('Cargando notas...');
+        const notas = await cargarListaNotas();
+        ocultarLoading();
+        mostrarGrillaNotas(notas);
+    } catch (error) {
+        console.error('❌ Error:', error);
+        ocultarLoading();
+        alert('❌ Error al cargar notas: ' + error.message);
+    }
+}
+
+// =============================================================================================
+// 3. 🌐 CARGAR LISTA DE NOTAS DEL API
+// =============================================================================================
+
+async function cargarListaNotas() {
+    const token = localStorage.getItem('access_token');
+    if (!token) throw new Error('No hay token de autenticación');
+    
+    // Obtener hospitalizacion_id del localStorage (como tienes en tu sistema)
+    const currentPatientData = JSON.parse(localStorage.getItem('currentPatientData') || '{}');
+    const hospitalizacionId = currentPatientData.hospitalizacion_id || 2;
+    
+    console.log(`📡 Cargando notas para hospitalización: ${hospitalizacionId}`);
+    
+    const url = `${VER_NOTAS_CONFIG.endpoints.base}${VER_NOTAS_CONFIG.endpoints.listaNotas}/${hospitalizacionId}`;
+    
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(`Error ${response.status}: ${error.message || 'Error del servidor'}`);
+    }
+    
+    const respuesta = await response.json();
+    console.log('📦 Respuesta del API (objeto único):', respuesta);
+    
+    return detectarFormatoNotas(respuesta);
+}
+
+// =============================================================================================
+// 4. 🔄 PROCESAR NOTA DEL API (SIGUIENDO TU LÓGICA JSON)
+// =============================================================================================
+
+function procesarNotaDelAPI(notaAPI) {
+    console.log('🔄 Procesando nota del API...');
+    
+    try {
+        // 1. PROCESAR CONTENIDO (como tu JSON de ejemplo)
+        let contenidoParsed = {};
+        
+        if (notaAPI.contenido_nota) {
+            if (typeof notaAPI.contenido_nota === 'string') {
+                try {
+                    contenidoParsed = JSON.parse(notaAPI.contenido_nota);
+                } catch (e) {
+                    console.warn('⚠️ Contenido no es JSON válido');
+                    contenidoParsed = { 
+                        texto: notaAPI.contenido_nota,
+                        html: notaAPI.contenido_nota
+                    };
+                }
+            } else {
+                contenidoParsed = notaAPI.contenido_nota;
+            }
+        }
+        
+        // 2. PROCESAR FIRMA (del campo firma_digital)
+        let firmaBase64 = null;
+        
+        if (notaAPI.firma_digital) {
+            try {
+                let firmaData = notaAPI.firma_digital;
+                
+                if (typeof firmaData === 'string') {
+                    firmaData = JSON.parse(firmaData);
+                }
+                
+                firmaBase64 = firmaData.firma_base64 || firmaData.base64;
+                
+                // Asegurar formato data:image
+                if (firmaBase64 && !firmaBase64.startsWith('data:image/')) {
+                    firmaBase64 = 'data:image/png;base64,' + firmaBase64;
+                }
+                
+            } catch (e) {
+                console.warn('⚠️ Error parseando firma');
+                if (typeof notaAPI.firma_digital === 'string' && notaAPI.firma_digital.startsWith('data:image/')) {
+                    firmaBase64 = notaAPI.firma_digital;
+                }
+            }
+        }
+        
+        console.log('✅ Nota procesada:', {
+            id: notaAPI.id,
+            numeroNota: notaAPI.numero_nota,
+            tieneTexto: !!contenidoParsed.texto,
+            tieneHTML: !!contenidoParsed.html,
+            tieneDibujos: !!(contenidoParsed.dibujos?.length),
+            tieneImagenes: !!(contenidoParsed.imagenes?.length),
+            tieneFirma: !!firmaBase64
+        });
+        
+        return {
+            // Metadatos de la nota
+            id: notaAPI.id,
+            numeroNota: notaAPI.numero_nota,
+            tituloNota: notaAPI.titulo_nota,
+            fechaCreacion: notaAPI.creado_en || notaAPI.fecha_nota,
+            turno: notaAPI.turno,
+            
+            // Contenido (como tu previsualizador lo captura)
+            texto: contenidoParsed.texto || '',
+            html: contenidoParsed.html || contenidoParsed.texto || '',
+            dibujos: contenidoParsed.dibujos || [],
+            imagenes: contenidoParsed.imagenes || [],
+            
+            // Firma digital
+            firmaBase64: firmaBase64,
+            
+            // Signos vitales si existen
+            signosVitales: notaAPI.signos_vitales || null
+        };
+        
+    } catch (error) {
+        console.error('❌ Error procesando nota:', error);
+        throw new Error('Error al procesar contenido: ' + error.message);
+    }
+}
+
+// =============================================================================================
+// 5. 📋 CARGAR NOTA COMPLETA EN EL EDITOR
+// =============================================================================================
+
+async function cargarNotaEnEditor(notaResumen) {
+    console.log('📝 Cargando nota completa:', notaResumen.numero_nota);
+    
+    try {
+        // Cerrar grilla
+        cerrarGrilla();
+        
+        // Mostrar loading
+        mostrarLoading('Cargando contenido de la nota...');
+        
+        // Cargar nota completa del API
+        const notaCompleta = await cargarNotaCompletaDelAPI(notaResumen.id);
+        
+        // Reconstruir en el editor (SIGUIENDO TU LÓGICA DEL PREVISUALIZADOR)
+        await reconstruirNotaEnEditor(notaCompleta);
+        
+        // Ocultar loading
+        ocultarLoading();
+        
+        // Notificar éxito
+        mostrarNotificacion(`✅ Nota ${notaCompleta.numeroNota} cargada exitosamente`);
+        
+    } catch (error) {
+        console.error('❌ Error cargando nota:', error);
+        ocultarLoading();
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// =============================================================================================
+// 6. 🌐 CARGAR NOTA COMPLETA DEL API
+// =============================================================================================
+
+async function cargarNotaCompletaDelAPI(notaId) {
+    const token = localStorage.getItem('access_token');
+    if (!token) throw new Error('No hay token de autenticación');
+    
+    const url = `${VER_NOTAS_CONFIG.endpoints.base}${VER_NOTAS_CONFIG.endpoints.notaIndividual}/${notaId}`;
+    
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(`Error ${response.status}: ${error.message || 'Error del servidor'}`);
+    }
+    
+    const notaAPI = await response.json();
+    
+    // Si la respuesta tiene estructura .data (como tu ejemplo)
+    const datosNota = notaAPI.data || notaAPI;
+    
+    return procesarNotaDelAPI(datosNota);
+}
+
+// =============================================================================================
+// 7. 🎨 RECONSTRUIR NOTA EN EDITOR (BASADO EN TU PREVISUALIZADOR)
+// =============================================================================================
+
+async function reconstruirNotaEnEditor(nota) {
+    console.log('🎨 Reconstruyendo nota en editor...');
+    
+    // 1. LIMPIAR TODO PRIMERO
+    limpiarEditorCompleto();
+    
+    // 2. VERIFICAR QUE EL EDITOR EXISTE
+    const editor = document.getElementById(VER_NOTAS_CONFIG.elementos.editor);
+    if (!editor) {
+        throw new Error('Editor no encontrado');
+    }
+    
+    // 3. RECONSTRUIR CONTENIDO HTML (como tu previsualizador)
+    if (nota.html && nota.html.trim()) {
+        editor.innerHTML = nota.html;
+        console.log('✅ Contenido HTML restaurado');
+    } else if (nota.texto && nota.texto.trim()) {
+        editor.innerHTML = nota.texto.replace(/\n/g, '<br>');
+        console.log('✅ Contenido de texto restaurado');
+    } else {
+        editor.innerHTML = '<p><em>Esta nota no tiene contenido</em></p>';
+    }
+    
+    // 4. RESTAURAR ELEMENTOS MULTIMEDIA (después de un delay para que el DOM se actualice)
+    setTimeout(async () => {
+        try {
+            // Restaurar dibujos/canvas
+            if (nota.dibujos && nota.dibujos.length > 0) {
+                await restaurarDibujosEnCanvas(nota.dibujos);
+            }
+            
+            // Restaurar imágenes
+            if (nota.imagenes && nota.imagenes.length > 0) {
+                await restaurarImagenesEnEditor(nota.imagenes);
+            }
+            
+            // Restaurar firma digital
+            if (nota.firmaBase64) {
+                await restaurarFirmaDigital(nota.firmaBase64);
+            }
+            
+            console.log('✅ Nota completamente reconstruida');
+            
+        } catch (error) {
+            console.error('❌ Error en reconstrucción multimedia:', error);
+        }
+    }, 300);
+}
+
+// =============================================================================================
+// 8. 🖼️ RESTAURAR DIBUJOS EN CANVAS
+// =============================================================================================
+
+async function restaurarDibujosEnCanvas(dibujos) {
+    console.log(`🖼️ Restaurando ${dibujos.length} dibujos...`);
+    
+    for (const dibujo of dibujos) {
+        try {
+            // Buscar canvas por ID o índice
+            let canvas = null;
+            
+            if (dibujo.id && dibujo.id !== 'signatureCanvas') {
+                canvas = document.getElementById(dibujo.id);
+            }
+            
+            if (!canvas) {
+                // Buscar canvas normales (no el de firma)
+                const canvasElements = document.querySelectorAll(`#${VER_NOTAS_CONFIG.elementos.editor} canvas:not(#${VER_NOTAS_CONFIG.elementos.canvasFirma})`);
+                canvas = canvasElements[dibujo.indice] || canvasElements[0];
+            }
+            
+            if (canvas && dibujo.datos?.imageData) {
+                await cargarImagenEnCanvas(canvas, dibujo.datos.imageData);
+                console.log(`✅ Dibujo ${dibujo.id || dibujo.indice} restaurado`);
+            }
+            
+        } catch (error) {
+            console.warn(`⚠️ Error restaurando dibujo:`, error);
+        }
+    }
+}
+
+// =============================================================================================
+// 9. 🖼️ RESTAURAR IMÁGENES EN EDITOR
+// =============================================================================================
+
+async function restaurarImagenesEnEditor(imagenes) {
+    console.log(`🖼️ Restaurando ${imagenes.length} imágenes...`);
+    
+    for (const imagen of imagenes) {
+        try {
+            // Buscar imagen por ID o índice
+            let imgElement = null;
+            
+            if (imagen.id) {
+                imgElement = document.getElementById(imagen.id);
+            }
+            
+            if (!imgElement) {
+                const imgElements = document.querySelectorAll(`#${VER_NOTAS_CONFIG.elementos.editor} img`);
+                imgElement = imgElements[imagen.indice];
+            }
+            
+            if (imgElement && imagen.src) {
+                imgElement.src = imagen.src;
+                imgElement.style.maxWidth = '100%';
+                imgElement.style.height = 'auto';
+                console.log(`✅ Imagen ${imagen.id || imagen.indice} restaurada`);
+            }
+            
+        } catch (error) {
+            console.warn(`⚠️ Error restaurando imagen:`, error);
+        }
+    }
+}
+
+// =============================================================================================
+// 10. ✍️ RESTAURAR FIRMA DIGITAL
+// =============================================================================================
+
+async function restaurarFirmaDigital(firmaBase64) {
+    console.log('✍️ Restaurando firma digital...');
+    
+    try {
+        // Buscar canvas de firma
+        const firmaCanvas = document.getElementById(VER_NOTAS_CONFIG.elementos.canvasFirma);
+        if (!firmaCanvas) {
+            console.warn('⚠️ Canvas de firma no encontrado');
+            return;
+        }
+        
+        // Cargar firma en el canvas
+        await cargarImagenEnCanvas(firmaCanvas, firmaBase64);
+        
+        // Actualizar estado visual de la firma
+        const statusElement = document.getElementById(VER_NOTAS_CONFIG.elementos.statusFirma);
+        if (statusElement) {
+            statusElement.innerHTML = '<span style="color: #27ae60;">✅ Firmado digitalmente</span>';
+        }
+        
+        // Marcar como firmado en el API de firma (si existe)
+        if (window.signatureAPI && typeof window.signatureAPI.markAsSigned === 'function') {
+            window.signatureAPI.markAsSigned();
+        }
+        
+        console.log('✅ Firma digital restaurada');
+        
+    } catch (error) {
+        console.error('❌ Error restaurando firma:', error);
+    }
+}
+
+// =============================================================================================
+// 11. 🛠️ CARGAR IMAGEN EN CANVAS (HELPER)
+// =============================================================================================
+
+function cargarImagenEnCanvas(canvas, imagenBase64) {
+    return new Promise((resolve, reject) => {
+        if (!canvas || !imagenBase64) {
+            reject(new Error('Canvas o imagen no válidos'));
+            return;
+        }
+        
+        const img = new Image();
+        
+        img.onload = function() {
+            try {
+                const ctx = canvas.getContext('2d');
+                
+                // Limpiar canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Dibujar imagen
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                resolve();
+                
+            } catch (error) {
+                reject(error);
+            }
+        };
+        
+        img.onerror = () => reject(new Error('Error cargando imagen'));
+        
+        // Timeout de seguridad
+        setTimeout(() => {
+            if (!img.complete) {
+                reject(new Error('Timeout cargando imagen'));
+            }
+        }, 5000);
+        
+        img.src = imagenBase64;
+    });
+}
+
+// =============================================================================================
+// 12. 🧹 LIMPIAR EDITOR COMPLETO
+// =============================================================================================
+
+function limpiarEditorCompleto() {
+    console.log('🧹 Limpiando editor completo...');
+    
+    // Limpiar editor principal
+    const editor = document.getElementById(VER_NOTAS_CONFIG.elementos.editor);
+    if (editor) {
+        editor.innerHTML = '';
+    }
+    
+    // Limpiar todos los canvas de dibujo (excepto el de firma)
+    const canvasElements = document.querySelectorAll(`canvas:not(#${VER_NOTAS_CONFIG.elementos.canvasFirma})`);
+    canvasElements.forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+    
+    // Limpiar canvas de firma
+    const firmaCanvas = document.getElementById(VER_NOTAS_CONFIG.elementos.canvasFirma);
+    if (firmaCanvas) {
+        const ctx = firmaCanvas.getContext('2d');
+        ctx.clearRect(0, 0, firmaCanvas.width, firmaCanvas.height);
+        
+        // Actualizar estado de firma
+        const statusElement = document.getElementById(VER_NOTAS_CONFIG.elementos.statusFirma);
+        if (statusElement) {
+            statusElement.innerHTML = '<span style="color: #e74c3c;">📝 Pendiente de firma</span>';
+        }
+        
+        // Marcar como no firmado en el API
+        if (window.signatureAPI && typeof window.signatureAPI.markAsUnsigned === 'function') {
+            window.signatureAPI.markAsUnsigned();
+        }
+    }
+    
+    console.log('✅ Editor limpiado completamente');
+}
+
+// =============================================================================================
+// 13. 🎨 MOSTRAR GRILLA DE NOTAS
+// =============================================================================================
+
+function mostrarGrillaNotas(notas) {
+    console.log(`🎨 Mostrando grilla con ${notas.length} notas`);
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'ver-notas-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 10000;
+        display: flex; align-items: center; justify-content: center;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: white; border-radius: 12px; width: 90%; max-width: 800px;
+        max-height: 80vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        display: flex; flex-direction: column;
+    `;
+    
+    const header = document.createElement('div');
+    header.style.cssText = `
+        padding: 20px; border-bottom: 1px solid #eee; display: flex; 
+        justify-content: space-between; align-items: center; background: #f8f9fa;
+    `;
+    header.innerHTML = `
+        <h3 style="margin: 0; color: #2c3e50;">📋 Notas Médicas (${notas.length})</h3>
+        <button onclick="cerrarGrilla()" style="
+            background: #e74c3c; color: white; border: none; padding: 8px 12px; 
+            border-radius: 6px; cursor: pointer; font-weight: bold;
+        ">✕ Cerrar</button>
+    `;
+    
+    const contenido = document.createElement('div');
+    contenido.style.cssText = `
+        overflow-y: auto; flex: 1; padding: 0;
+    `;
+    
+    if (notas.length === 0) {
+        contenido.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 15px;">📄</div>
+                <h4>No hay notas disponibles</h4>
+                <p>No se encontraron notas para esta hospitalización.</p>
+            </div>
+        `;
+    } else {
+        const tabla = document.createElement('table');
+        tabla.style.cssText = `
+            width: 100%; border-collapse: collapse; font-size: 14px;
+        `;
+        
+        tabla.innerHTML = `
+            <thead style="background: #2c3e50; color: white;">
+                <tr>
+                    <th style="padding: 12px; text-align: left;">N° Nota</th>
+                    <th style="padding: 12px; text-align: left;">Título</th>
+                    <th style="padding: 12px; text-align: left;">Fecha</th>
+                    <th style="padding: 12px; text-align: left;">Turno</th>
+                    <th style="padding: 12px; text-align: center;">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${notas.map((nota, index) => {
+                    const notaProcesada = procesarNotaDelAPI(nota);
+                    const fecha = new Date(notaProcesada.fechaCreacion).toLocaleDateString('es-ES');
+                    
+                    return `
+                        <tr style="border-bottom: 1px solid #eee; ${index % 2 === 0 ? 'background: #f9f9f9;' : ''}">
+                            <td style="padding: 12px; font-weight: bold; color: #2c3e50;">${notaProcesada.numeroNota}</td>
+                            <td style="padding: 12px;">${notaProcesada.tituloNota}</td>
+                            <td style="padding: 12px;">${fecha}</td>
+                            <td style="padding: 12px; text-align: center;">
+                                <span style="background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
+                                    ${notaProcesada.turno || 'N/A'}
+                                </span>
+                            </td>
+                            <td style="padding: 12px; text-align: center;">
+                                <button onclick="cargarNotaEnEditor({id: ${notaProcesada.id}, numero_nota: '${notaProcesada.numeroNota}'})" 
+                                        style="
+                                            background: #27ae60; color: white; border: none; 
+                                            padding: 6px 12px; border-radius: 4px; cursor: pointer;
+                                            font-size: 12px; font-weight: bold;
+                                        ">
+                                    📝 Cargar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        `;
+        
+        contenido.appendChild(tabla);
+    }
+    
+    modal.appendChild(header);
+    modal.appendChild(contenido);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // Cerrar con click fuera del modal
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            cerrarGrilla();
+        }
+    });
+    
+    // Cerrar con ESC
+    document.addEventListener('keydown', function cerrarConEsc(e) {
+        if (e.key === 'Escape') {
+            cerrarGrilla();
+            document.removeEventListener('keydown', cerrarConEsc);
+        }
+    });
+}
+
+// =============================================================================================
+// 14. 🔧 FUNCIONES DE UTILIDAD
+// =============================================================================================
+
+function detectarFormatoNotas(respuesta) {
+    // Detectar diferentes formatos de respuesta del API
+    if (respuesta.data) return Array.isArray(respuesta.data) ? respuesta.data : [respuesta.data];
+    if (respuesta.notas) return Array.isArray(respuesta.notas) ? respuesta.notas : [respuesta.notas];
+    if (respuesta.items) return Array.isArray(respuesta.items) ? respuesta.items : [respuesta.items];
+    if (respuesta.results) return Array.isArray(respuesta.results) ? respuesta.results : [respuesta.results];
+    
+    // Buscar arrays en las propiedades
+    for (const [key, value] of Object.entries(respuesta)) {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'object' && value?.id) return [value];
+    }
+    
+    // Si es una sola nota
+    if (respuesta.id || respuesta.numero_nota) return [respuesta];
+    
+    return [];
+}
+
+function mostrarLoading(mensaje) {
+    ocultarLoading(); // Remover loading existente
+    
+    const loading = document.createElement('div');
+    loading.id = 'ver-notas-loading';
+    loading.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 10001;
+        display: flex; align-items: center; justify-content: center;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    loading.innerHTML = `
+        <div style="
+            background: white; padding: 30px; border-radius: 12px; 
+            text-align: center; min-width: 300px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        ">
+            <div style="font-size: 48px; margin-bottom: 15px; animation: bounce 1s infinite;">📋</div>
+            <h3 style="margin: 0 0 10px 0; color: #2c3e50;">${mensaje}</h3>
+            <div style="
+                width: 40px; height: 40px; border: 4px solid #f3f3f3; 
+                border-top: 4px solid #3498db; border-radius: 50%; 
+                animation: spin 1s linear infinite; margin: 0 auto;
+            "></div>
+        </div>
+        <style>
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes bounce { 
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 
+                40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } 
+            }
+        </style>
+    `;
+    
+    document.body.appendChild(loading);
+}
+
+function ocultarLoading() {
+    const loading = document.getElementById('ver-notas-loading');
+    if (loading && loading.parentNode) {
+        loading.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            if (loading.parentNode) {
+                document.body.removeChild(loading);
+            }
+        }, 300);
+    }
+}
+
+function cerrarGrilla() {
+    const overlay = document.querySelector('.ver-notas-overlay');
+    if (overlay && overlay.parentNode) {
+        overlay.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                document.body.removeChild(overlay);
+            }
+        }, 300);
+    }
+}
+
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    // Remover notificaciones existentes
+    const existentes = document.querySelectorAll('.ver-notas-notification');
+    existentes.forEach(notif => {
+        if (notif.parentNode) notif.parentNode.removeChild(notif);
+    });
+    
+    const colores = {
+        success: 'linear-gradient(135deg, #27ae60, #2ecc71)',
+        error: 'linear-gradient(135deg, #e74c3c, #c0392b)',
+        warning: 'linear-gradient(135deg, #f39c12, #e67e22)',
+        info: 'linear-gradient(135deg, #3498db, #2980b9)'
+    };
+    
+    const notif = document.createElement('div');
+    notif.className = 'ver-notas-notification';
+    notif.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 10002;
+        background: ${colores[tipo] || colores.success};
+        color: white; padding: 15px 25px; border-radius: 8px;
+        font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease; max-width: 400px; word-wrap: break-word;
+    `;
+    notif.textContent = mensaje;
+    
+    // Añadir estilos de animación si no existen
+    if (!document.querySelector('#notification-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'notification-styles';
+        styles.textContent = `
+            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+            @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        `;
+        document.head.appendChild(styles);
+    }
+    
+    document.body.appendChild(notif);
+    
+    // Auto-remover después de 3 segundos
+    setTimeout(() => {
+        if (notif.parentNode) {
+            notif.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (notif.parentNode) {
+                    document.body.removeChild(notif);
+                }
+            }, 300);
+        }
+    }, 3000);
+    
+    // Permitir click para cerrar
+    notif.onclick = () => {
+        if (notif.parentNode) {
+            notif.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (notif.parentNode) {
+                    document.body.removeChild(notif);
+                }
+            }, 300);
+        }
+    };
+}
+
+
+
+console.log('📋 Sistema Ver Notas MEJORADO cargado - Compatible con tu previsualizador v4.0');
 
 
 
