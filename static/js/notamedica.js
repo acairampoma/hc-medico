@@ -3689,16 +3689,99 @@ async function pruebaCompleta() {
 
 // 3. FUNCIONES DE VALIDACIÓN
 function validarContenido(contenido) {
-    return contenido && (
-        (contenido.texto && contenido.texto.trim() !== '') || 
-        (contenido.dibujos && contenido.dibujos.some(d => d.tieneContenido)) ||
-        (contenido.imagenes && contenido.imagenes.length > 0)
-    );
+    console.log('🔍 Validando contenido del editor...');
+    
+    // Verificar que el contenido no sea null o undefined
+    if (!contenido) {
+        console.warn('❌ Contenido es null o undefined');
+        return false;
+    }
+    
+    // Verificar que tenga la propiedad texto
+    if (!contenido.texto) {
+        console.warn('❌ No hay texto en el contenido');
+        return false;
+    }
+    
+    // Limpiar el texto de espacios, saltos de línea y HTML
+    const textoLimpio = contenido.texto
+        .replace(/<[^>]*>/g, '') // Quitar tags HTML
+        .replace(/&nbsp;/g, ' ') // Reemplazar &nbsp; con espacios
+        .replace(/\s+/g, ' ')    // Múltiples espacios a uno solo
+        .trim();                 // Quitar espacios al inicio y final
+    
+    console.log('📝 Texto limpio para validar:', `"${textoLimpio}"`);
+    console.log('📏 Longitud del texto:', textoLimpio.length);
+    
+    // Verificar que el texto tenga al menos 10 caracteres
+    if (textoLimpio.length < 10) {
+        console.warn(`❌ Texto muy corto: ${textoLimpio.length} caracteres (mínimo 10)`);
+        return false;
+    }
+    
+    // Verificar que no sea solo texto de placeholder
+    const placeholderTexts = [
+        'escriba o dicte',
+        'placeholder',
+        'contenido aquí',
+        'escriba aquí',
+        'texto aquí'
+    ];
+    
+    const textoMinuscula = textoLimpio.toLowerCase();
+    for (const placeholder of placeholderTexts) {
+        if (textoMinuscula.includes(placeholder)) {
+            console.warn(`❌ Texto contiene placeholder: "${placeholder}"`);
+            return false;
+        }
+    }
+    
+    console.log('✅ Contenido válido');
+    return true;
 }
 
 function validarFirma(firma) {
-    return firma && firma.tiene_firma === true;
+    console.log('🔍 Validando firma digital...');
+    
+    // Verificar que la firma no sea null o undefined
+    if (!firma) {
+        console.warn('❌ Firma es null o undefined');
+        return false;
+    }
+    
+    // Verificar que tenga la propiedad firma_base64
+    if (!firma.firma_base64) {
+        console.warn('❌ No hay firma_base64 en el objeto firma');
+        return false;
+    }
+    
+    // Verificar que la firma no esté vacía
+    if (firma.firma_base64.length < 100) {
+        console.warn(`❌ Firma muy corta: ${firma.firma_base64.length} caracteres`);
+        return false;
+    }
+    
+    // Verificar que sea un base64 válido
+    if (!firma.firma_base64.startsWith('data:image/')) {
+        console.warn('❌ Firma no tiene formato base64 válido');
+        return false;
+    }
+    
+    // Verificar usando el API de firma si existe
+    if (window.signatureAPI && typeof window.signatureAPI.isSigned === 'function') {
+        const firmadoAPI = window.signatureAPI.isSigned();
+        console.log('🔍 Estado firma según API:', firmadoAPI);
+        
+        if (!firmadoAPI) {
+            console.warn('❌ API indica que no está firmado');
+            return false;
+        }
+    }
+    
+    console.log('✅ Firma válida');
+    return true;
 }
+
 
 function validarDatosPaciente(pacienteData) {
     return pacienteData !== null && pacienteData !== undefined;
@@ -4583,28 +4666,206 @@ async function reconstruirNotaEnEditor(nota) {
 async function restaurarDibujosEnCanvas(dibujos) {
     console.log(`🖼️ Restaurando ${dibujos.length} dibujos...`);
     
-    for (const dibujo of dibujos) {
+    // Filtrar dibujos para excluir cualquier cosa relacionada con firmas
+    const dibujosFiltrados = dibujos.filter(dibujo => {
+        if (dibujo.id && (dibujo.id.toLowerCase().includes('signature') || 
+                          dibujo.id.toLowerCase().includes('firma'))) {
+            console.log(`⚠️ Saltando dibujo de firma con ID: ${dibujo.id}`);
+            return false;
+        }
+        if (dibujo.esFirma || dibujo.tipo === 'firma') {
+            console.log(`⚠️ Saltando dibujo marcado como firma`);
+            return false;
+        }
+        return true;
+    });
+    
+    console.log(`🖼️ Procesando ${dibujosFiltrados.length} dibujos (excluyendo firmas)...`);
+    
+    for (const dibujo of dibujosFiltrados) {
         try {
-            // Buscar canvas por ID o índice
             let canvas = null;
             
+            // 1. Buscar canvas existente por ID
             if (dibujo.id && dibujo.id !== 'signatureCanvas') {
                 canvas = document.getElementById(dibujo.id);
             }
             
+            // 2. Si no existe, buscar en canvas del editor (sin firma)
             if (!canvas) {
-                // Buscar canvas normales (no el de firma)
-                const canvasElements = document.querySelectorAll(`#${VER_NOTAS_CONFIG.elementos.editor} canvas:not(#${VER_NOTAS_CONFIG.elementos.canvasFirma})`);
-                canvas = canvasElements[dibujo.indice] || canvasElements[0];
+                console.log(`🔍 Buscando canvas existente para índice ${dibujo.indice}`);
+                
+                const canvasElements = document.querySelectorAll(`#${VER_NOTAS_CONFIG.elementos.editor} canvas`);
+                console.log(`📊 Total canvas en editor: ${canvasElements.length}`);
+                
+                const canvasSinFirma = Array.from(canvasElements).filter(c => {
+                    const esFirma = c.id === VER_NOTAS_CONFIG.elementos.canvasFirma || 
+                                   c.id === 'signatureCanvas' || 
+                                   c.id.toLowerCase().includes('firma') || 
+                                   c.id.toLowerCase().includes('signature');
+                    
+                    console.log(`🎨 Canvas ${c.id || 'sin-id'}: ${esFirma ? 'ES FIRMA' : 'NO ES FIRMA'}`);
+                    return !esFirma;
+                });
+                
+                console.log(`🎯 Canvas sin firma encontrados: ${canvasSinFirma.length}`);
+                canvas = canvasSinFirma[dibujo.indice] || canvasSinFirma[0];
+                
+                if (canvas) {
+                    console.log(`✅ Canvas encontrado: ${canvas.id || 'sin-id'}`);
+                } else {
+                    console.log(`❌ No se encontró canvas existente`);
+                }
             }
             
-            if (canvas && dibujo.datos?.imageData) {
-                await cargarImagenEnCanvas(canvas, dibujo.datos.imageData);
-                console.log(`✅ Dibujo ${dibujo.id || dibujo.indice} restaurado`);
+            // 3. ✅ CREAR CANVAS SI NO EXISTE
+            if (!canvas) {
+                console.log(`🏗️ Creando canvas dinámicamente para dibujo ${dibujo.id || dibujo.indice}`);
+                
+                canvas = document.createElement('canvas');
+                canvas.id = dibujo.id || `canvas_dinamico_${dibujo.indice}`;
+                canvas.width = 400;
+                canvas.height = 300;
+                canvas.style.cssText = `
+                    border: 1px solid #ddd;
+                    display: block;
+                    max-width: 100%;
+                    background: white;
+                `;
+                
+                // 🎯 BUSCAR DÓNDE INSERTAR EL CANVAS (en tabla si existe)
+                let contenedor = null;
+                
+                // Buscar contenedor de tabla de imagen
+                const tablasImagen = document.querySelectorAll('.image-table-container');
+                if (tablasImagen.length > dibujo.indice && tablasImagen[dibujo.indice]) {
+                    contenedor = tablasImagen[dibujo.indice];
+                    console.log(`📋 Insertando canvas en tabla de imagen ${dibujo.indice}`);
+                }
+                
+                // Si no hay tabla, buscar contenedor de pintura
+                if (!contenedor) {
+                    const contenedoresPintura = document.querySelectorAll('.image-paint-container');
+                    if (contenedoresPintura.length > dibujo.indice && contenedoresPintura[dibujo.indice]) {
+                        contenedor = contenedoresPintura[dibujo.indice];
+                        console.log(`🎨 Insertando canvas en contenedor de pintura ${dibujo.indice}`);
+                    }
+                }
+                
+                // Si no hay contenedor específico, crear uno dentro del editor
+                if (!contenedor) {
+                    const editor = document.getElementById(VER_NOTAS_CONFIG.elementos.editor);
+                    if (editor) {
+                        // Crear contenedor wrapper
+                        contenedor = document.createElement('div');
+                        contenedor.className = 'image-paint-container';
+                        contenedor.style.cssText = `
+                            border: 1px solid #ddd;
+                            margin: 10px 0;
+                            padding: 10px;
+                            background: #f9f9f9;
+                        `;
+                        editor.appendChild(contenedor);
+                        console.log(`📦 Contenedor creado en editor`);
+                    }
+                }
+                
+                if (contenedor) {
+                    contenedor.appendChild(canvas);
+                    console.log(`✨ Canvas creado e insertado en contenedor: ${canvas.id}`);
+                } else {
+                    console.error(`❌ No se encontró contenedor para insertar canvas`);
+                    continue;
+                }
             }
             
+            if (canvas) {
+                let imagenBase64 = null;
+                
+                // Intentar extraer la imagen base64 de diferentes formatos posibles
+                if (dibujo.datos?.imageData) {
+                    imagenBase64 = dibujo.datos.imageData;
+                    console.log(`📊 Usando formato imageData para dibujo ${dibujo.id || dibujo.indice}`);
+                }
+                else if (dibujo.imageData) {
+                    imagenBase64 = dibujo.imageData;
+                    console.log(`📊 Usando imageData directo para dibujo ${dibujo.id || dibujo.indice}`);
+                }
+                else if (dibujo.base64 || dibujo.imagen) {
+                    imagenBase64 = dibujo.base64 || dibujo.imagen;
+                    console.log(`📊 Usando base64/imagen para dibujo ${dibujo.id || dibujo.indice}`);
+                }
+                else if (typeof dibujo === 'string' && dibujo.startsWith('data:')) {
+                    imagenBase64 = dibujo;
+                    console.log(`📊 El dibujo es directamente una cadena base64`);
+                }
+                // Intentar buscar en cualquier propiedad que pueda contener la imagen
+                else {
+                    // Buscar recursivamente en el objeto dibujo cualquier propiedad que parezca una imagen base64
+                    const buscarBase64 = (obj) => {
+                        if (!obj || typeof obj !== 'object') return null;
+                        
+                        for (const key in obj) {
+                            const valor = obj[key];
+                            if (typeof valor === 'string' && valor.startsWith('data:image')) {
+                                return valor;
+                            } else if (typeof valor === 'object' && valor !== null) {
+                                const resultado = buscarBase64(valor);
+                                if (resultado) return resultado;
+                            }
+                        }
+                        return null;
+                    };
+                    
+                    imagenBase64 = buscarBase64(dibujo);
+                    if (imagenBase64) {
+                        console.log(`📊 Encontrada imagen base64 en estructura anidada para dibujo ${dibujo.id || dibujo.indice}`);
+                    }
+                }
+                
+                if (imagenBase64) {
+                    // Asegurarse de que la imagen base64 tenga el formato correcto
+                    if (!imagenBase64.startsWith('data:image')) {
+                        console.warn(`⚠️ Formato de imagen incorrecto, intentando corregir...`);
+                        // Intentar detectar y corregir el formato
+                        if (imagenBase64.includes(',')) {
+                            // Podría ser que solo falte el prefijo
+                            const partes = imagenBase64.split(',');
+                            if (partes.length === 2 && !partes[0].includes(':')) {
+                                imagenBase64 = `data:image/png;base64,${partes[1]}`;
+                                console.log(`✅ Formato corregido a PNG estándar`);
+                            }
+                        } else {
+                            // Asumir que es directamente el contenido base64 sin prefijo
+                            imagenBase64 = `data:image/png;base64,${imagenBase64}`;
+                            console.log(`✅ Añadido prefijo de formato PNG`);
+                        }
+                    }
+                    
+                    try {
+                        await cargarImagenEnCanvas(canvas, imagenBase64);
+                        console.log(`✅ Dibujo ${dibujo.id || dibujo.indice} restaurado correctamente`);
+                    } catch (error) {
+                        console.error(`❌ Error cargando imagen en canvas:`, error);
+                        // Intentar con otro formato si falla
+                        try {
+                            const formatoAlternativo = imagenBase64.replace(/^data:image\/[^;]+/, 'data:image/png');
+                            console.log(`🔄 Intentando con formato alternativo...`);
+                            await cargarImagenEnCanvas(canvas, formatoAlternativo);
+                            console.log(`✅ Dibujo restaurado con formato alternativo`);
+                        } catch (err) {
+                            console.error(`❌ También falló el formato alternativo:`, err);
+                        }
+                    }
+                } else {
+                    console.warn(`⚠️ No se encontraron datos de imagen para el dibujo ${dibujo.id || dibujo.indice}`);
+                    console.log('Estructura del dibujo:', JSON.stringify(dibujo));
+                }
+            } else {
+                console.warn(`⚠️ No se pudo crear o encontrar canvas para el dibujo ${dibujo.id || dibujo.indice}`);
+            }
         } catch (error) {
-            console.warn(`⚠️ Error restaurando dibujo:`, error);
+            console.error(`❌ Error restaurando dibujo:`, error);
         }
     }
 }
