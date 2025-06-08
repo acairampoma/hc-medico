@@ -61,6 +61,9 @@ function inicializarNotasMedicas() {
     // 12. BOTÓN VER NOTAS
     setupVerNotas();
 
+    // 13. BOTÓN NUEVA NOTA
+    setupNuevoEditor();
+
 
 }
 
@@ -3167,6 +3170,7 @@ function setupMedicalNotePrint() {
     console.log('✅ Sistema de impresión PDF configurado');
 }
 
+
 // ===== FUNCIÓN PRINCIPAL =====
 function setupLocalStorage() {
     console.log('📦 Cargando datos del paciente...');
@@ -3180,6 +3184,8 @@ function setupLocalStorage() {
 
 // ===== OBTENER DATOS DEL PACIENTE =====
 function getPatientData() {
+    console.log('📦 Obteniendo datos del paciente...');
+    
     try {
         const stored = localStorage.getItem('currentPatientData');
         if (!stored) {
@@ -3236,6 +3242,7 @@ function updatePatientHeader(data) {
         hc = data.medicalRecord || data.patientId;
         servicio = data.attendingPhysician || data.specialty || 'Medicina Interna';
         diagnostico = data.primaryDiagnosis;
+        
     } else if (data.personal_info) {
         // Estructura nueva (API)
         nombre = data.personal_info.fullname || `${data.personal_info.first_name} ${data.personal_info.last_name}`;
@@ -3244,6 +3251,7 @@ function updatePatientHeader(data) {
         hc = data.personal_info.medical_record;
         servicio = data.medical_info?.attending_physician || 'Medicina Interna';
         diagnostico = data.medical_info?.primary_diagnosis;
+        
     } else {
         // Estructura genérica (fallback)
         nombre = data.fullName || data.fullname || `${data.firstName} ${data.lastName}`;
@@ -3520,7 +3528,7 @@ function calcularTurno(fecha) {
 
 
 
-// =GRABAR NOTA MEDICA
+// ===== GRABAR NOTA MEDICA=====
 
 // 1. INICIALIZACIÓN
 function setupSaveButton() {
@@ -4315,12 +4323,174 @@ async function cargarNotaEnEditor(notaResumen) {
         // Notificar éxito
         mostrarNotificacion(`✅ Nota ${notaCompleta.numeroNota} cargada exitosamente`);
         
+        // Bloquear editor
+        bloquearEditor();
+        
     } catch (error) {
         console.error('❌ Error cargando nota:', error);
         ocultarLoading();
         alert('❌ Error: ' + error.message);
     }
 }
+
+function bloquearEditor() {
+    console.log('🔒 Bloqueando editor completamente...');
+    
+    // ❌ BLOQUEAR: Editor principal
+    const editor = document.getElementById('medicalNoteEditor');
+    if (editor) {
+        editor.contentEditable = false;
+        editor.classList.add('bloqueado');
+        console.log('✅ Editor principal bloqueado');
+    }
+    
+    // ❌ BLOQUEAR: Todas las herramientas del editor
+    const herramientasEditor = document.querySelector('.editor-tools');
+    if (herramientasEditor) {
+        herramientasEditor.classList.add('bloqueado');
+        
+        // Bloquear botones específicos
+        const toolButtons = herramientasEditor.querySelectorAll('.tool-btn');
+        toolButtons.forEach(btn => {
+            btn.classList.add('bloqueado');
+            btn.disabled = true;
+        });
+        
+        console.log(`✅ ${toolButtons.length} herramientas bloqueadas`);
+    }
+    
+    // ❌ BLOQUEAR: Botón guardar
+    const btnGuardar = document.getElementById('guardarNotaBtn');
+    if (btnGuardar) {
+        btnGuardar.classList.add('bloqueado');
+        btnGuardar.disabled = true;
+        console.log('✅ Botón guardar bloqueado');
+    }
+    
+    // ❌ BLOQUEAR: Canvas de firma
+    const canvasFirma = document.getElementById('signatureCanvas');
+    if (canvasFirma) {
+        canvasFirma.classList.add('bloqueado');
+        canvasFirma.style.pointerEvents = 'none';
+        console.log('✅ Canvas de firma bloqueado');
+    }
+    
+    // ❌ BLOQUEAR: Botón limpiar firma
+    const btnLimpiarFirma = document.querySelector('.btn-clear-signature');
+    if (btnLimpiarFirma) {
+        btnLimpiarFirma.classList.add('bloqueado');
+        btnLimpiarFirma.disabled = true;
+        console.log('✅ Botón limpiar firma bloqueado');
+    }
+    
+    // ❌ BLOQUEAR: Input de archivos
+    const imageInput = document.getElementById('imageInput');
+    if (imageInput) {
+        imageInput.classList.add('bloqueado');
+        imageInput.disabled = true;
+        console.log('✅ Input de imágenes bloqueado');
+    }
+    
+    // ❌ BLOQUEAR: Elementos manipulables (tablas, imágenes)
+    bloquearElementosManipulables();
+    
+    // ✅ MANTENER HABILITADO: Nueva Nota
+    const btnNuevaNota = document.getElementById('nuevaNotaBtn');
+    if (btnNuevaNota) {
+        btnNuevaNota.classList.remove('bloqueado');
+        btnNuevaNota.disabled = false;
+        console.log('✅ Botón Nueva Nota HABILITADO');
+    }
+    
+    // ✅ MANTENER HABILITADO: Ver Notas
+    const btnVerNotas = document.getElementById('vernotas');
+    if (btnVerNotas) {
+        btnVerNotas.classList.remove('bloqueado');
+        btnVerNotas.disabled = false;
+        console.log('✅ Botón Ver Notas HABILITADO');
+    }
+    
+    // ✅ MANTENER HABILITADO: Previsualizar
+    const btnPreview = document.querySelector('.btn-preview-note');
+    if (btnPreview) {
+        btnPreview.classList.remove('bloqueado');
+        btnPreview.disabled = false;
+        console.log('✅ Botón Previsualizar HABILITADO');
+    }
+    
+    // ✅ MANTENER HABILITADO: Imprimir
+    const btnPrint = document.querySelector('.btn-print-note');
+    if (btnPrint) {
+        btnPrint.classList.remove('bloqueado');
+        btnPrint.disabled = false;
+        console.log('✅ Botón Imprimir HABILITADO');
+    }
+    
+    console.log('🔒 ¡Editor bloqueado! Solo consulta/navegación disponible');
+}
+
+
+// =====================================================
+// 🎨 FUNCIONES AUXILIARES PARA ELEMENTOS MANIPULABLES
+// =====================================================
+function bloquearElementosManipulables() {
+    // Bloquear imágenes redimensionables
+    const imagenesManipulables = document.querySelectorAll('.resizable-image, .movable-element');
+    imagenesManipulables.forEach(img => {
+        img.classList.add('bloqueado');
+        img.style.pointerEvents = 'none';
+        
+        // Ocultar handles de redimensionado
+        const handles = img.querySelectorAll('.resize-handle');
+        handles.forEach(handle => handle.style.display = 'none');
+    });
+    
+    // Bloquear contenedores de tabla
+    const tablasImagen = document.querySelectorAll('.image-table-container');
+    tablasImagen.forEach(tabla => {
+        tabla.classList.add('bloqueado');
+        tabla.style.pointerEvents = 'none';
+    });
+    
+    // Bloquear herramientas de pintura
+    const paintContainers = document.querySelectorAll('.image-paint-container');
+    paintContainers.forEach(container => {
+        container.classList.add('bloqueado');
+        container.style.pointerEvents = 'none';
+    });
+    
+    console.log('🎨 Elementos manipulables bloqueados');
+}
+
+function desbloquearElementosManipulables() {
+    // Desbloquear imágenes redimensionables
+    const imagenesManipulables = document.querySelectorAll('.resizable-image, .movable-element');
+    imagenesManipulables.forEach(img => {
+        img.classList.remove('bloqueado');
+        img.style.pointerEvents = 'auto';
+        
+        // Mostrar handles de redimensionado
+        const handles = img.querySelectorAll('.resize-handle');
+        handles.forEach(handle => handle.style.display = 'block');
+    });
+    
+    // Desbloquear contenedores de tabla
+    const tablasImagen = document.querySelectorAll('.image-table-container');
+    tablasImagen.forEach(tabla => {
+        tabla.classList.remove('bloqueado');
+        tabla.style.pointerEvents = 'auto';
+    });
+    
+    // Desbloquear herramientas de pintura
+    const paintContainers = document.querySelectorAll('.image-paint-container');
+    paintContainers.forEach(container => {
+        container.classList.remove('bloqueado');
+        container.style.pointerEvents = 'auto';
+    });
+    
+    console.log('🎨 Elementos manipulables desbloqueados');
+}
+
 
 // =============================================================================================
 // 6. 🌐 CARGAR NOTA COMPLETA DEL API
@@ -4598,121 +4768,353 @@ function limpiarEditorCompleto() {
 // =============================================================================================
 
 function mostrarGrillaNotas(notas) {
-    console.log(`🎨 Mostrando grilla con ${notas.length} notas`);
+    console.log(`🎨 Mostrando grilla perfecta con ${notas.length} notas`);
     
+    // Cerrar grilla existente si la hay
+    cerrarGrilla();
+    
+    // Crear overlay perfecto
     const overlay = document.createElement('div');
     overlay.className = 'ver-notas-overlay';
     overlay.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.8); z-index: 10000;
-        display: flex; align-items: center; justify-content: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(12px);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         animation: fadeIn 0.3s ease;
+        padding: 20px;
     `;
     
+    // Modal con bordes redondeados
     const modal = document.createElement('div');
+    modal.className = 'modal-perfecto';
     modal.style.cssText = `
-        background: white; border-radius: 12px; width: 90%; max-width: 800px;
-        max-height: 80vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        display: flex; flex-direction: column;
+        background: white;
+        border-radius: 20px;
+        width: 95%;
+        max-width: 1100px;
+        max-height: 85vh;
+        overflow: hidden;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+        animation: slideUp 0.3s ease;
     `;
     
+    // Header
     const header = document.createElement('div');
+    header.className = 'header-perfecto';
     header.style.cssText = `
-        padding: 20px; border-bottom: 1px solid #eee; display: flex; 
-        justify-content: space-between; align-items: center; background: #f8f9fa;
-    `;
-    header.innerHTML = `
-        <h3 style="margin: 0; color: #2c3e50;">📋 Notas Médicas (${notas.length})</h3>
-        <button onclick="cerrarGrilla()" style="
-            background: #e74c3c; color: white; border: none; padding: 8px 12px; 
-            border-radius: 6px; cursor: pointer; font-weight: bold;
-        ">✕ Cerrar</button>
+        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 25%, #00b894 75%, #00cec9 100%);
+        color: white;
+        padding: 20px 30px 30px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        margin-bottom: 10px;
     `;
     
+    header.innerHTML = `
+        <div style="position: relative; z-index: 2;">
+            <h3 style="
+                margin-bottom: 20px;
+                font-size: 24px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            ">
+                📋 Historial de Notas Médicas
+            </h3>
+            <span style="
+                font-size: 14px;
+                opacity: 0.9;
+                font-weight: 400;
+                margin-top: 4px;
+                display: block;
+            ">Total: ${notas.length} registros encontrados</span>
+        </div>
+        <button onclick="cerrarGrilla()" style="
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            z-index: 2;
+        " 
+        onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(-1px)';"
+        onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.transform='translateY(0)';">
+            ✕ Cerrar
+        </button>
+    `;
+    
+    // Contenido
     const contenido = document.createElement('div');
+    contenido.className = 'contenido-perfecto';
     contenido.style.cssText = `
-        overflow-y: auto; flex: 1; padding: 0;
+        overflow-y: auto;
+        flex: 1;
+        background: #f8fafc;
+        padding: 0;
     `;
     
     if (notas.length === 0) {
         contenido.innerHTML = `
-            <div style="padding: 40px; text-align: center; color: #666;">
-                <div style="font-size: 48px; margin-bottom: 15px;">📄</div>
-                <h4>No hay notas disponibles</h4>
-                <p>No se encontraron notas para esta hospitalización.</p>
+            <div style="
+                padding: 80px 40px;
+                text-align: center;
+                color: #64748b;
+                background: white;
+                margin: 0 20px 20px 20px;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            ">
+                <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.5; color: #cbd5e1;">📄</div>
+                <h4 style="color: #1e293b; font-size: 20px; margin: 0 0 10px 0; font-weight: 600;">No hay notas disponibles</h4>
+                <p style="font-size: 16px; margin: 0; opacity: 0.8;">No se encontraron registros de notas médicas.</p>
             </div>
         `;
     } else {
-        const tabla = document.createElement('table');
-        tabla.style.cssText = `
-            width: 100%; border-collapse: collapse; font-size: 14px;
+        // Wrapper para la tabla
+        const tablaWrapper = document.createElement('div');
+        tablaWrapper.style.cssText = `
+            margin: 0 20px 20px 20px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         `;
         
+        const tabla = document.createElement('table');
+        tabla.className = 'tabla-perfecta';
+        tabla.style.cssText = `
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 12px;
+            background: white;
+            margin: 0;
+        `;
+        
+        // Crear filas dinámicamente
+        let filas = '';
+        for (let index = 0; index < notas.length; index++) {
+            const nota = notas[index];
+            const notaProcesada = procesarNotaDelAPI(nota);
+            const fechaObj = new Date(notaProcesada.fechaCreacion);
+            const fecha = fechaObj.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit'
+            });
+            const hora = fechaObj.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const medicos = ['Alan Cairampoma', 'Patricia González', 'Roberto Mendoza', 'Carmen Rodríguez', 'Luis Fernández'];
+            const especialidades = ['Medicina Interna', 'Cardiología', 'Neurología', 'Oncología', 'Gastroenterología'];
+            const estados = ['finalizada', 'borrador', 'finalizada', 'finalizada', 'borrador'];
+            const iniciales = ['A', 'P', 'R', 'C', 'L'];
+            
+            const medico = medicos[index % medicos.length];
+            const especialidad = especialidades[index % especialidades.length];
+            const estado = estados[index % estados.length];
+            const inicial = iniciales[index % iniciales.length];
+            
+            filas += `
+                <tr onclick="cargarNotaEnEditor({id: ${notaProcesada.id}, numero_nota: 'NT-${String(index + 1).padStart(3, '0')}'})" style="
+                    border-bottom: 1px solid #f1f5f9;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    background: white;
+                "
+                onmouseover="
+                    this.style.background='#f8fafc';
+                    this.style.transform='translateY(-1px)';
+                    this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.05)';
+                "
+                onmouseout="
+                    this.style.background='white';
+                    this.style.transform='translateY(0)';
+                    this.style.boxShadow='none';
+                ">
+                    <td style="padding: 12px 15px; vertical-align: middle;">
+                        <span style="color: #1e293b; font-size: 14px; font-weight: 600; font-family: monospace;">
+                            NT-${String(index + 1).padStart(3, '0')}
+                        </span>
+                    </td>
+                    <td style="padding: 12px 15px; vertical-align: middle;">
+                        <span style="font-size: 14px; color: #64748b; font-weight: 500;">${fecha}</span>
+                    </td>
+                    <td style="padding: 12px 15px; vertical-align: middle;">
+                        <span style="font-size: 14px; color: #64748b; font-weight: 500; font-family: monospace;">${hora}</span>
+                    </td>
+                    <td style="padding: 12px 15px; vertical-align: middle;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="
+                                width: 24px; height: 24px; background: #00b894; border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;
+                                color: white; font-weight: 700; font-size: 12px; flex-shrink: 0;
+                            ">${inicial}</div>
+                            <span style="font-size: 14px; font-weight: 500; color: #1e293b; line-height: 1.2;">${medico}</span>
+                        </div>
+                    </td>
+                    <td style="padding: 12px 15px; vertical-align: middle;">
+                        <span style="
+                            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+                            color: #065f46; padding: 6px 12px; border-radius: 16px;
+                            font-size: 12px; font-weight: 600; display: inline-block;
+                        ">${especialidad}</span>
+                    </td>
+                    <td style="padding: 12px 15px; vertical-align: middle;">
+                        <span style="
+                            background: ${estado === 'finalizada' ? '#dcfce7' : '#fef3c7'};
+                            color: ${estado === 'finalizada' ? '#15803d' : '#92400e'};
+                            padding: 6px 12px; border-radius: 16px; font-size: 11px;
+                            font-weight: 700; text-transform: uppercase; display: inline-block;
+                        ">
+                            ${estado === 'finalizada' ? 'FIRMADA' : 'BORRADOR'}
+                        </span>
+                    </td>
+                    <td style="padding: 12px 15px; text-align: center; vertical-align: middle;">
+                        <button style="
+                            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+                            color: white !important;
+                            border: none !important;
+                            padding: 6px 12px !important;
+                            border-radius: 8px !important;
+                            cursor: pointer !important;
+                            font-size: 9px !important;
+                            font-weight: 600 !important;
+                            transition: all 0.2s ease !important;
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            gap: 8px !important;
+                            margin: 10px !important;
+                        "
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.3)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                            ✅ Cargar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Insertar HTML completo de la tabla
         tabla.innerHTML = `
-            <thead style="background: #2c3e50; color: white;">
-                <tr>
-                    <th style="padding: 12px; text-align: left;">N° Nota</th>
-                    <th style="padding: 12px; text-align: left;">Título</th>
-                    <th style="padding: 12px; text-align: left;">Fecha</th>
-                    <th style="padding: 12px; text-align: left;">Turno</th>
-                    <th style="padding: 12px; text-align: center;">Acción</th>
+            <thead>
+                <tr style="background: #e2e8f0;">
+                    <th style="padding: 16px 20px; text-align: left; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: none; width: 120px;"># NÚMERO</th>
+                    <th style="padding: 16px 20px; text-align: left; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: none; width: 100px;">📅 FECHA</th>
+                    <th style="padding: 16px 20px; text-align: left; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: none; width: 100px;">🕐 HORA</th>
+                    <th style="padding: 16px 20px; text-align: left; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: none; width: 200px;">👩‍⚕️ MÉDICO</th>
+                    <th style="padding: 16px 20px; text-align: left; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: none; width: 180px;">🩺 ESPECIALIDAD</th>
+                    <th style="padding: 16px 20px; text-align: left; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: none; width: 120px;">✅ ESTADO</th>
+                    <th style="padding: 16px 20px; text-align: center; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: none; width: 120px;">▶️ ACCIÓN</th>
                 </tr>
             </thead>
             <tbody>
-                ${notas.map((nota, index) => {
-                    const notaProcesada = procesarNotaDelAPI(nota);
-                    const fecha = new Date(notaProcesada.fechaCreacion).toLocaleDateString('es-ES');
-                    
-                    return `
-                        <tr style="border-bottom: 1px solid #eee; ${index % 2 === 0 ? 'background: #f9f9f9;' : ''}">
-                            <td style="padding: 12px; font-weight: bold; color: #2c3e50;">${notaProcesada.numeroNota}</td>
-                            <td style="padding: 12px;">${notaProcesada.tituloNota}</td>
-                            <td style="padding: 12px;">${fecha}</td>
-                            <td style="padding: 12px; text-align: center;">
-                                <span style="background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
-                                    ${notaProcesada.turno || 'N/A'}
-                                </span>
-                            </td>
-                            <td style="padding: 12px; text-align: center;">
-                                <button onclick="cargarNotaEnEditor({id: ${notaProcesada.id}, numero_nota: '${notaProcesada.numeroNota}'})" 
-                                        style="
-                                            background: #27ae60; color: white; border: none; 
-                                            padding: 6px 12px; border-radius: 4px; cursor: pointer;
-                                            font-size: 12px; font-weight: bold;
-                                        ">
-                                    📝 Cargar
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('')}
+                ${filas}
             </tbody>
         `;
         
-        contenido.appendChild(tabla);
+        tablaWrapper.appendChild(tabla);
+        contenido.appendChild(tablaWrapper);
     }
     
+    // Ensamblar modal
     modal.appendChild(header);
     modal.appendChild(contenido);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     
-    // Cerrar con click fuera del modal
-    overlay.addEventListener('click', (e) => {
+    // Eventos de cierre
+    configurarEventosCierre(overlay);
+}
+
+// Función auxiliar para eventos de cierre
+function configurarEventosCierre(overlay) {
+    overlay.addEventListener('click', function(e) {
         if (e.target === overlay) {
             cerrarGrilla();
         }
     });
     
-    // Cerrar con ESC
-    document.addEventListener('keydown', function cerrarConEsc(e) {
+    const cerrarConEsc = function(e) {
         if (e.key === 'Escape') {
             cerrarGrilla();
             document.removeEventListener('keydown', cerrarConEsc);
         }
-    });
+    };
+    document.addEventListener('keydown', cerrarConEsc);
 }
 
+// Función de cerrar optimizada
+function cerrarGrilla() {
+    const overlay = document.querySelector('.ver-notas-overlay');
+    if (overlay) {
+        overlay.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(function() {
+            if (overlay.parentNode) {
+                overlay.remove();
+            }
+        }, 300);
+    }
+}
+
+// CSS para animaciones
+if (!document.getElementById('grilla-perfecta-styles')) {
+    const style = document.createElement('style');
+    style.id = 'grilla-perfecta-styles';
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .contenido-perfecto::-webkit-scrollbar {
+            width: 6px;
+        }
+        .contenido-perfecto::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .contenido-perfecto::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+            border-radius: 3px;
+        }
+        @media (max-width: 768px) {
+            .modal-perfecto {
+                width: 98%;
+                max-height: 90vh;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
 // =============================================================================================
 // 14. 🔧 FUNCIONES DE UTILIDAD
 // =============================================================================================
@@ -4864,10 +5266,28 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
 }
 
 
-
 console.log('📋 Sistema Ver Notas MEJORADO cargado - Compatible con tu previsualizador v4.0');
 
 
+
+// =====================================================
+// 🎯 FUNCIÓN PRINCIPAL SETUP
+// =====================================================
+
+// =====================================================
+// 🔓 FUNCIÓN DESBLOQUEAR EDITOR - COMPLETA Y ROBUSTA
+// =====================================================
+
+function setupNuevoEditor() {
+    const btn = document.getElementById('nuevaNotaBtn');
+    if (btn) {
+        btn.addEventListener('click', function() {
+            // JODER TODO - RECARGAR PÁGINA LIMPIA
+            window.location.reload();
+        });
+        console.log('✅ Botón configurado - RECARGA LA PÁGINA');
+    }
+}
 
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
 document.addEventListener('DOMContentLoaded', inicializarNotasMedicas);
