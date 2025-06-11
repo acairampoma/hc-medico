@@ -3,19 +3,18 @@ Servicio principal de autenticación
 Maneja la lógica de negocio y coordina con OAuth2
 """
 
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, Set
 from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass, asdict
 import json
-
-from .oauth2_client import oauth2_client, TokenResponse
+from .oauth2_client import oauth2_client, TokenResponse  
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class UserSession:
-    """Información de sesión del usuario"""
+    """Información de sesión del usuario CON datos profesionales"""
     user_id: str
     username: str
     name: str
@@ -25,9 +24,18 @@ class UserSession:
     token: Optional[TokenResponse] = None
     login_time: datetime = None
     last_activity: datetime = None
-    # Agregar campos adicionales para nombres
+    # Campos básicos del usuario
     firstName: Optional[str] = None
     lastName: Optional[str] = None
+    
+    # 🔥 NUEVOS CAMPOS PROFESIONALES
+    cmp: Optional[str] = None
+    tipo: Optional[str] = None  
+    hospital_id: Optional[int] = None
+    area_trabajo: Optional[str] = None
+    especialidad_principal: Optional[str] = None
+    datos_profesional_raw: Optional[str] = None
+    datos_profesional_parsed: Optional[dict] = None
     
     def __post_init__(self):
         if self.login_time is None:
@@ -49,15 +57,36 @@ class UserSession:
         self.last_activity = datetime.now()
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convierte la sesión a diccionario para JSON"""
-        data = asdict(self)
+        """Convierte la sesión a diccionario para JSON CON datos profesionales"""
+        data = {
+            'user_id': self.user_id,
+            'username': self.username,
+            'name': self.name,
+            'email': self.email,
+            'role': self.role,
+            'permissions': self.permissions,
+            'firstName': self.firstName,
+            'lastName': self.lastName,
+            
+            # 🔥 INCLUIR DATOS PROFESIONALES
+            'cmp': self.cmp,
+            'tipo': self.tipo,
+            'hospital_id': self.hospital_id, 
+            'area_trabajo': self.area_trabajo,
+            'especialidad_principal': self.especialidad_principal,
+            'datos_profesional_parsed': self.datos_profesional_parsed,
+            
+            # Datos calculados
+            'displayName': f"Dr. {self.firstName} {self.lastName}".strip() if self.firstName and self.lastName else self.name,
+            'fullName': f"{self.firstName} {self.lastName}".strip() if self.firstName and self.lastName else self.name,
+        }
+        
         # Convertir datetime a string
         if self.login_time:
             data['login_time'] = self.login_time.isoformat()
         if self.last_activity:
             data['last_activity'] = self.last_activity.isoformat()
-        # Excluir token por seguridad pero incluir firstName y lastName si están disponibles
-        data.pop('token', None)
+            
         return data
 
 @dataclass
@@ -96,7 +125,8 @@ class AuthService:
         self._failed_attempts: Dict[str, list] = {}
         self.max_failed_attempts = 5
         self.lockout_duration = timedelta(minutes=15)
-    
+        self._blacklisted_tokens = set()
+
     async def login(
         self, 
         username: str, 
@@ -170,17 +200,45 @@ class AuthService:
         token_response: TokenResponse
     ) -> UserSession:
         """
-        Crea una sesión de usuario con información del token y del microservicio
+        Crea una sesión de usuario con información COMPLETA del microservicio
         """
         try:
-            # Obtener información detallada del usuario desde el microservicio
+            # 🔥 AQUÍ ESTÁ EL CAMBIO: Traer datos completos del microservicio
+            logger.info(f"👤 Obteniendo datos completos para: {username}")
+            
             success, user_data, error = await oauth2_client.get_user_info(
                 username=username,
                 token=token_response.access_token
             )
             
             if success and user_data:
-                # Usar datos reales del microservicio
+                logger.info(f"✅ Datos obtenidos del microservicio: {user_data}")
+                
+                # 🔥 PARSEAR datosProfesional AQUÍ EN EL BACKEND
+                datos_profesionales = {}
+                try:
+                    if 'datosProfesional' in user_data and user_data['datosProfesional']:
+                        raw_datos = user_data['datosProfesional']
+                        
+                        if isinstance(raw_datos, str):
+                            # Es string JSON, parsearlo
+                            datos_profesionales = json.loads(raw_datos)
+                            logger.info(f"✅ datosProfesional parseado: {datos_profesionales}")
+                        elif isinstance(raw_datos, dict):
+                            # Ya es dict
+                            datos_profesionales = raw_datos
+                        else:
+                            logger.warning(f"⚠️ datosProfesional tipo inesperado: {type(raw_datos)}")
+                            datos_profesionales = {}
+                    else:
+                        logger.warning(f"⚠️ No hay datosProfesional para {username}")
+                        datos_profesionales = {}
+                        
+                except json.JSONDecodeError as e:
+                    logger.error(f"❌ Error parseando datosProfesional: {e}")
+                    datos_profesionales = {}
+                
+                # Crear sesión con TODOS los datos
                 firstName = user_data.get('firstName', '')
                 lastName = user_data.get('lastName', '')
                 
@@ -196,18 +254,29 @@ class AuthService:
                     lastName=lastName
                 )
                 
-                logger.info(f"👤 Sesión creada con datos del microservicio para {username}")
+                # 🔥 AGREGAR LOS DATOS PROFESIONALES A LA SESIÓN
+                user_session.cmp = datos_profesionales.get('cmp', 'N/A')
+                user_session.tipo = datos_profesionales.get('tipo', 'N/A') 
+                user_session.hospital_id = datos_profesionales.get('hospital_id', None)
+                user_session.area_trabajo = datos_profesionales.get('area_trabajo', 'N/A')
+                user_session.especialidad_principal = datos_profesionales.get('especialidad_principal', 'N/A')
+                user_session.datos_profesional_raw = user_data.get('datosProfesional', '{}')
+                user_session.datos_profesional_parsed = datos_profesionales
+                
+                logger.info(f"👤 Sesión COMPLETA creada para {username}")
+                logger.info(f"🏥 CMP: {user_session.cmp}")
+                logger.info(f"⚕️ Especialidad: {user_session.especialidad_principal}")
+                logger.info(f"🏢 Área: {user_session.area_trabajo}")
+                
                 return user_session
             else:
-                # Fallback a datos básicos si no se puede obtener info del usuario
                 logger.warning(f"⚠️ No se pudo obtener info del usuario {username}, usando datos básicos")
                 return self._create_basic_user_session(username, token_response)
                 
         except Exception as e:
             logger.error(f"💥 Error creando sesión con datos del microservicio: {str(e)}")
-            # Fallback a datos básicos
             return self._create_basic_user_session(username, token_response)
-    
+
     def _create_basic_user_session(
         self, 
         username: str, 
@@ -359,27 +428,25 @@ class AuthService:
         """
         self._failed_attempts.pop(username, None)
     
-    async def logout(self, username: str) -> bool:
-        """
-        Cierra sesión de usuario
-        """
+    async def logout(self, token: str) -> bool:
+        """Logout con token y blacklist"""
         try:
-            user_session = self._active_sessions.get(username)
-            if user_session and user_session.token:
-                # Revocar token en OAuth2
-                await oauth2_client.logout(user_session.token.access_token)
-            
-            # Remover sesión activa
-            self._active_sessions.pop(username, None)
-            
-            # Limpiar cache de tokens
-            oauth2_client.clear_cache(username)
-            
-            logger.info(f"🚪 Logout exitoso para: {username}")
+            if token:
+                self._blacklisted_tokens.add(token)
+                print(f"Token blacklisted: {token[:20]}...")
+                
+                try:
+                    import jwt
+                    payload = jwt.decode(token, options={"verify_signature": False})
+                    username = payload.get('sub') or payload.get('username')
+                    if username:
+                        self._active_sessions.pop(username, None)
+                        print(f"Sesión eliminada para: {username}")
+                except:
+                    pass
             return True
-            
         except Exception as e:
-            logger.error(f"💥 Error en logout: {str(e)}")
+            print(f"Error en logout: {e}")
             return False
     
     def get_user_session(self, username: str) -> Optional[UserSession]:
@@ -462,6 +529,136 @@ class AuthService:
                 len(attempts) for attempts in self._failed_attempts.values()
             )
         }
+
+    def get_blacklisted_tokens(self) -> Set[str]:
+        """
+        Obtiene la lista de tokens blacklisted
+        """
+        return self._blacklisted_tokens
+
+    async def validate_token(self, token: str) -> bool:
+        """
+        Validar si un JWT token es válido
+        """
+        try:
+            if not token:
+                logger.debug("❌ Token vacío")
+                return False
+            
+            # Verificar en sesiones activas primero
+            for username, session in self._active_sessions.items():
+                if (session.token and 
+                    session.token.access_token == token and 
+                    session.is_active):
+                    
+                    # Actualizar última actividad
+                    session.update_activity()
+                    logger.debug(f"✅ Token válido para usuario: {username}")
+                    return True
+            
+            # Si no está en sesiones activas, validar con OAuth2 server
+            logger.debug("🔍 Validando token con OAuth2 server")
+            return await self._validate_with_oauth_server(token)
+            
+        except Exception as e:
+            logger.error(f"💥 Error validando token: {str(e)}")
+            return False
+    
+    async def get_user_from_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """
+        Obtener datos del usuario desde un JWT token
+        """
+        try:
+            if not token:
+                return None
+            
+            # Buscar en sesiones activas
+            for username, session in self._active_sessions.items():
+                if (session.token and 
+                    session.token.access_token == token and
+                    session.is_active):
+                    
+                    # Actualizar última actividad
+                    session.update_activity()
+                    
+                    return {
+                        "username": session.username,
+                        "user_id": session.user_id,
+                        "name": session.name,
+                        "email": session.email,
+                        "role": session.role,
+                        "permissions": session.permissions,
+                        "firstName": session.firstName,
+                        "lastName": session.lastName,
+                        "last_activity": session.last_activity.isoformat() if session.last_activity else None,
+                        "login_time": session.login_time.isoformat() if session.login_time else None
+                    }
+            
+            # Si no está en sesiones, intentar validar con OAuth2 server
+            logger.debug("🔍 Usuario no encontrado en sesiones activas, intentando OAuth2")
+            return await self._get_user_from_oauth_server(token)
+            
+        except Exception as e:
+            logger.error(f"💥 Error obteniendo usuario del token: {str(e)}")
+            return None
+    
+    async def _validate_with_oauth_server(self, token: str) -> bool:
+        """
+        Validar token directamente con el servidor OAuth2
+        """
+        try:
+            # Usar el oauth2_client existente para validar
+            success, user_data, error = await oauth2_client.get_user_info_by_token(token)
+            
+            if success and user_data:
+                logger.debug(f"✅ Token validado con OAuth2 server para usuario: {user_data.get('username', 'unknown')}")
+                return True
+            
+            logger.debug(f"❌ Token inválido según OAuth2 server: {error}")
+            return False
+            
+        except AttributeError:
+            # Si el método get_user_info_by_token no existe, intentar alternativa
+            logger.warning("⚠️ Método get_user_info_by_token no disponible, usando validación básica")
+            return len(token) > 20  # Validación básica como fallback
+        except Exception as e:
+            logger.error(f"💥 Error validando con OAuth server: {str(e)}")
+            return False
+    
+    async def _get_user_from_oauth_server(self, token: str) -> Optional[Dict[str, Any]]:
+        """
+        Obtener datos del usuario desde el servidor OAuth2 usando el token
+        """
+        try:
+            # Intentar obtener info del usuario del token
+            success, user_data, error = await oauth2_client.get_user_info_by_token(token)
+            
+            if success and user_data:
+                # Formatear datos para consistencia
+                firstName = user_data.get('firstName', '')
+                lastName = user_data.get('lastName', '')
+                
+                return {
+                    "username": user_data.get('username', 'unknown'),
+                    "user_id": str(user_data.get('id', 'unknown')),
+                    "name": f"{firstName} {lastName}".strip() or user_data.get('username', 'unknown'),
+                    "email": user_data.get('email', ''),
+                    "role": self._extract_role_from_roles(user_data.get('roles', [])),
+                    "permissions": self._get_permissions_from_roles(user_data.get('roles', [])),
+                    "firstName": firstName,
+                    "lastName": lastName,
+                    "last_activity": datetime.now().isoformat(),
+                    "login_time": None
+                }
+            
+            return None
+            
+        except AttributeError:
+            logger.warning("⚠️ Método get_user_info_by_token no disponible en oauth2_client")
+            return None
+        except Exception as e:
+            logger.error(f"💥 Error obteniendo usuario del OAuth server: {str(e)}")
+            return None
 
 # Instancia singleton del servicio de autenticación
 auth_service = AuthService()

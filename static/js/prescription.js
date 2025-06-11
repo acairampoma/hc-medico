@@ -141,98 +141,79 @@ document.addEventListener('alpine:init', () => {
         },
 
         // === GESTIÓN DE DATOS DEL PACIENTE ===
-        determinarGenero(patientData) {
-            if (patientData.gender) {
-                return patientData.gender === 'Masculino' ? 'M' : 
-                       patientData.gender === 'Femenino' ? 'F' : '';
-            } else if (patientData.genero) {
-                return patientData.genero === 'Masculino' ? 'M' : 
-                       patientData.genero === 'Femenino' ? 'F' : 
-                       patientData.genero;
-            }
-            return '';
+        determinarGenero(gender) {
+            if (!gender) return '';
+            
+            const g = gender.toLowerCase();
+            if (g.includes('masculino') || g.includes('hombre') || g === 'm') return 'M';
+            if (g.includes('femenino') || g.includes('mujer') || g === 'f') return 'F';
+            
+            return gender;
         },
 
         cargarDatosPaciente(patientData) {
-            console.log('Cargando datos del paciente:', patientData);
+            console.log('🔄 Cargando datos del paciente:', patientData);
             
             try {
-                // Establecer datos del paciente
-                this.data.paciente.nombre = patientData.patientName || patientData.nombre || '';
-                this.data.paciente.edad = patientData.patientAge || patientData.edad || '';
-                this.data.paciente.genero = this.determinarGenero(patientData);
-                this.data.paciente.cama = patientData.bedNumber || patientData.cama || '';
-                this.data.paciente.sala = patientData.specialty || patientData.servicio || patientData.sala || '';
+                // 👤 DATOS DEL PACIENTE - Mapeo correcto
+                this.data.paciente.nombre = patientData.fullName || `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim();
+                this.data.paciente.edad = patientData.age || '';
+                this.data.paciente.genero = this.determinarGenero(patientData.gender);
+                this.data.paciente.cama = patientData.bedNumber || '';
+                this.data.paciente.sala = patientData.specialty || patientData.attendingPhysician || '';
                 
-                // Cargar diagnóstico si existe
-                if (patientData.diagnosis || patientData.diagnostico) {
-                    const diagnosisCode = patientData.diagnosisCode || patientData.codigoDiagnostico || '';
-                    const diagnosisName = patientData.diagnosis || patientData.diagnostico || '';
-                    
+                // 🩺 DIAGNÓSTICO - Usar campos correctos
+                if (patientData.primaryDiagnosis && patientData.diagnosisCode) {
                     this.data.diagnostico = {
-                        codigo: diagnosisCode,
-                        nombre: diagnosisName
+                        codigo: patientData.diagnosisCode,
+                        nombre: patientData.primaryDiagnosis
                     };
+                    this.buscarDx = `${patientData.diagnosisCode} - ${patientData.primaryDiagnosis}`;
                 }
                 
-                // Establecer médico
-                if (patientData.doctor || patientData.medico) {
-                    this.data.medico.nombre = patientData.doctor || patientData.medico;
+                // 👨‍⚕️ MÉDICO - Priorizar doctor.name
+                if (patientData.doctor && patientData.doctor.name) {
+                    this.data.medico.nombre = `Dr. ${patientData.doctor.name}`;
+                } else if (patientData.attendingPhysician) {
+                    this.data.medico.nombre = `Dr. ${patientData.attendingPhysician}`;
                 } else {
-                    this.data.medico.nombre = 'Dr. Carrillo - Cabeza y Cuello';
+                    // Cargar desde userCompleto como fallback
+                    this.cargarMedicoDesdeUserCompleto();
                 }
                 
-                // Marcar origen de datos
+                // ✅ MARCAR COMO DATOS DEL SISTEMA
                 this.datosDesdeRondas = true;
                 
-                console.log('Datos cargados correctamente');
+                console.log('✅ Datos cargados correctamente');
+                console.log('📊 Estado final:', {
+                    paciente: this.data.paciente,
+                    diagnostico: this.data.diagnostico,
+                    medico: this.data.medico
+                });
+                
             } catch (error) {
-                console.error('Error al cargar datos del paciente:', error);
+                console.error('❌ Error cargando datos del paciente:', error);
                 this.mostrarError('Error al cargar datos del paciente');
             }
         },
 
         cargarDatosURL() {
-            console.log('Buscando datos del paciente...');
+            console.log('🔍 Buscando datos del paciente en localStorage...');
             
             try {
-                // Verificar sessionStorage primero
-                const sessionData = sessionStorage.getItem('patientData');
-                if (sessionData) {
-                    const patientData = JSON.parse(sessionData);
+                // SOLO leer de localStorage currentPatientData
+                const currentPatientStr = localStorage.getItem('currentPatientData');
+                
+                if (currentPatientStr) {
+                    const patientData = JSON.parse(currentPatientStr);
+                    console.log('📋 Datos encontrados:', patientData);
                     this.cargarDatosPaciente(patientData);
-                    return;
+                } else {
+                    console.warn('⚠️ No hay datos en localStorage.currentPatientData');
                 }
                 
-                // Verificar parámetros URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const patientId = urlParams.get('patientId');
-                
-                if (patientId) {
-                    const patientKey = `patient_${patientId}`;
-                    const patientDataStr = localStorage.getItem(patientKey) || 
-                                         localStorage.getItem('currentPatientData');
-                    
-                    if (patientDataStr) {
-                        const patientData = JSON.parse(patientDataStr);
-                        this.cargarDatosPaciente(patientData);
-                        return;
-                    }
-                }
-                
-                // Verificar localStorage general
-                const pacienteData = localStorage.getItem('currentPatientData') || 
-                                   localStorage.getItem('patientData') || 
-                                   localStorage.getItem('patient_data');
-                
-                if (pacienteData) {
-                    const patientData = JSON.parse(pacienteData);
-                    this.cargarDatosPaciente(patientData);
-                } else if (window.currentPatientData) {
-                    this.cargarDatosPaciente(window.currentPatientData);
-                }
             } catch (error) {
-                console.error('Error al cargar datos desde URL/localStorage:', error);
+                console.error('❌ Error leyendo currentPatientData:', error);
             }
         },
 

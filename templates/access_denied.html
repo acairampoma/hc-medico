@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚫 Acceso Denegado - Sistema Hospitalario</title>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .access-denied-container {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            max-width: 500px;
+            width: 100%;
+            padding: 60px 40px;
+            text-align: center;
+            animation: slideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .error-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: pulse 2s infinite;
+            box-shadow: 0 16px 32px rgba(44, 90, 160, 0.2);
+        }
+
+        .error-icon i {
+            font-size: 3.5rem;
+            color: white;
+        }
+
+        .error-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .error-subtitle {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c5aa0;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            color: #64748b;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(44, 90, 160, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(44, 90, 160, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(100, 116, 139, 0.1);
+            color: #475569;
+            border: 2px solid rgba(100, 116, 139, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(100, 116, 139, 0.15);
+            border-color: rgba(100, 116, 139, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .medical-pattern {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            opacity: 0.05;
+            transform: rotate(15deg);
+        }
+
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: 24px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(24px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 16px 32px rgba(44, 90, 160, 0.2);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 20px 40px rgba(44, 90, 160, 0.3);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .access-denied-container {
+                padding: 40px 24px;
+                margin: 16px;
+            }
+            
+            .error-title {
+                font-size: 2rem;
+            }
+            
+            .error-icon {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .error-icon i {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="access-denied-container">
+        <!-- Patrón médico decorativo -->
+        <div class="medical-pattern">
+            <i class="fas fa-heartbeat"></i>
+        </div>
+        
+        <div class="error-icon">
+            <i class="fas fa-user-shield"></i>
+        </div>
+        
+        <h1 class="error-title">Acceso Restringido</h1>
+        <h2 class="error-subtitle">Autenticación Requerida</h2>
+        
+        <p class="error-message">
+            Para acceder al Sistema Hospitalario necesitas estar autenticado con credenciales médicas válidas. Tu sesión puede haber expirado o no tienes los permisos necesarios.
+        </p>
+        
+        <div class="action-buttons">
+            <a href="/login" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i>
+                Iniciar Sesión Médica
+            </a>
+            
+            <button onclick="goBack()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Regresar
+            </button>
+        </div>
+        
+        <div class="security-badge">
+            <i class="fas fa-shield-alt"></i>
+            <span>Sistema Protegido</span>
+        </div>
+    </div>
+
+    <script>
+        // Funciones de botones
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/login';
+            }
+        }
+
+        // Verificar si viene de redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        const reason = urlParams.get('reason');
+
+        if (reason) {
+            let message = '';
+            let subtitle = '';
+            
+            switch(reason) {
+                case 'session_expired':
+                    subtitle = 'Sesión Expirada';
+                    message = 'Tu sesión ha expirado por inactividad. Por favor, inicia sesión nuevamente para continuar.';
+                    break;
+                case 'invalid_token':
+                    subtitle = 'Token Inválido';
+                    message = 'Tu token de acceso no es válido. Necesitas autenticarte nuevamente.';
+                    break;
+                case 'no_permissions':
+                    subtitle = 'Sin Permisos';
+                    message = 'No tienes los permisos necesarios para acceder a esta sección del sistema.';
+                    break;
+                default:
+                    subtitle = 'Autenticación Requerida';
+                    message = 'Para acceder al Sistema Hospitalario necesitas estar autenticado con credenciales médicas válidas.';
+            }
+            
+            document.querySelector('.error-subtitle').textContent = subtitle;
+            document.querySelector('.error-message').textContent = message;
+        }
+
+        // Detectar tecla Enter para ir a login
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                window.location.href = '/login';
+            }
+        });
+
+        // Mostrar notificación elegante al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Opcional: Auto-redirect después de tiempo
+            // setTimeout(() => {
+            //     window.location.href = '/login';
+            // }, 10000);
+        });
+    </script>
+</body>
+</html>

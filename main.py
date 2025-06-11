@@ -9,6 +9,17 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import io
 import asyncio
+from fastapi.responses import JSONResponse, Response 
+
+os.environ["DEVELOPMENT_MODE"] = "false"
+os.environ["SECURITY_ENABLED"] = "true"
+print("🔧 FORZADO: Modo producción activado")
+# 🔧 CARGAR VARIABLES DE ENTORNO
+from dotenv import load_dotenv
+load_dotenv()  # Carga el archivo .env
+
+# ===== 🆕 IMPORTAR MIDDLEWARE (AGREGAR ESTA LÍNEA) =====
+from middleware import AuthMiddleware
 
 # ===== TUS SERVICIOS EXISTENTES (CONSERVAMOS TODO) =====
 from services.auth_service import auth_service, LoginResult
@@ -42,6 +53,10 @@ app = FastAPI(
     description="Sistema hospitalario con autenticación OAuth2 y Rondas Médicas",
     version="1.0.0"
 )
+
+# ===== 🔐 AGREGAR MIDDLEWARE DE SEGURIDAD (AGREGAR ESTAS LÍNEAS) =====
+app.add_middleware(AuthMiddleware)
+logger.info("🔐 Middleware de seguridad agregado exitosamente")
 
 # Configurar archivos estáticos y templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -90,92 +105,6 @@ class MedicalOrder(BaseModel):
 
 
 
-@app.api_route("/api/proxy/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def proxy_to_gateway(path: str, request: Request):
-    """
-    🌐 Proxy hacia el API Gateway - VERSIÓN CORREGIDA
-    """
-    try:
-        # URL completa del gateway
-        gateway_url = f"http://localhost:8090/api/{path}"
-        
-        # Headers básicos
-        headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        }
-        
-        # Agregar Authorization si está disponible
-        auth_header = request.headers.get('authorization')
-        if auth_header:
-            headers['Authorization'] = auth_header
-        
-        print(f"🌐 PROXY: {request.method} {gateway_url}")
-        print(f"🔑 Headers: {headers}")
-        
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            if request.method == "GET":
-                response = await client.get(
-                    gateway_url,
-                    headers=headers,
-                    params=request.query_params
-                )
-            elif request.method == "POST":
-                body = await request.body()
-                response = await client.post(
-                    gateway_url,
-                    headers=headers,
-                    content=body
-                )
-            else:
-                response = await client.request(
-                    method=request.method,
-                    url=gateway_url,
-                    headers=headers
-                )
-            
-            print(f"✅ PROXY Response: {response.status_code}")
-            
-            # Retornar respuesta
-            try:
-                response_data = response.json()
-            except:
-                response_data = {"data": response.text}
-            
-            return JSONResponse(
-                content=response_data,
-                status_code=response.status_code
-            )
-            
-    except httpx.ConnectError as e:
-        print(f"❌ PROXY ConnectError: {str(e)}")
-        return JSONResponse(
-            {"error": f"No se pudo conectar al gateway: {str(e)}"}, 
-            status_code=503
-        )
-    except httpx.TimeoutException as e:
-        print(f"❌ PROXY Timeout: {str(e)}")
-        return JSONResponse(
-            {"error": f"Timeout conectando al gateway: {str(e)}"}, 
-            status_code=504
-        )
-    except Exception as e:
-        print(f"❌ PROXY Error: {str(e)}")
-        return JSONResponse(
-            {"error": f"Error en proxy: {str(e)}"}, 
-            status_code=500
-        )
-
-# ===============================================================================
-# 🧪 ENDPOINT DE TEST SIMPLE
-# ===============================================================================
-
-@app.get("/api/proxy/test")
-async def test_proxy():
-    """Test simple del proxy"""
-    return {"message": "Proxy funcionando", "status": "OK"}
-
-
 # ===== TUS RUTAS EXISTENTES (CONSERVAMOS TODO) =====
 
 @app.get("/", response_class=HTMLResponse)
@@ -196,9 +125,10 @@ async def dashboard_page(request: Request):
 # ===== TUS APIs DE AUTENTICACIÓN (CONSERVAMOS) =====
 
 @app.post("/api/login")
-async def login_api(login_data: LoginRequest):
+async def login_api(login_data: LoginRequest, response: Response):
     """
     Endpoint de login que usa nuestro servicio OAuth2 elegante
+    SOLUCIÓN FINAL: Guarda token en cookie HTTP-only para acceso automático
     """
     try:
         logger.info(f"🔑 Solicitud de login para: {login_data.username}")
@@ -219,11 +149,33 @@ async def login_api(login_data: LoginRequest):
         else:
             logger.warning(f"❌ Login fallido para: {login_data.username} - {login_result.message}")
         
-        return JSONResponse(
-            status_code=200 if login_result.success else 401,
-            content=response_data
-        )
-        
+        if login_result.success and login_result.token:
+            # Crear respuesta con cookie
+            resp = JSONResponse(
+                status_code=200,
+                content=response_data
+            )
+            
+            # 🍪 ESTABLECER COOKIE
+            max_age = 24 * 3600 if login_data.remember_me else 3600  # 24h o 1h
+            resp.set_cookie(
+                key="access_token",          # ← MISMO NOMBRE que busca el middleware
+                value=login_result.token,    # ← TOKEN COMPLETO
+                max_age=max_age,
+                httponly=True,              # No accesible desde JavaScript (seguridad)
+                secure=False,               # True en producción con HTTPS
+                samesite="lax",             # Protección CSRF
+                path="/"                    # Disponible en toda la app
+            )
+            
+            logger.info(f"🍪 Cookie establecida para: {login_data.username}")
+            return resp
+        else:
+            # Login fallido, solo JSON
+            return JSONResponse(
+                status_code=401,
+                content=response_data
+            )
     except Exception as e:
         logger.error(f"💥 Error en login API: {str(e)}")
         return JSONResponse(
@@ -236,6 +188,10 @@ async def login_api(login_data: LoginRequest):
         )
 
 # ===== RUTAS DE PÁGINAS MÉDICAS =====
+
+@app.get("/access-denied", response_class=HTMLResponse)
+async def access_denied(request: Request):
+    return templates.TemplateResponse("access_denied.html", {"request": request})
 
 @app.get("/medical/rounds", response_class=HTMLResponse)
 async def medical_rounds_page(request: Request):
@@ -272,27 +228,68 @@ async def notes_page(request: Request, bed_number: str = None, patient_id: str =
     })
 
 # ===== TUS OTRAS RUTAS EXISTENTES (CONSERVAMOS) ===== 
-
 @app.post("/api/logout")
-async def logout_api(logout_data: LogoutRequest):
-    """
-    Endpoint para cerrar sesión
-    """
+async def logout_endpoint(request: Request):
+    """Logout completo con invalidación de token"""
     try:
-        logger.info(f"🚪 Solicitud de logout para: {logout_data.username}")
+        print(f"\n🔴 LOGOUT REQUEST RECIBIDO")
         
-        success = await auth_service.logout(logout_data.username)
+        # Extraer token de la request
+        token = None
         
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": success,
-                "message": "Sesión cerrada exitosamente" if success else "Error cerrando sesión"
-            }
-        )
+        # Buscar en Authorization header
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
         
+        # Buscar en cookies si no está en header
+        if not token:
+            token = request.cookies.get("access_token")
+        
+        print(f"   🔑 Token para logout: {token[:20] if token else 'None'}...")
+        
+        # Invalidar token
+        success = await auth_service.logout(token)
+        
+        if success:
+            # Crear respuesta exitosa
+            response = JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": "Sesión cerrada correctamente"
+                }
+            )
+            
+            # 🍪 LIMPIAR TODAS LAS COOKIES
+            cookies_to_clear = [
+                "access_token", "auth_token", "session_token", 
+                "user_info", "authToken", "token"
+            ]
+            
+            for cookie_name in cookies_to_clear:
+                response.delete_cookie(
+                    key=cookie_name,
+                    path="/",
+                    domain=None
+                )
+                print(f"   🧹 Cookie '{cookie_name}' eliminada")
+            
+            print(f"   ✅ LOGOUT EXITOSO")
+            return response
+        
+        else:
+            print(f"   ❌ LOGOUT FALLÓ")
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "message": "Error al cerrar sesión"
+                }
+            )
+    
     except Exception as e:
-        logger.error(f"💥 Error en logout API: {str(e)}")
+        print(f"   💥 Error en logout endpoint: {e}")
         return JSONResponse(
             status_code=500,
             content={
@@ -1293,6 +1290,12 @@ if __name__ == "__main__":
     print("📋 API Docs: http://localhost:8000/docs")
     print("🔍 Health Check: http://localhost:8000/api/health")
     print("📊 Stats: http://localhost:8000/api/stats")
+
+
+     # 🆕 MOSTRAR CONFIGURACIÓN ACTUAL
+    dev_mode = os.getenv("DEVELOPMENT_MODE", "false").lower() == "true"
+    print(f"🔧 Modo: {'DESARROLLO' if dev_mode else 'PRODUCCIÓN'}")
+    print(f"🛡️ Seguridad: {'DESHABILITADA' if dev_mode else 'ACTIVA'}")
     
     uvicorn.run(
         app, 

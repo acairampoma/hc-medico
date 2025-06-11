@@ -64,6 +64,8 @@ function inicializarNotasMedicas() {
     // 13. BOTÓN NUEVA NOTA
     setupNuevoEditor();
 
+    // 14. CARGAR DATOS DE FIRMA
+    setupCargarDatosFirma();
 
 }
 
@@ -3527,7 +3529,6 @@ function calcularTurno(fecha) {
 }
 
 
-
 // ===== GRABAR NOTA MEDICA=====
 
 // 1. INICIALIZACIÓN
@@ -5549,6 +5550,97 @@ function setupNuevoEditor() {
         console.log('✅ Botón configurado - RECARGA LA PÁGINA');
     }
 }
+
+
+
+
+/**
+ * Configura y carga los datos de la firma médica
+ */
+function setupCargarDatosFirma() {
+    try {
+        console.log('📋 Configurando datos de firma médica...');
+        
+        // 🔍 OBTENER datos del localStorage
+        const userCompletoString = localStorage.getItem('userCompleto');
+        
+        if (!userCompletoString) {
+            console.warn('⚠️ No hay datos de usuario en localStorage');
+            return;
+        }
+        
+        const userCompleto = JSON.parse(userCompletoString);
+        console.log('👤 Usuario completo cargado:', userCompleto);
+        
+        // 🏥 EXTRAER datos profesionales
+        const datosProfesional = userCompleto.datosProfesional_parsed || {};
+        
+        // 📝 CONSTRUIR nombre completo del médico
+        const nombreCompleto = `Dr. ${userCompleto.firstName} ${userCompleto.lastName}`;
+        
+        // 🕒 OBTENER fecha y hora actual
+        const ahora = new Date();
+        const fecha = ahora.toLocaleDateString('es-PE', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric'
+        });
+        const hora = ahora.toLocaleTimeString('es-PE', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // 🎯 LLENAR los campos de la firma
+        llenarDatosFirma({
+            medico: nombreCompleto,
+            cmp: datosProfesional.cmp || 'No especificado',
+            especialidad: datosProfesional.especialidad_principal || 'Medicina General',
+            fecha: fecha,
+            hora: hora
+        });
+        
+        console.log('✅ Datos de firma configurados correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error configurando datos de firma:', error);
+    }
+}
+
+/**
+ * Llena los campos específicos de la firma médica
+ */
+function llenarDatosFirma(datos) {
+    try {
+        // 🔍 BUSCAR elementos en el DOM
+        const signatureInfo = document.querySelector('.signature-info');
+        
+        if (!signatureInfo) {
+            console.warn('⚠️ No se encontró el contenedor .signature-info');
+            return;
+        }
+        
+        // 📝 ACTUALIZAR contenido HTML
+        signatureInfo.innerHTML = `
+            <div class="doctor-info">
+                <p><strong>MÉDICO:</strong> ${datos.medico}</p>
+                <p><strong>CMP:</strong> ${datos.cmp}</p>
+                <p><strong>ESPECIALIDAD:</strong> ${datos.especialidad}</p>
+            </div>
+            <div class="signature-datetime">
+                <p><strong>FECHA:</strong> ${datos.fecha}</p>
+                <p><strong>HORA:</strong> ${datos.hora}</p>
+            </div>
+        `;
+        
+        console.log('📋 Firma actualizada con:', datos);
+        
+    } catch (error) {
+        console.error('❌ Error llenando datos de firma:', error);
+    }
+}
+
+
+
 
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
 document.addEventListener('DOMContentLoaded', inicializarNotasMedicas);
