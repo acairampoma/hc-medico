@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, Body, Path, Query, Header
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, Response, FileResponse
 from pydantic import BaseModel
 import logging
 import os
@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import io
 import asyncio
-from fastapi.responses import JSONResponse, Response 
 
 os.environ["DEVELOPMENT_MODE"] = "false"
 os.environ["SECURITY_ENABLED"] = "true"
@@ -28,7 +27,7 @@ from services.oauth2_client import oauth2_client
 # ===== NUEVO SERVICIO DE HOSPITAL (AGREGAMOS SIN TOCAR NADA) =====
 from services.hospital_service import HospitalService
 
-# ===== NUEVO SERVICIO DE RECETAS (AGREGAMOS SIN TOCAR NADA) =====
+# ===== NUEVO SERVICIO DE RECETAS (CORREGIDO) =====
 from services.prescription_service import prescription_service
 
 # ===== NUEVO SERVICIO DE SIGNOS VITALES (AGREGAMOS SIN TOCAR NADA) =====
@@ -568,6 +567,32 @@ async def search_medications(q: str):
         logger.error(f"Error en search_medications: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
+@app.get("/api/pharmacy/medications/search/advanced")
+async def advanced_medication_search(
+    q: str = Query(..., min_length=2), 
+    limit: int = Query(default=10, le=50)
+):
+    """Búsqueda avanzada de medicamentos con posología"""
+    try:
+        # Buscar en el vademécum
+        medications_data = hospital_service.search_medications(q)
+        
+        # Limitar resultados
+        limited_results = dict(list(medications_data.items())[:limit])
+        
+        return {
+            "success": True,
+            "query": q,
+            "results": limited_results,
+            "total_found": len(medications_data)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en búsqueda avanzada de medicamentos: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
 @app.get("/api/medical/exams")
 async def get_exams_database():
     """Obtener base de datos de exámenes"""
@@ -601,71 +626,221 @@ async def create_medical_note(note: MedicalNote):
         logger.error(f"Error en create_medical_note: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.post("/api/medical/prescriptions/generate-pdf")
-async def generate_prescription_pdf(prescription_data: dict):
-    """Generar PDF de receta médica profesional"""
-    try:
-        # Generar PDF usando ReportLab
-        pdf_content = prescription_service.generate_prescription_pdf(prescription_data)
-        
-        # Guardar registro de la receta
-        prescription_id = prescription_service.save_prescription_record(prescription_data)
-        
-        # Preparar respuesta
-        from fastapi.responses import Response
-        
-        filename = f"Receta_{prescription_data.get('prescription', {}).get('number', 'N/A')}_{prescription_data.get('prescription', {}).get('patient', {}).get('name', 'Paciente').replace(' ', '_')}.pdf"
-        
-        return Response(
-            content=pdf_content,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}",
-                "Content-Type": "application/pdf"
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Error generando PDF de receta: {e}")
-        raise HTTPException(status_code=500, detail="Error generando PDF de receta")
+# ===== RUTAS DE RECETAS (CORREGIDAS PARA FUNCIONAL) =====
 
-@app.get("/api/medications/search")
-async def search_medications_advanced(q: str, limit: int = 10):
-    """Búsqueda avanzada de medicamentos con posología"""
+@app.post("/api/recetas/crear")
+async def crear_receta_endpoint(
+    receta_data: dict = Body(...),
+    token: str = Header(..., alias="Authorization")
+):
+    """📝 CREAR NUEVA RECETA"""
     try:
-        if len(q) < 2:
-            raise HTTPException(status_code=400, detail="La búsqueda debe tener al menos 2 caracteres")
-        
-        # Buscar en el vademécum
-        medications_data = hospital_service.search_medications(q)
-        
-        # Limitar resultados
-        limited_results = dict(list(medications_data.items())[:limit])
-        
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            receta = await service.crear_receta_desde_frontend(receta_data, clean_token)
         return {
             "success": True,
-            "query": q,
-            "results": limited_results,
-            "total_found": len(medications_data)
+            "data": receta,
+            "message": "Receta creada exitosamente",
+            "timestamp": datetime.now().isoformat()
         }
-        
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Error en búsqueda avanzada de medicamentos: {e}")
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
+        raise HTTPException(status_code=500, detail=str(e))
 
-        # === SIGNOS VITALES ===
-    @app.get("/medical/vital-signs", response_class=HTMLResponse)
-    async def monitor_signos_vitales():
-        """Monitor de signos vitales"""
-        return FileResponse("templates/vital_signs.html")
+@app.get("/api/recetas/{receta_id}")
+async def obtener_receta_endpoint(
+    receta_id: int = Path(..., gt=0),
+    token: str = Header(..., alias="Authorization")
+):
+    """📖 OBTENER RECETA por ID (modal visualización)"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            receta = await service.obtener_receta_por_id(receta_id, clean_token)
+            if not receta:
+                raise HTTPException(status_code=404, detail="Receta no encontrada")
+            return {
+                "success": True,
+                "data": receta,
+                "message": "Receta obtenida exitosamente",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/recetas/hospitalizacion/{hospitalizacion_id}")
+async def obtener_recetas_hospitalizacion_endpoint(
+    hospitalizacion_id: int = Path(..., gt=0),
+    token: str = Header(..., alias="Authorization")
+):
+    """🏥 OBTENER RECETAS de hospitalización (Ver Recetas)"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            recetas = await service.obtener_recetas_hospitalizacion(hospitalizacion_id, clean_token)
+        return {
+            "success": True,
+            "data": recetas,
+            "message": f"Recetas de hospitalización ({len(recetas)} encontradas)",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/recetas/{receta_id}/editar")
+async def actualizar_receta_endpoint(
+    receta_id: int = Path(..., gt=0),
+    cambios: dict = Body(...),
+    medico_id: int = Query(..., gt=0),
+    token: str = Header(..., alias="Authorization")
+):
+    """✏️ ACTUALIZAR RECETA (modal edición)"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            receta = await service.actualizar_receta(receta_id, cambios, medico_id, clean_token)
+            return {
+                "success": True,
+                "data": receta,
+                "message": "Receta actualizada exitosamente",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/catalogos/medicamentos/buscar")
+async def buscar_medicamentos_endpoint(
+    q: Optional[str] = Query(None),
+    token: str = Header(..., alias="Authorization")
+):
+    """🔍 BUSCAR MEDICAMENTOS"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            medicamentos = await service.buscar_medicamentos(q, None, clean_token)
+            return {
+                "success": True,
+                "data": medicamentos,
+                "message": f"Medicamentos encontrados: {len(medicamentos)}",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/catalogos/diagnosticos/buscar")
+async def buscar_diagnosticos_endpoint(
+    q: Optional[str] = Query(None),
+    token: str = Header(..., alias="Authorization")
+):
+    """🔍 BUSCAR DIAGNÓSTICOS"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            diagnosticos = await service.buscar_diagnosticos(q, clean_token)
+            return {
+                "success": True,
+                "data": diagnosticos,
+                "message": f"Diagnósticos encontrados: {len(diagnosticos)}",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/recetas/generar-pdf")
+async def generar_pdf_endpoint(
+    receta_id: int = Query(..., gt=0),
+    token: str = Header(..., alias="Authorization")
+):
+    """📄 GENERAR PDF con datos reales"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            pdf_bytes = await service.generate_prescription_pdf_from_microservice(receta_id, clean_token)
+            return Response(
+                pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=receta_{receta_id}.pdf"}
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/pacientes/cama/{bed_number}")
+async def obtener_datos_cama_endpoint(
+    bed_number: str = Path(...),
+    token: str = Header(..., alias="Authorization")
+):
+    """🏥 OBTENER DATOS por número de cama"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            datos = await service.obtener_datos_cama(bed_number, clean_token)
+            if not datos:
+                raise HTTPException(status_code=404, detail="Cama no encontrada")
+            return {
+                "success": True,
+                "data": datos,
+                "message": "Datos de cama obtenidos",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/recetas/health")
+async def health_check_recetas_endpoint():
+    """🛠️ HEALTH CHECK"""
+    try:
+        async with prescription_service as service:
+            health = await service.health_check()
+        return {
+            "success": True,
+            "data": health,
+            "message": "Health check completado",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/api/recetas/test/datos")
+async def obtener_datos_prueba_endpoint():
+    """🧪 DATOS DE PRUEBA"""
+    return {
+        "success": True,
+        "data": prescription_service.obtener_datos_prueba(),
+        "message": "Datos de prueba obtenidos",
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/api/recetas/test/crear-prueba")
+async def crear_receta_prueba_endpoint(
+    token: str = Header(..., alias="Authorization")
+):
+    """🧪 CREAR RECETA DE PRUEBA"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            receta = await service.crear_receta_prueba(clean_token)
+            return {
+                "success": True,
+                "data": receta,
+                "message": "Receta de prueba creada",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== RUTAS DE SIGNOS VITALES =====
 
 @app.get("/medical/vital-signs/{bed_id}", response_class=HTMLResponse)
-async def monitor_paciente_especifico(bed_id: str):
+async def monitor_paciente_especifico(request: Request, bed_id: str):
     """Monitor específico de un paciente"""
-
-    return FileResponse("templates/medical/vitales/vital_signs.html")
+    return templates.TemplateResponse("medical/vitales/vital_signs.html", {
+        "request": request,
+        "bed_id": bed_id
+    })
 
 # ===== APIS DE SIGNOS VITALES =====
 
@@ -821,35 +996,8 @@ async def test_vital_signs_file():
 
 
 # ========================================
-# 🩻 APIs DICOM
+# 🩻 APIs DICOM (DUPLICADAS - LIMPIAR)
 # ========================================
-
-@app.get("/api/dicom/studies")
-async def get_dicom_studies():
-    """Obtener lista de estudios DICOM disponibles"""
-    try:
-        return dicom_service.get_dicom_studies()
-    except Exception as e:
-        logger.error(f"Error en get_dicom_studies: {e}")
-        raise HTTPException(status_code=500, detail="Error obteniendo estudios DICOM")
-
-@app.get("/api/dicom/image")
-async def get_dicom_image(file_path: str):
-    """Convertir archivo DICOM a imagen PNG"""
-    try:
-        image_data = dicom_service.get_dicom_image(file_path)
-        
-        return StreamingResponse(
-            io.BytesIO(image_data),
-            media_type="image/png",
-            headers={"Cache-Control": "max-age=3600"}
-        )
-        
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Archivo DICOM no encontrado")
-    except Exception as e:
-        logger.error(f"Error convirtiendo imagen DICOM: {e}")
-        raise HTTPException(status_code=500, detail="Error procesando imagen DICOM")
 
 @app.get("/api/dicom/metadata/{file_name}")
 async def get_dicom_metadata(file_name: str):
@@ -876,18 +1024,6 @@ async def test_dicom_processing():
             "timestamp": datetime.now().isoformat()
         }
 
-@app.get("/api/dicom/health")
-async def dicom_health_check():
-    """Health check específico para servicio DICOM"""
-    try:
-        return dicom_service.health_check()
-    except Exception as e:
-        logger.error(f"Error en health check DICOM: {e}")
-        return {
-            "status": "error",
-            "message": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
 # ===== TUS ENDPOINTS DE MONITOREO (CONSERVAMOS) =====
 
 @app.get("/api/health")

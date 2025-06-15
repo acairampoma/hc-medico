@@ -1450,22 +1450,7 @@ function setupDigitalSignature() {
         stopDrawing();
     });
     
-    // TEST: Agregar click simple para verificar
-    canvas.addEventListener('click', function(e) {
-        console.log('👆 CLICK detectado en canvas');
-        
-        // Dibujar punto de prueba
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        ctx.fillStyle = '#e74c3c';
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        console.log('🔴 Punto rojo dibujado en:', x, y);
-    });
+    
     
     // Eventos touch para tablets/móviles
     canvas.addEventListener('touchstart', handleTouch);
@@ -1491,10 +1476,10 @@ function setupDigitalSignature() {
             console.log('🧹 Placeholder limpiado');
         }
         
-        // Dibujar punto inicial
+        // Dibujar punto iniciala
         ctx.fillStyle = '#2c3e50';
         ctx.beginPath();
-        ctx.arc(lastX, lastY, 2, 0, 2 * Math.PI);
+        ctx.arc(lastX, lastY, 0.5, 0, 2 * Math.PI);
         ctx.fill();
         
         // Guardar punto inicial
