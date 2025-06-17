@@ -1416,3 +1416,177 @@ body {
         padding: 4px 8px;
     }
 }
+
+
+
+/* 
+🔒 CSS PARA BLOQUEO DE FORMULARIO DE RECETAS - MODO SOLO LECTURA
+Aplicar cuando se presiona el botón "Ver" en el modal de recetas
+*/
+
+/* =========================== 
+   🎯 CLASE PRINCIPAL DE BLOQUEO 
+   =========================== */
+   .modo-solo-lectura {
+    position: relative;
+    pointer-events: none !important;
+    user-select: none;
+}
+
+.modo-solo-lectura::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(248, 250, 252, 0.8);
+    backdrop-filter: blur(1px);
+    z-index: 10;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+/* =========================== 
+   🚫 BOTÓN GUARDAR BLOQUEADO 
+   =========================== */
+.btn-guardar-bloqueado {
+    background: #e2e8f0 !important;
+    color: #64748b !important;
+    border: 1px solid #cbd5e1 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    pointer-events: none !important;
+    position: relative;
+}
+
+.btn-guardar-bloqueado::after {
+    content: '🔒 Solo Lectura';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* Ocultar texto original del botón */
+.btn-guardar-bloqueado span,
+.btn-guardar-bloqueado i {
+    opacity: 0;
+}
+
+/* 
+🔒 CSS BLOQUEO DIRECTO - SIN TONTERÍAS
+Solo bloquear lo necesario, rápido y efectivo
+*/
+
+/* =========================== 
+   🚫 BOTÓN GUARDAR BLOQUEADO - SIN ETIQUETAS
+   =========================== */
+   .btn-guardar-bloqueado {
+    background: #e5e7eb !important;
+    color: #9ca3af !important;
+    border: 1px solid #d1d5db !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+    pointer-events: none !important;
+}
+
+/* =========================== 
+   💊 BÚSQUEDA MEDICAMENTOS BLOQUEADA - OPACO
+   =========================== */
+.busqueda-bloqueada {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+    background: #f9fafb !important;
+    border-radius: 8px;
+}
+
+.busqueda-bloqueada input {
+    background: #f3f4f6 !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+.busqueda-bloqueada .med-results {
+    display: none !important;
+}
+
+/* =========================== 
+   ✍️ FIRMA BLOQUEADA - CON ETIQUETA (Como dijiste que está bien)
+   =========================== */
+.firma-bloqueada {
+    position: relative;
+    opacity: 0.7 !important;
+    pointer-events: none !important;
+    background: #f9fafb !important;
+    border-radius: 8px;
+}
+
+.firma-bloqueada::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(249, 250, 251, 0.8);
+    z-index: 5;
+    border-radius: 8px;
+}
+
+.firma-bloqueada::after {
+    content: '✍️ FIRMA DIGITAL - SOLO LECTURA';
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    z-index: 10;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.firma-bloqueada canvas {
+    pointer-events: none !important;
+}
+
+.firma-bloqueada button:not(.preview):not(.print):not(#previewBtn):not(#printBtn) {
+    opacity: 0.4 !important;
+    pointer-events: none !important;
+}
+
+/* =========================== 
+   ✅ BOTONES PERMITIDOS (Previsualizar/Imprimir) - FUERZA TOTAL
+   =========================== */
+#previewBtn,
+#printBtn,
+.preview,
+.print,
+button[onclick*="preview"],
+button[onclick*="print"],
+.signature-btn.preview,
+.signature-btn.print {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: #059669 !important;
+    color: white !important;
+    cursor: pointer !important;
+    z-index: 20 !important;
+    position: relative !important;
+}
+
+#previewBtn:hover,
+#printBtn:hover,
+.preview:hover,
+.print:hover {
+    background: #047857 !important;
+    transform: translateY(-1px) !important;
+}

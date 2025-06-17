@@ -58,6 +58,7 @@ function inicializarSistemaRecetas() {
     setupResponsiveHandling();   // 8. Responsive
     setupPrevisualizar();        // 9. Previsualizar    
     setupImprimir();             // 10. Imprimir
+    setupNuevaReceta();          // 11. Nueva receta
     
     console.log('✅ Sistema de recetas REFACTORIZADO inicializado correctamente');
 }
@@ -1167,24 +1168,27 @@ function setupGuardarReceta() {
         if (!firmaDigitalCorregida && typeof window.obtenerFirmaParaBD === 'function') {
             try {
                 console.log('🎯 MÉTODO 3: Ejecutando obtenerFirmaParaBD()...');
-                firmaDigitalCorregida = window.obtenerFirmaParaBD();
-                console.log('Resultado obtenerFirmaParaBD:', !!firmaDigitalCorregida);
-                if (firmaDigitalCorregida) {
-                    console.log('Tamaño:', firmaDigitalCorregida.length);
+                const resultadoFuncion = window.obtenerFirmaParaBD();
+                console.log('Resultado obtenerFirmaParaBD:', !!resultadoFuncion);
+                
+                if (resultadoFuncion && resultadoFuncion.tiene_firma && resultadoFuncion.firma_base64) {
+                    firmaDigitalCorregida = resultadoFuncion.firma_base64;
+                    console.log('✅ Firma obtenida desde obtenerFirmaParaBD()');
+                    console.log('📏 Tamaño:', firmaDigitalCorregida.length);
                 }
             } catch (error) {
                 console.error('❌ Error con obtenerFirmaParaBD:', error);
             }
         }
         
-        // 🎯 MÉTODO 4: Canvas directo (último recurso)
+        // 🎯 MÉTODO 4: Canvas directo (último recurso) - ✅ ID CORREGIDO
         if (!firmaDigitalCorregida) {
-            console.log('🎯 MÉTODO 4: Buscando canvas signaturePad...');
-            const canvas = document.getElementById('signaturePad');
+            console.log('🎯 MÉTODO 4: Buscando canvas signatureCanvas...');
+            const canvas = document.getElementById('signatureCanvas'); // ← CAMBIO CRÍTICO
             console.log('Canvas encontrado:', !!canvas);
             
             if (canvas) {
-                console.log('✅ Canvas signaturePad encontrado');
+                console.log('✅ Canvas signatureCanvas encontrado');
                 console.log('📊 Propiedades del canvas:', {
                     id: canvas.id,
                     width: canvas.width,
@@ -1233,7 +1237,7 @@ function setupGuardarReceta() {
                     console.error('❌ Error capturando desde canvas directo:', error);
                 }
             } else {
-                console.error('❌ Canvas signaturePad NO ENCONTRADO en el DOM');
+                console.error('❌ Canvas signatureCanvas NO ENCONTRADO en el DOM');
                 
                 // LOG: Buscar todos los canvas disponibles
                 const todosCanvas = document.querySelectorAll('canvas');
@@ -1325,19 +1329,19 @@ function setupGuardarReceta() {
                 imagen_base64: firmaDigitalCorregida,
                 fecha_firma: fechaFirma,
                 medico_id: parseInt(medicoData?.id || 1),
-                metodo: "variable_global_priorizada",
-                version: "corregida_v2",
+                metodo: "canvas_nativo_estandarizado",
+                version: "corregida_v3",
                 canvas_info: {
-                    id: "signaturePad",
-                    width: 280,
-                    height: 100,
+                    id: "signatureCanvas",      // ← CORREGIDO
+                    width: 400,                 // ← CORREGIDO
+                    height: 150,                // ← CORREGIDO
                     captured_at: ahora.toISOString()
                 },
                 validacion: {
                     tamano_bytes: firmaDigitalCorregida.length,
                     formato: "image/png",
                     es_valida: true,
-                    metodo_captura: "prioritario"
+                    metodo_captura: "metodo_unificado"
                 }
             };
             console.log('✅ Objeto firma_digital construido');
@@ -1376,7 +1380,7 @@ function setupGuardarReceta() {
             tieneFiremaDigital: !!recetaJson.firma_digital,
             tamañoBase64: firmaDigitalCorregida ? firmaDigitalCorregida.length : 0,
             numeroReceta: numeroReceta,
-            metodoCaptura: "variable_global_priorizada"
+            metodoCaptura: "canvas_nativo_estandarizado"
         });
         
         // LOG CRÍTICO: Mostrar si firma_digital es null o tiene contenido
@@ -1611,408 +1615,199 @@ function setupGuardarReceta() {
 }
 
 // =============================================================================================
-// 🖊️ SETUP 6: FIRMA DIGITAL - TODO ENCAPSULADO
+// 🖊️ SETUP 6: FIRMA DIGITAL - MÉTODO NATIVO OPTIMIZADO
 // =============================================================================================
 function setupFirmaDigital() {
     
-    console.log('🖊️ Configurando sistema de firma digital MEJORADO...');
-    
-    // ===== VARIABLES PRIVADAS =====
+    // Variables privadas
     const config = {
-        elementos: {
-            canvas: null,
-            clearBtn: null,
-            container: null,
-            placeholder: null
-        }
+        canvas: null,
+        ctx: null,
+        isDrawing: false,
+        hasSignature: false
     };
     
-    let firmaGuardada = null;
-    
-    // ===== FUNCIONES PRIVADAS =====
-    function inicializar() {
-        config.elementos.canvas = document.getElementById('signaturePad');
-        config.elementos.clearBtn = document.getElementById('clearSignatureBtn');
-        config.elementos.container = document.getElementById('signatureContainer');
-        config.elementos.placeholder = document.getElementById('signaturePlaceholder');
-        
-        if (!config.elementos.canvas) {
-            console.error('❌ Canvas de firma no encontrado');
+    // Inicialización
+    function init() {
+        config.canvas = document.getElementById('signatureCanvas');
+        if (!config.canvas) {
+            console.error('Canvas signatureCanvas no encontrado');
             return false;
         }
         
-        if (typeof SignaturePad === 'undefined') {
-            console.error('❌ SignaturePad no disponible');
-            return false;
-        }
-        
-        configurarSignaturePad();
-        configurarBotonLimpiar();
-        configurarEventListeners();
-        
-        // *** NUEVA LÓGICA: CARGAR DATOS DE FIRMA ***
-        cargarDatosFirmaDesdeStorage();
-        
+        config.ctx = config.canvas.getContext('2d');
+        setupCanvasEvents();
+        setupButtons();
+        setupCanvasStyle();
         return true;
     }
     
-    // *** NUEVA FUNCIÓN: CARGAR DATOS DESDE LOCALSTORAGE (COMO NOTAS MÉDICAS) ***
-    function cargarDatosFirmaDesdeStorage() {
-        try {
-            console.log('📋 Configurando datos de firma médica...');
-            
-            // 🔍 OBTENER datos del localStorage (misma lógica que notas)
-            const userCompletoString = localStorage.getItem('userCompleto');
-            
-            if (!userCompletoString) {
-                console.warn('⚠️ No hay datos de usuario en localStorage, usando datos por defecto');
-                llenarDatosFirmaPorDefecto();
-                return;
-            }
-            
-            const userCompleto = JSON.parse(userCompletoString);
-            console.log('👤 Usuario completo cargado:', userCompleto);
-            
-            // 🏥 EXTRAER datos profesionales
-            const datosProfesional = userCompleto.datosProfesional_parsed || {};
-            
-            // 📝 CONSTRUIR nombre completo del médico
-            const nombreCompleto = `Dr. ${userCompleto.firstName} ${userCompleto.lastName}`;
-            
-            // 🕒 OBTENER fecha y hora actual
-            const ahora = new Date();
-            const fecha = ahora.toLocaleDateString('es-PE', {
-                day: '2-digit',
-                month: '2-digit', 
-                year: 'numeric'
-            });
-            const hora = ahora.toLocaleTimeString('es-PE', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            // 🎯 LLENAR los campos de la firma
-            llenarDatosFirma({
-                medico: nombreCompleto,
-                cmp: datosProfesional.cmp || 'No especificado',
-                especialidad: datosProfesional.especialidad_principal || 'Medicina General',
-                fecha: fecha,
-                hora: hora
-            });
-            
-            console.log('✅ Datos de firma configurados correctamente desde localStorage');
-            
-        } catch (error) {
-            console.error('❌ Error configurando datos de firma:', error);
-            llenarDatosFirmaPorDefecto();
-        }
+    // Configuración del canvas
+    function setupCanvasStyle() {
+        config.ctx.strokeStyle = '#000000';
+        config.ctx.lineWidth = 2;
+        config.ctx.lineCap = 'round';
+        config.ctx.lineJoin = 'round';
     }
     
-    // *** FUNCIÓN AUXILIAR: LLENAR DATOS DE FIRMA ***
-    function llenarDatosFirma(datos) {
-        try {
-            // 🔍 BUSCAR elementos en el DOM específicos de recetas
-            const doctorDetails = document.querySelectorAll('.doctor-details div');
-            
-            if (doctorDetails.length >= 5) {
-                doctorDetails[0].innerHTML = `<strong>MÉDICO:</strong> ${datos.medico}`;
-                doctorDetails[1].innerHTML = `<strong>CMP:</strong> ${datos.cmp}`;
-                doctorDetails[2].innerHTML = `<strong>ESPECIALIDAD:</strong> ${datos.especialidad}`;
-                doctorDetails[3].innerHTML = `<strong>FECHA:</strong> ${datos.fecha}`;
-                doctorDetails[4].innerHTML = `<strong>HORA:</strong> ${datos.hora}`;
-                
-                console.log('📋 Datos de firma actualizados en recetas:', datos);
-            } else {
-                console.warn('⚠️ No se encontraron elementos .doctor-details suficientes');
-            }
-            
-        } catch (error) {
-            console.error('❌ Error llenando datos de firma:', error);
-        }
+    // Eventos del canvas
+    function setupCanvasEvents() {
+        // Mouse events
+        config.canvas.addEventListener('mousedown', startDrawing);
+        config.canvas.addEventListener('mousemove', draw);
+        config.canvas.addEventListener('mouseup', stopDrawing);
+        config.canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Touch events para móvil
+        config.canvas.addEventListener('touchstart', handleTouch);
+        config.canvas.addEventListener('touchmove', handleTouch);
+        config.canvas.addEventListener('touchend', stopDrawing);
     }
     
-    // *** FUNCIÓN FALLBACK: DATOS POR DEFECTO ***
-    function llenarDatosFirmaPorDefecto() {
-        const ahora = new Date();
-        const fecha = ahora.toLocaleDateString('es-PE');
-        const hora = ahora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-        
-        llenarDatosFirma({
-            medico: 'Dr. Iker Cairampoma',
-            cmp: '1234',
-            especialidad: 'Cardiología',
-            fecha: fecha,
-            hora: hora
-        });
-        
-        console.log('✅ Datos de firma por defecto aplicados');
+    // Iniciar dibujo
+    function startDrawing(e) {
+        config.isDrawing = true;
+        const coords = getCoordinates(e);
+        config.ctx.beginPath();
+        config.ctx.moveTo(coords.x, coords.y);
     }
     
-    function configurarSignaturePad() {
-        console.log('🎨 Configurando SignaturePad...');
+    // Dibujar línea
+    function draw(e) {
+        if (!config.isDrawing) return;
         
-        // Crear nueva instancia
-        window.signaturePad = new SignaturePad(config.elementos.canvas, {
-            backgroundColor: '#ffffff',
-            penColor: '#000000',
-            minWidth: 1,
-            maxWidth: 2.5,
-            onBegin: function() {
-                console.log('✏️ Comenzando firma...');
-                ocultarPlaceholder();
-            },
-            onEnd: function() {
-                console.log('✅ Firma completada');
-                capturarFirmaDigital();
-            }
-        });
-        
-        // Configurar dimensiones
-        config.elementos.canvas.width = 280;
-        config.elementos.canvas.height = 100;
-        
-        // *** ASEGURAR QUE LA FIRMA ESTÉ SIEMPRE HABILITADA ***
-        config.elementos.canvas.style.pointerEvents = 'auto';
-        config.elementos.canvas.style.opacity = '1';
-        if (config.elementos.container) {
-            config.elementos.container.classList.remove('disabled');
-        }
-        
-        console.log('✅ SignaturePad configurado correctamente');
+        const coords = getCoordinates(e);
+        config.ctx.lineTo(coords.x, coords.y);
+        config.ctx.stroke();
+        config.hasSignature = true;
     }
     
-    function configurarBotonLimpiar() {
-        if (config.elementos.clearBtn) {
-            config.elementos.clearBtn.addEventListener('click', function() {
-                limpiarFirma();
-            });
-        }
+    // Detener dibujo
+    function stopDrawing() {
+        config.isDrawing = false;
+        config.ctx.beginPath();
+        updateSignatureStatus();
     }
     
-    function configurarEventListeners() {
-        // Event listener para detectar clicks en el canvas
-        config.elementos.canvas.addEventListener('mousedown', ocultarPlaceholder);
-        config.elementos.canvas.addEventListener('touchstart', ocultarPlaceholder);
-    }
-    
-    function capturarFirmaDigital() {
-        console.log('📸 Capturando firma digital...');
+    // Coordenadas precisas
+    function getCoordinates(e) {
+        const rect = config.canvas.getBoundingClientRect();
+        const scaleX = config.canvas.width / rect.width;
+        const scaleY = config.canvas.height / rect.height;
         
-        try {
-            if (window.signaturePad && !window.signaturePad.isEmpty()) {
-                firmaGuardada = window.signaturePad.toDataURL('image/png');
-                window.firmaDigitalBase64 = firmaGuardada; // Variable global para otros setups
-                
-                console.log('✅ Firma capturada y guardada en base64');
-                console.log('📏 Tamaño del base64:', firmaGuardada.length, 'caracteres');
-                
-                // Verificar que la captura es válida
-                if (firmaGuardada.length > 100) {
-                    mostrarEstadoFirma('capturada');
-                } else {
-                    console.warn('⚠️ Firma muy pequeña, posible error');
-                }
-            } else {
-                console.log('📝 Firma vacía o no válida');
-                firmaGuardada = null;
-                window.firmaDigitalBase64 = null;
-                mostrarEstadoFirma('vacia');
-            }
-        } catch (error) {
-            console.error('❌ Error capturando firma:', error);
-            firmaGuardada = null;
-            window.firmaDigitalBase64 = null;
-        }
-    }
-    
-    function limpiarFirma() {
-        console.log('🧹 Limpiando firma...');
-        
-        if (window.signaturePad) {
-            window.signaturePad.clear();
-        }
-        
-        firmaGuardada = null;
-        window.firmaDigitalBase64 = null;
-        
-        mostrarPlaceholder();
-        mostrarEstadoFirma('limpia');
-        
-        console.log('✅ Firma limpiada correctamente');
-    }
-    
-    function restaurarFirma(firmaBase64) {
-        console.log('🔄 Restaurando firma en canvas...');
-        
-        try {
-            if (!firmaBase64) {
-                console.log('⚠️ No hay firma para restaurar');
-                return false;
-            }
-            
-            // Asegurar formato correcto
-            let firmaFormateada = firmaBase64;
-            if (!firmaFormateada.startsWith('data:image/')) {
-                firmaFormateada = 'data:image/png;base64,' + firmaFormateada;
-            }
-            
-            const img = new Image();
-            img.onload = function() {
-                const ctx = config.elementos.canvas.getContext('2d');
-                ctx.clearRect(0, 0, config.elementos.canvas.width, config.elementos.canvas.height);
-                ctx.drawImage(img, 0, 0, config.elementos.canvas.width, config.elementos.canvas.height);
-                
-                // Actualizar variables
-                firmaGuardada = firmaFormateada;
-                window.firmaDigitalBase64 = firmaFormateada;
-                
-                ocultarPlaceholder();
-                mostrarEstadoFirma('restaurada');
-                
-                console.log('✅ Firma restaurada correctamente en canvas');
-            };
-            
-            img.onerror = function() {
-                console.error('❌ Error cargando imagen de firma');
-                mostrarEstadoFirma('error');
-            };
-            
-            img.src = firmaFormateada;
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Error restaurando firma:', error);
-            return false;
-        }
-    }
-    
-    function mostrarPlaceholder() {
-        if (config.elementos.placeholder) {
-            config.elementos.placeholder.style.display = 'flex';
-        }
-    }
-    
-    function ocultarPlaceholder() {
-        if (config.elementos.placeholder) {
-            config.elementos.placeholder.style.display = 'none';
-        }
-    }
-    
-    function mostrarEstadoFirma(estado) {
-        const estadoTextos = {
-            'capturada': '✅ Firma capturada',
-            'vacia': '📝 Firma vacía',
-            'limpia': '🧹 Firma limpiada',
-            'restaurada': '🔄 Firma restaurada',
-            'error': '❌ Error en firma'
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
         };
-        
-        console.log('📊 Estado firma:', estadoTextos[estado] || estado);
     }
     
-    function obtenerFirmaBase64() {
-        console.log('📤 Solicitando firma base64...');
-        
-        // Primero intentar capturar si hay cambios recientes
-        if (window.signaturePad && !window.signaturePad.isEmpty()) {
-            capturarFirmaDigital();
-        }
-        
-        const firma = firmaGuardada || window.firmaDigitalBase64;
-        console.log('📤 Firma devuelta:', firma ? 'SÍ EXISTE' : 'NO EXISTE');
-        
-        return firma;
+    // Manejo touch
+    function handleTouch(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        config.canvas.dispatchEvent(mouseEvent);
     }
     
-    function validarFirmaParaGuardado() {
-        const firma = obtenerFirmaBase64();
-        
-        if (!firma) {
-            console.log('⚠️ No hay firma para guardar');
-            return null;
-        }
-        
-        if (firma.length < 100) {
-            console.warn('⚠️ Firma demasiado pequeña, posible error');
-            return null;
-        }
-        
-        console.log('✅ Firma válida para guardado');
-        return firma;
-    }
-    
-    // ===== FUNCIONES PÚBLICAS (PARA OTROS SETUPS) =====
-    function obtenerFirmaParaBD() {
-        return validarFirmaParaGuardado();
-    }
-    
-    function cargarFirmaDesdeDB(firmaData) {
-        console.log('📥 Cargando firma desde BD...');
-        
-        try {
-            let firmaBase64 = null;
-            
-            // Parsear si es string JSON
-            if (typeof firmaData === 'string' && firmaData.startsWith('{')) {
-                firmaData = JSON.parse(firmaData);
-            }
-            
-            // Extraer base64 según estructura
-            if (typeof firmaData === 'object' && firmaData !== null) {
-                firmaBase64 = firmaData.imagen_base64 || 
-                             firmaData.base64 || 
-                             firmaData.firma_base64 ||
-                             firmaData.firmaDigital ||
-                             firmaData.signature;
-            } else if (typeof firmaData === 'string') {
-                firmaBase64 = firmaData;
-            }
-            
-            if (firmaBase64 && firmaBase64 !== 'null' && firmaBase64.length > 50) {
-                return restaurarFirma(firmaBase64);
-            } else {
-                console.log('📝 No hay firma válida en BD');
-                return false;
-            }
-            
-        } catch (error) {
-            console.error('❌ Error cargando firma desde BD:', error);
-            return false;
+    // Configurar botones
+    function setupButtons() {
+        const clearBtn = document.getElementById('clearSignatureBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', clearSignature);
         }
     }
     
-    // ===== FUNCIÓN DE ESTADO CORREGIDA =====
-    function actualizarEstadoFirma() {
-        console.log('🎯 Actualizando estado firma...');
-        
-        // *** SIEMPRE HABILITADA - NO DEPENDE DE MEDICAMENTOS ***
-        if (config.elementos.container) {
-            config.elementos.container.classList.remove('disabled');
-        }
-        if (config.elementos.canvas) {
-            config.elementos.canvas.style.pointerEvents = 'auto';
-            config.elementos.canvas.style.opacity = '1';
-        }
-        
-        console.log('✅ Firma siempre habilitada');
+    // Limpiar firma
+    function clearSignature() {
+        config.ctx.clearRect(0, 0, config.canvas.width, config.canvas.height);
+        config.hasSignature = false;
+        window.firmaDigitalBase64 = null;
+        updateSignatureStatus();
     }
     
-    // ===== INICIALIZACIÓN =====
-    if (!inicializar()) {
-        console.error('❌ Error inicializando firma digital mejorada');
+    // Actualizar estado visual
+    function updateSignatureStatus() {
+        const placeholder = document.getElementById('signaturePlaceholder');
+        if (placeholder) {
+            placeholder.style.display = config.hasSignature ? 'none' : 'flex';
+        }
+        
+        // Actualizar variable global para compatibilidad
+        if (config.hasSignature) {
+            window.firmaDigitalBase64 = config.canvas.toDataURL('image/png');
+        }
+    }
+    
+    // Verificar contenido del canvas
+    function hasContent() {
+        const imageData = config.ctx.getImageData(0, 0, config.canvas.width, config.canvas.height);
+        return imageData.data.some((channel, index) => index % 4 !== 3 && channel !== 0);
+    }
+    
+    // Obtener firma para BD
+    function getSignatureForDB() {
+        if (!hasContent()) {
+            return {
+                tiene_firma: false,
+                firma_base64: null,
+                fecha_firma: null
+            };
+        }
+        
+        return {
+            tiene_firma: true,
+            firma_base64: config.canvas.toDataURL('image/png'),
+            fecha_firma: new Date().toISOString(),
+            metodo: 'nativo'
+        };
+    }
+    
+    // Validar firma antes de guardar
+    function validateSignature() {
+        const signature = getSignatureForDB();
+        
+        if (!signature.tiene_firma) {
+            return { valida: false, mensaje: 'Debe firmar antes de guardar la receta' };
+        }
+        
+        if (signature.firma_base64.length < 100) {
+            return { valida: false, mensaje: 'Firma demasiado pequeña' };
+        }
+        
+        return { valida: true, datos: signature };
+    }
+    
+    // Cargar firma existente
+    function loadSignature(base64Data) {
+        if (!base64Data) return false;
+        
+        const img = new Image();
+        img.onload = () => {
+            clearSignature();
+            config.ctx.drawImage(img, 0, 0);
+            config.hasSignature = true;
+            updateSignatureStatus();
+        };
+        img.src = base64Data;
+        return true;
+    }
+    
+    // Inicializar sistema
+    if (!init()) {
+        console.error('Error inicializando firma digital');
         return;
     }
     
-    // ===== EXPOSICIÓN GLOBAL =====
-    window.obtenerFirmaParaBD = obtenerFirmaParaBD;
-    window.cargarFirmaDesdeDB = cargarFirmaDesdeDB;
-    window.validarFirmaParaGuardado = validarFirmaParaGuardado;
-    window.restaurarFirmaEnCanvas = restaurarFirma;
+    // API pública
+    window.obtenerFirmaParaBD = getSignatureForDB;
+    window.validarFirmaParaGuardado = validateSignature;
+    window.cargarFirmaEnCanvas = loadSignature;
+    window.limpiarFirmaCanvas = clearSignature;
     
-    // *** EXPOSICIÓN CORREGIDA ***
-    window.actualizarEstadoFirmaDesdeOtroSetup = actualizarEstadoFirma;
-    
-    console.log('✅ Setup firma digital MEJORADO configurado con datos de localStorage');
+    console.log('✅ Firma digital nativa configurada');
 }
 
 // =============================================================================================
@@ -2580,27 +2375,17 @@ function setupVerRecetas() {
     }
     
     function bloquearFormulario() {
-        console.log('🔒 Bloqueando formulario...');
+        // 🚫 Botón guardar bloqueado (SIN etiquetas)
+        document.getElementById('saveTabBtn').classList.add('btn-guardar-bloqueado');
         
-        const elementos = [
-            '#searchMed',
-            '.btn-posologia',
-            '.btn-danger',
-            '.quantity-input',
-            '#signaturePad',
-            '#clearSignatureBtn',
-            '#saveTabBtn'
-        ];
+        // 💊 Búsqueda bloqueada (opaco)
+        document.querySelector('.form-group').classList.add('busqueda-bloqueada');
         
-        elementos.forEach(selector => {
-            const els = document.querySelectorAll(selector);
-            els.forEach(el => {
-                el.disabled = true;
-                el.style.opacity = '0.5';
-                el.style.pointerEvents = 'none';
-            });
-        });
+        // ✍️ Firma bloqueada (CON etiqueta como te gustó)
+        document.querySelector('.signature-section').classList.add('firma-bloqueada');
     }
+
+
     
     function desbloquearFormulario() {
         console.log('🔓 Desbloqueando formulario...');
@@ -2626,42 +2411,69 @@ function setupVerRecetas() {
         if (typeof window.actualizarEstadoBotonGuardar === 'function') {
             window.actualizarEstadoBotonGuardar();
         }
+
+
+
+
+
     }
+    
+    
     
     function restaurarFirma(firmaData) {
         console.log('✍️ Restaurando firma digital...');
         
         try {
-            const canvas = document.getElementById('signaturePad');
-            if (!canvas) return;
+            const canvas = document.getElementById('signatureCanvas'); // ← CAMBIO: Canvas correcto
+            const placeholder = document.getElementById('signaturePlaceholder');
+            
+            if (!canvas) {
+                console.warn('⚠️ Canvas de firma no encontrado');
+                return;
+            }
             
             let firmaBase64 = null;
             
-            if (typeof firmaData === 'string') {
-                firmaData = JSON.parse(firmaData);
+            // Extraer base64 del JsonNode
+            if (typeof firmaData === 'object' && firmaData.imagen_base64) {
+                firmaBase64 = firmaData.imagen_base64; // ← CAMBIO: JsonNode structure
+            } else if (typeof firmaData === 'string') {
+                firmaBase64 = firmaData;
             }
             
-            firmaBase64 = firmaData.imagen_base64 || firmaData.base64 || firmaData.firma_base64;
+            if (!firmaBase64) {
+                console.log('ℹ️ No hay firma para restaurar');
+                return;
+            }
             
-            if (firmaBase64 && !firmaBase64.startsWith('data:image/')) {
+            // Formatear correctamente
+            if (!firmaBase64.startsWith('data:image/')) {
                 firmaBase64 = 'data:image/png;base64,' + firmaBase64;
             }
             
-            if (firmaBase64) {
-                const img = new Image();
-                img.onload = function() {
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                };
-                img.src = firmaBase64;
+            // Cargar en canvas
+            const img = new Image();
+            img.onload = function() {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                firmaDigitalBase64 = firmaBase64;
-            }
+                // Ocultar placeholder
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                
+                console.log('✅ Firma restaurada en signatureCanvas');
+            };
+            
+            img.src = firmaBase64;
+            window.firmaDigitalBase64 = firmaBase64;
+            
         } catch (error) {
             console.error('❌ Error restaurando firma:', error);
         }
     }
+
     
     function cerrarGrillaForzado() {
         console.log('🚨 CERRANDO MODAL FORZADAMENTE...');
@@ -3698,6 +3510,37 @@ function setupImprimir() {
 }
 
 
+// =============================================================================================
+// 🔄 SETUP 11 - REFRESCAR PANTALLA SIMPLE
+// =============================================================================================
+function setupNuevaReceta() {
+    console.log('🔄 Configurando botón Nuevo - Refrescar...');
+    
+    // ===== INICIALIZACIÓN =====
+    function inicializar() {
+        const botonNuevo = document.querySelector('[onclick="newPrescription()"]') || 
+                          document.querySelector('.action-tab.active');
+        
+        if (botonNuevo) {
+            botonNuevo.removeAttribute('onclick');
+            botonNuevo.addEventListener('click', refrescar);
+            console.log('✅ Botón Nuevo configurado');
+        } else {
+            console.error('❌ Botón no encontrado');
+        }
+    }
+    
+    // ===== FUNCIÓN PRINCIPAL =====
+    function refrescar(e) {
+        e.preventDefault();
+        window.location.reload();
+    }
+    
+    // ===== INICIALIZACIÓN =====
+    inicializar();
+    
+    console.log('✅ Setup Nuevo completado');
+}
 
 
 

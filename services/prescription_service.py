@@ -399,42 +399,97 @@ async def health_check() -> Dict[str, Any]:
         return {"status": "DOWN", "error": str(e)}
 
 # ===== JSON MAPPING FUNCIONAL =====
-def armar_json_receta(datos_formulario: Dict) -> Dict:
-    """🔧 ARMAR JSON formato microservicio"""
-    # Fecha vencimiento
-    fecha_venc = datos_formulario.get("fecha_vencimiento")
-    if isinstance(fecha_venc, str):
-        fecha_venc = fecha_venc
-    elif isinstance(fecha_venc, date):
-        fecha_venc = fecha_venc.isoformat()
+def armar_json_receta(frontend_data: Dict) -> Dict:
+    """
+    🎯 FUNCIÓN FINAL CORREGIDA: Firma digital + Fecha compatible con Java
+    ✅ Mapeo correcto de firma_digital como JsonNode
+    ✅ Formato de fecha compatible con Java LocalDateTime
+    """
+    
+    # ===== DATOS BÁSICOS =====
+    paciente_id = int(frontend_data.get("paciente_id", 1))
+    medico_id = int(frontend_data.get("medico_id", 1))
+    tipo_origen = frontend_data.get("tipo_origen", "ACT")
+    origen_id = int(frontend_data.get("origen_id", 1))
+    
+    ahora = datetime.now()
+    fecha_vencimiento = ahora + timedelta(days=30)
+    
+    # ===== 🔐 PROCESAMIENTO FIRMA DIGITAL CORREGIDO =====
+    firmada_status = frontend_data.get("firmada", "N")
+    fecha_firma_raw = frontend_data.get("fecha_firma")
+    firma_digital_raw = frontend_data.get("firma_digital")
+    
+    # Procesar fecha firma
+    fecha_firma = None
+    if fecha_firma_raw:
+        try:
+            fecha_firma = datetime.fromisoformat(fecha_firma_raw.replace('Z', '+00:00')) if isinstance(fecha_firma_raw, str) else fecha_firma_raw
+        except:
+            fecha_firma = ahora if firmada_status == "S" else None
     else:
-        fecha_venc = (date.today() + timedelta(days=30)).isoformat()
+        fecha_firma = ahora if firmada_status == "S" else None
     
-    # Datos base
-    base_data = {
-        "paciente_id": datos_formulario.get("paciente_id"),
-        "medico_id": datos_formulario.get("medico_id"),
-        "tipo_origen": datos_formulario.get("tipo_origen", "HOS"),
-        "origen_id": datos_formulario.get("origen_id"),
-        "diagnostico_principal": datos_formulario.get("diagnostico_principal"),
-        "indicaciones_generales": datos_formulario.get("indicaciones_generales"),
-        "fecha_vencimiento": fecha_venc,
-        "observaciones": datos_formulario.get("observaciones"),
-        "creado_por": datos_formulario.get("creado_por")
+    # Procesar firma digital como JsonNode
+    firma_digital_processed = None
+    if firmada_status == "S" and firma_digital_raw:
+        imagen_base64 = firma_digital_raw.get("imagen_base64") if isinstance(firma_digital_raw, dict) else firma_digital_raw
+        
+        if imagen_base64 and len(imagen_base64) > 100:
+            firma_digital_processed = {
+                "imagen_base64": imagen_base64,
+                "fecha_firma": fecha_firma.strftime("%Y-%m-%dT%H:%M:%S") if fecha_firma else ahora.strftime("%Y-%m-%dT%H:%M:%S"),  # ← FIX: Sin timezone
+                "medico_id": medico_id,
+                "metodo": "python_service_fix_final",
+                "version": "firma_fix_v2_final"
+            }
+    
+    # ===== MEDICAMENTOS =====
+    medicamentos = []
+    for idx, med in enumerate(frontend_data.get("medicamentos", [])):
+        medicamento = {
+            "medicamento_id": int(med.get("medicamento_id", med.get("id", 0))),
+            "codigo_medicamento": med.get("codigo_medicamento", med.get("codigo", "")),
+            "nombre_medicamento": med.get("nombre_medicamento", med.get("nombre", "")).strip()[:255],
+            "diagnostico_medicamento": frontend_data.get("diagnostico_principal", "")[:10],
+            "dosis": med.get("dosis", "").strip()[:100],
+            "frecuencia": med.get("frecuencia", "").strip()[:100],
+            "duracion_tratamiento": med.get("duracion_tratamiento", med.get("duracion", "")).strip()[:50],
+            "cantidad_total": float(med.get("cantidad_total", med.get("cantidad", 1))),
+            "unidad_cantidad": med.get("unidad_cantidad", "caja")[:20],
+            "via_administracion": med.get("via_administracion", med.get("via", "Oral"))[:50],
+            "instrucciones_especiales": med.get("instrucciones_especiales", med.get("indicaciones", ""))[:500],
+            "con_alimentos": med.get("con_alimentos", "N"),
+            "momento_administracion": med.get("momento_administracion", "Post comidas")[:50],
+            "orden_item": idx + 1,
+            "estado": "01",
+            "creado_por": medico_id
+        }
+        medicamentos.append(medicamento)
+    
+    # ===== JSON FINAL PARA MICROSERVICIO JAVA =====
+    return {
+        "paciente_id": paciente_id,
+        "medico_id": medico_id,
+        "tipo_origen": tipo_origen,
+        "origen_id": origen_id,
+        "fecha_receta": ahora.strftime("%Y-%m-%dT%H:%M:%S"),  # ← FIX: Sin timezone
+        "fecha_vencimiento": fecha_vencimiento.date().isoformat(),
+        "diagnostico_principal": frontend_data.get("diagnostico_principal", "")[:10],
+        "indicaciones_generales": frontend_data.get("indicaciones_generales", ""),
+        "observaciones": frontend_data.get("observaciones", ""),
+        "estado": "01",
+        "activo": "S",
+        
+        # ===== 🔐 CAMPOS DE FIRMA DIGITAL CORREGIDOS =====
+        "firmada": firmada_status,
+        "fecha_firma": fecha_firma.strftime("%Y-%m-%dT%H:%M:%S") if fecha_firma else None,  # ← FIX: Sin timezone
+        "firma_digital": firma_digital_processed,  # ← JsonNode estructurado
+        
+        "medicamentos": medicamentos,
+        "creado_por": medico_id,
+        "creado_en": ahora.strftime("%Y-%m-%dT%H:%M:%S")  # ← FIX: Sin timezone
     }
-    
-    # Mapear medicamentos funcionalmente
-    medicamentos = datos_formulario.get("medicamentos", [])
-    diagnostico = datos_formulario.get("diagnostico_principal")
-    creado_por = datos_formulario.get("creado_por")
-    
-    mapper = partial(map_medicamento_to_json, 
-                    diagnostico=diagnostico, 
-                    creado_por=creado_por)
-    
-    base_data["medicamentos"] = list(map(mapper, medicamentos))
-    
-    return base_data
 
 def obtener_datos_medico_firma(medico_data: Optional[Dict] = None) -> Dict:
     """🖊️ DATOS médico para firma"""
@@ -464,6 +519,10 @@ async def crear_receta_desde_frontend(frontend_data: Dict, token: str) -> Dict:
     """🎨 CREAR RECETA desde frontend"""
     json_receta = armar_json_receta(frontend_data)
     return await crear_receta(token, json_receta)
+
+
+
+
 
 # ===== PDF GENERATION FUNCIONAL =====
 def create_custom_styles() -> Dict:
