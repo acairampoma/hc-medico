@@ -518,85 +518,185 @@ function setupImageTable() {
     });
     
     function createImageTextTable(imageSrc, position) {
-        // Contenedor
+        // 🎯 CONTENEDOR REDIMENSIONABLE - SIN LÍMITES DE ANCHO
         const container = document.createElement('div');
         Object.assign(container.style, {
             margin: '20px 0',
-            border: '2px solid #2c5aa0',
-            borderRadius: '5px',
-            overflow: 'hidden',
-            position: 'relative'
+            border: 'none',                    // ✅ SIN BORDES POR DEFECTO
+            borderBottom: '1px solid #e0e0e0', // ✅ LÍNEA SUTIL INFERIOR
+            borderRadius: '0px',               // ✅ SIN ESQUINAS POR DEFECTO
+            overflow: 'visible',               
+            position: 'relative',
+            backgroundColor: 'transparent',     
+            minHeight: '200px',
+            width: '600px',                    
+            maxWidth: 'none',                  // ✅ SIN LÍMITE MÁXIMO
+            resize: 'horizontal',              
+            minWidth: '300px',
+            paddingBottom: '10px',
+            transition: 'border 0.3s ease',   
+            cursor: 'pointer'                  
         });
         
-        // Tabla
-        const table = document.createElement('table');
+        // 🔄 TABLA FLEX - COMPLETAMENTE REDIMENSIONABLE
+        const table = document.createElement('div');
         Object.assign(table.style, {
+            display: 'flex',                   // ✅ FLEXBOX PARA CONTROL TOTAL
             width: '100%',
-            borderCollapse: 'collapse',
-            minHeight: '200px'
+            border: 'none',                    // ✅ SIN BORDES DE TABLA
+            minHeight: '200px',
+            backgroundColor: 'transparent'
         });
         
-        const row = document.createElement('tr');
-        
-        // Celda imagen
-        const imageCell = document.createElement('td');
+        // 🖼️ CELDA IMAGEN FLEXIBLE - CENTRABLE
+        const imageCell = document.createElement('div');
         Object.assign(imageCell.style, {
-            width: '200px',
-            padding: '10px',
-            verticalAlign: 'top',
-            backgroundColor: '#f8f9fa'
+            flex: '0 0 150px',                 // ✅ TAMAÑO INICIAL MÁS PEQUEÑO
+            minWidth: '80px',                  // ✅ PERMITE MINIATURAS
+            maxWidth: '300px',                 // ✅ MÁXIMO REDUCIDO
+            padding: '5px',                    // ✅ PEQUEÑO PADDING PARA RESPIRO
+            display: 'flex',
+            alignItems: 'center',              // ✅ CENTRADO VERTICAL POR DEFECTO
+            justifyContent: 'center',          // ✅ CENTRADO HORIZONTAL POR DEFECTO
+            backgroundColor: 'transparent',     
+            border: 'none',                    
+            position: 'relative'               
         });
         
+        // 📷 IMAGEN RESPONSIVA - SE ADAPTA AL CONTENEDOR
         const img = document.createElement('img');
         Object.assign(img.style, {
-            width: '100%',
-            height: 'auto',
-            maxHeight: '180px',
-            cursor: 'nw-resize',
-            transition: 'all 0.2s ease'
+            width: '100%',                     // ✅ SE ADAPTA AL ANCHO DEL CONTENEDOR
+            height: 'auto',                    // ✅ MANTIENE PROPORCIÓN
+            maxWidth: '100%',                  // ✅ NO DESBORDA
+            maxHeight: '200px',                // ✅ ALTURA MÁXIMA CONTROLADA
+            minHeight: '60px',                 // ✅ ALTURA MÍNIMA PARA MINIATURAS
+            objectFit: 'contain',              // ✅ SE AJUSTA SIN DEFORMAR
+            cursor: 'grab',
+            transition: 'all 0.3s ease',
+            boxShadow: 'none',                 
+            border: 'none',                    
+            borderRadius: '4px',               // ✅ ESQUINAS SUAVES
+            display: 'block'
         });
         img.src = imageSrc;
         
-        // Hacer imagen redimensionable con doble clic
-        img.addEventListener('dblclick', () => {
-            const newSize = prompt('Tamaño de imagen (px):\n\nActual: 180px\nEjemplo: 250, 300, 150', '180');
-            if (newSize && !isNaN(newSize)) {
-                img.style.maxHeight = newSize + 'px';
-                imageCell.style.width = Math.min(parseInt(newSize) + 20, 400) + 'px';
-            }
+        // 🖱️ EVENTOS HOVER EN IMAGEN + DOBLE CLIC PARA AJUSTES
+        img.addEventListener('mouseenter', () => {
+            img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+        });
+        
+        img.addEventListener('mouseleave', () => {
+            img.style.boxShadow = 'none';
+        });
+        
+        // ✅ CLICK EN IMAGEN TAMBIÉN MUESTRA BORDES
+        img.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // ✅ MOSTRAR BORDES AL HACER CLICK EN IMAGEN (CORREGIDO)
+            container.style.border = '2px solid #2c5aa0';
+            container.style.borderBottom = '2px solid #2c5aa0';
+            container.style.borderRadius = '8px';
+        });
+        
+        // ✅ DOBLE CLIC PARA AJUSTES RÁPIDOS DE IMAGEN
+        img.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            showImageQuickMenu(img, imageCell);
         });
         
         imageCell.appendChild(img);
         
-        // Celda texto
-        const textCell = document.createElement('td');
+        // 📝 CELDA TEXTO - TOTALMENTE CLICKEABLE
+        const textCell = document.createElement('div');
         Object.assign(textCell.style, {
-            padding: '15px',
-            verticalAlign: 'top',
-            backgroundColor: '#ffffff',
-            minHeight: '180px',
-            outline: 'none'
+            flex: '1',                         // ✅ OCUPA ESPACIO RESTANTE
+            padding: '0px',                    // ✅ SIN PADDING EXTRA
+            display: 'flex',
+            alignItems: 'stretch',             
+            backgroundColor: 'transparent',     
+            border: 'none',                    
+            minHeight: '200px',                // ✅ ALTURA MÍNIMA GARANTIZADA
+            outline: 'none',
+            cursor: 'text'                     // ✅ CURSOR DE TEXTO EN TODA EL ÁREA
         });
-        textCell.contentEditable = true;
-        textCell.innerHTML = '<p style="margin:0; color:#333; font-size:14px;">Escriba aquí el texto...</p>';
         
-        textCell.addEventListener('focus', () => {
-            if (textCell.innerHTML.includes('Escriba aquí el texto...')) {
-                textCell.innerHTML = '<p style="margin:0; color:#333; font-size:14px;"><br></p>';
+        const textContent = document.createElement('div');
+        Object.assign(textContent.style, {
+            width: '100%',
+            height: '100%',                    
+            outline: 'none',
+            padding: '15px',                   
+            border: '1px solid #e0e0e0',       
+            borderRadius: '4px',
+            backgroundColor: 'white',          // ✅ FONDO BLANCO PARA IMPRESIÓN
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',      
+            minHeight: '170px',                
+            cursor: 'text',                    
+            wordWrap: 'break-word',            
+            overflowWrap: 'break-word',        
+            whiteSpace: 'pre-wrap'             
+        });
+        textContent.contentEditable = true;
+        textContent.innerHTML = '<p style="margin:0; color:#666; font-size:14px; font-style:italic;">Escriba aquí el texto médico...</p>';
+        
+        // ✅ HACER TODA EL ÁREA CLICKEABLE + GESTIÓN DE BORDES
+        textCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // ✅ MOSTRAR BORDES AL HACER CLICK DENTRO
+            container.style.border = '2px solid #2c5aa0';
+            container.style.borderBottom = '2px solid #2c5aa0';
+            container.style.borderRadius = '8px';
+            
+            textContent.focus();
+            
+            // Si está vacío o con placeholder, posicionar cursor
+            if (textContent.innerHTML.includes('Escriba aquí el texto médico...')) {
+                textContent.innerHTML = '<p style="margin:0; color:#333; font-size:14px;"><br></p>';
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.setStart(textContent.querySelector('p'), 0);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
         });
         
-        // Mejorar edición de texto
-        textCell.addEventListener('keydown', (e) => {
-            // Permitir salir de la tabla con Tab
+        // 🎨 EFECTOS VISUALES EN CELDA TEXTO - FONDO PARA EDICIÓN
+        textContent.addEventListener('focus', () => {
+            if (textContent.innerHTML.includes('Escriba aquí el texto médico...')) {
+                textContent.innerHTML = '<p style="margin:0; color:#333; font-size:14px;"><br></p>';
+            }
+            
+            // ✅ MOSTRAR BORDES AL ENFOCAR
+            container.style.border = '2px solid #2c5aa0';
+            container.style.borderBottom = '2px solid #2c5aa0';
+            container.style.borderRadius = '8px';
+            
+            textContent.style.backgroundColor = '#f8f9ff';  // ✅ AZUL MUY SUTIL AL EDITAR
+            textContent.style.borderColor = '#2c5aa0';      
+        });
+        
+        textContent.addEventListener('blur', () => {
+            textContent.style.backgroundColor = 'white';    // ✅ BLANCO AL TERMINAR
+            textContent.style.borderColor = '#e0e0e0';       
+        });
+        
+        // ⌨️ NAVEGACIÓN MEJORADA
+        textContent.addEventListener('keydown', (e) => {
             if (e.key === 'Tab' && !e.shiftKey) {
                 e.preventDefault();
                 const editor = document.getElementById('medicalNoteEditor');
                 const newP = document.createElement('p');
                 newP.innerHTML = '<br>';
+                newP.style.minHeight = '20px';
                 editor.appendChild(newP);
                 
-                // Colocar cursor después de la tabla
+                // Posicionar cursor
                 const selection = window.getSelection();
                 const range = document.createRange();
                 range.setStart(newP, 0);
@@ -607,56 +707,436 @@ function setupImageTable() {
             }
         });
         
-        // Botón eliminar
-        const deleteBtn = document.createElement('div');
-        Object.assign(deleteBtn.style, {
-            position: 'absolute',
-            top: '5px',
-            right: '5px',
-            width: '25px',
-            height: '25px',
-            backgroundColor: '#e74c3c',
-            color: '#fff',
-            cursor: 'pointer',
-            textAlign: 'center',
-            lineHeight: '23px',
-            fontSize: '14px',
-            borderRadius: '50%'
+        textCell.appendChild(textContent);
+        
+        // 🗑️ BOTÓN ELIMINAR MODERNIZADO
+        const deleteBtn = createDeleteButton();
+        
+        // Efectos hover del botón eliminar
+        deleteBtn.addEventListener('mouseenter', () => {
+            deleteBtn.style.opacity = '1';
+            deleteBtn.style.transform = 'scale(1.1)';
+            deleteBtn.style.backgroundColor = '#ff3838';
         });
-        deleteBtn.innerHTML = '×';
+        
+        deleteBtn.addEventListener('mouseleave', () => {
+            deleteBtn.style.opacity = '0.7';
+            deleteBtn.style.transform = 'scale(1)';
+            deleteBtn.style.backgroundColor = '#ff4757';
+        });
         
         deleteBtn.addEventListener('click', () => {
-            if (confirm('¿Borrar tabla?')) {
-                container.remove();
+            if (confirm('¿Eliminar tabla imagen-texto?')) {
+                container.style.opacity = '0';
+                container.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    // Cleanup
+                    if (container._cleanupBorderToggle) {
+                        container._cleanupBorderToggle();
+                    }
+                    container.remove();
+                }, 300);
             }
         });
         
-        // Agregar celdas según posición
+        // ✅ GESTIÓN DE VISIBILIDAD DEL BOTÓN ELIMINAR
+        container._deleteBtn = deleteBtn;  // Referencia para manejarlo
+        
+        // 🏗️ ENSAMBLAR SEGÚN POSICIÓN (FLEXBOX)
         if (position === '1') {
-            row.append(imageCell, textCell);
+            table.append(imageCell, textCell);
         } else {
-            row.append(textCell, imageCell);
+            table.append(textCell, imageCell);
         }
         
-        // Ensamblar
-        table.appendChild(row);
-        container.append(table, deleteBtn);
+        container.appendChild(table);
         
-        // Insertar en el editor médico
+        // ✅ GESTIÓN GLOBAL DE CLICKS PARA MOSTRAR/OCULTAR BORDES
+        setupBorderToggle(container);
+        
+        // 🔧 CREAR HANDLES DE RESIZE PARA TODA LA TABLA
+        const resizeHandles = createTableResizeHandles(container, imageCell, textCell, position);
+        container.appendChild(deleteBtn);
+        
+        // 📄 INSERTAR EN EDITOR CON ESPACIO ARRIBA CLICKEABLE
         const editor = document.getElementById('medicalNoteEditor');
         if (editor) {
+            // ✅ ESPACIADOR ARRIBA PARA TÍTULOS
+            const spacerTop = document.createElement('p');
+            spacerTop.innerHTML = '<br>';
+            spacerTop.style.minHeight = '20px';
+            spacerTop.style.cursor = 'text';
+            spacerTop.addEventListener('click', () => {
+                spacerTop.focus();
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.setStart(spacerTop, 0);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            });
+            editor.appendChild(spacerTop);
+            
             editor.appendChild(container);
             
-            // Agregar espacio después de la tabla para poder escribir
+            // Espaciador para continuar escribiendo debajo
             const spacer = document.createElement('p');
             spacer.innerHTML = '<br>';
             spacer.style.minHeight = '20px';
+            spacer.style.cursor = 'text';
+            spacer.addEventListener('click', () => {
+                spacer.focus();
+            });
             editor.appendChild(spacer);
         }
         
-        setTimeout(() => textCell.focus(), 100);
+        // 🎯 FOCUS INICIAL
+        setTimeout(() => {
+            textContent.focus();
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(textContent.querySelector('p'));
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }, 100);
     }
+    
+    // 🔄 FUNCIÓN: GESTIÓN DE BORDES Y BOTÓN ELIMINAR
+    function setupBorderToggle(container) {
+        const deleteBtn = container._deleteBtn;
+        
+        // ✅ CLICK FUERA DE TABLA → QUITAR BORDES Y OCULTAR BOTÓN
+        function handleGlobalClick(e) {
+            // Si el click no es dentro del container Y no es en algún handle o menú
+            if (!container.contains(e.target) && 
+                !e.target.closest('.resize-handle') && 
+                !e.target.closest('[style*="position: fixed"]')) {
+                
+                // ✅ QUITAR BORDES
+                container.style.border = 'none';
+                container.style.borderBottom = '1px solid #e0e0e0';
+                container.style.borderRadius = '0px';
+                
+                // ✅ OCULTAR BOTÓN ELIMINAR
+                if (deleteBtn) {
+                    deleteBtn.style.opacity = '0';
+                    deleteBtn.style.pointerEvents = 'none';
+                }
+                
+                console.log('🔄 Bordes quitados + Botón eliminar oculto');
+            }
+        }
+        
+        // ✅ CLICK DENTRO DE TABLA → MOSTRAR BORDES Y BOTÓN
+        function handleContainerClick(e) {
+            e.stopPropagation();
+            
+            // ✅ MOSTRAR BORDES PARA EDICIÓN
+            container.style.border = '2px solid #2c5aa0';
+            container.style.borderBottom = '2px solid #2c5aa0';
+            container.style.borderRadius = '8px';
+            
+            // ✅ MOSTRAR BOTÓN ELIMINAR
+            if (deleteBtn) {
+                deleteBtn.style.opacity = '0.7';
+                deleteBtn.style.pointerEvents = 'auto';
+            }
+            
+            console.log('🔄 Bordes mostrados + Botón eliminar visible');
+        }
+        
+        // Agregar listeners
+        document.addEventListener('click', handleGlobalClick, true);
+        container.addEventListener('click', handleContainerClick);
+        
+        // Cleanup function mejorada
+        container._cleanupBorderToggle = () => {
+            document.removeEventListener('click', handleGlobalClick, true);
+            container.removeEventListener('click', handleContainerClick);
+        };
+        
+        console.log('✅ Bordes dinámicos + Botón eliminar: Click dentro = visible, Click fuera = oculto');
+    }
+    
+    // 🔧 FUNCIÓN: CREAR HANDLES DE RESIZE PARA TODA LA TABLA
+    function createTableResizeHandles(container, imageCell, textCell, position) {
+        const handles = [];
+        
+        // 🔄 Handle para redimensionar proporción imagen/texto - POSICIÓN DINÁMICA
+        const proportionHandle = document.createElement('div');
+        Object.assign(proportionHandle.style, {
+            position: 'absolute',
+            top: '50%',
+            left: position === '1' ? '150px' : 'auto',     // ✅ POSICIÓN INICIAL AJUSTADA
+            right: position === '2' ? '150px' : 'auto',    // ✅ POSICIÓN INICIAL AJUSTADA
+            width: '8px',
+            height: '40px',
+            backgroundColor: '#2c5aa0',
+            cursor: 'ew-resize',
+            borderRadius: '4px',
+            opacity: '0.3',
+            transition: 'all 0.3s ease',
+            zIndex: '5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: '10px',
+            transform: 'translateY(-50%)'
+        });
+        proportionHandle.innerHTML = '⟷';
+        proportionHandle.title = 'Ajustar proporción imagen/texto';
+        
+        // 🎯 Handle para redimensionar toda la tabla
+        const sizeHandle = document.createElement('div');
+        Object.assign(sizeHandle.style, {
+            position: 'absolute',
+            bottom: '5px',
+            right: '5px',
+            width: '15px',
+            height: '15px',
+            backgroundColor: '#e74c3c',
+            cursor: 'nw-resize',
+            borderRadius: '50%',
+            opacity: '0.3',
+            transition: 'all 0.3s ease',
+            zIndex: '5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: '10px'
+        });
+        sizeHandle.innerHTML = '⤡';
+        sizeHandle.title = 'Redimensionar tabla completa';
+        
+        // 🖱️ EVENTOS RESIZE PROPORCIÓN - MEJORADO PARA AMBAS POSICIONES
+        let isDraggingProportion = false;
+        proportionHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isDraggingProportion = true;
+            document.body.style.cursor = 'ew-resize';
+            
+            const startX = e.clientX;
+            const containerWidth = container.offsetWidth;
+            const startImageWidth = parseInt(imageCell.style.flexBasis) || 150;
+            
+            function handleProportionDrag(e) {
+                if (!isDraggingProportion) return;
+                
+                const deltaX = e.clientX - startX;
+                // ✅ LÍMITES CULTURALES UX - PERMITE MINIATURAS
+                const newImageWidth = Math.max(80, Math.min(300, startImageWidth + deltaX));
+                
+                imageCell.style.flexBasis = newImageWidth + 'px';
+                
+                // ✅ ACTUALIZAR POSICIÓN SEGÚN LAYOUT
+                if (position === '1') {
+                    // Imagen a la izquierda
+                    proportionHandle.style.left = newImageWidth + 'px';
+                } else {
+                    // Imagen a la derecha
+                    proportionHandle.style.right = newImageWidth + 'px';
+                }
+            }
+            
+            function stopProportionDrag() {
+                isDraggingProportion = false;
+                document.body.style.cursor = '';
+                document.removeEventListener('mousemove', handleProportionDrag);
+                document.removeEventListener('mouseup', stopProportionDrag);
+            }
+            
+            document.addEventListener('mousemove', handleProportionDrag);
+            document.addEventListener('mouseup', stopProportionDrag);
+        });
+        
+        // 🖱️ EVENTOS RESIZE TAMAÑO COMPLETO
+        let isDraggingSize = false;
+        sizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isDraggingSize = true;
+            document.body.style.cursor = 'nw-resize';
+            
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startWidth = container.offsetWidth;
+            const startHeight = container.offsetHeight;
+            
+            function handleSizeDrag(e) {
+                if (!isDraggingSize) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                // ✅ SIN LÍMITES MÁXIMOS - LIBERTAD TOTAL
+                const newWidth = Math.max(350, startWidth + deltaX);      // Sin límite máximo
+                const newHeight = Math.max(180, startHeight + deltaY);    // Sin límite máximo
+                
+                container.style.width = newWidth + 'px';
+                container.style.minHeight = newHeight + 'px';
+                
+                // ✅ ACTUALIZAR POSICIÓN DEL HANDLE DE PROPORCIÓN SEGÚN LAYOUT
+                const imageWidth = parseInt(imageCell.style.flexBasis) || 150;
+                if (position === '1') {
+                    // Imagen a la izquierda
+                    proportionHandle.style.left = Math.min(imageWidth, newWidth - 80) + 'px';
+                    proportionHandle.style.right = 'auto';
+                } else {
+                    // Imagen a la derecha  
+                    proportionHandle.style.right = Math.min(imageWidth, newWidth - 80) + 'px';
+                    proportionHandle.style.left = 'auto';
+                }
+            }
+            
+            function stopSizeDrag() {
+                isDraggingSize = false;
+                document.body.style.cursor = '';
+                document.removeEventListener('mousemove', handleSizeDrag);
+                document.removeEventListener('mouseup', stopSizeDrag);
+            }
+            
+            document.addEventListener('mousemove', handleSizeDrag);
+            document.addEventListener('mouseup', stopSizeDrag);
+        });
+        
+        // 🎨 EFECTOS HOVER
+        [proportionHandle, sizeHandle].forEach(handle => {
+            handle.addEventListener('mouseenter', () => {
+                handle.style.opacity = '1';
+                handle.style.transform = handle === proportionHandle ? 'translateY(-50%) scale(1.2)' : 'scale(1.2)';
+            });
+            
+            handle.addEventListener('mouseleave', () => {
+                if (!isDraggingProportion && !isDraggingSize) {
+                    handle.style.opacity = '0.3';
+                    handle.style.transform = handle === proportionHandle ? 'translateY(-50%) scale(1)' : 'scale(1)';
+                }
+            });
+        });
+        
+        container.appendChild(proportionHandle);
+        container.appendChild(sizeHandle);
+        handles.push(proportionHandle, sizeHandle);
+        
+        return handles;
+    }
+    
+    // 🗑️ FUNCIÓN: CREAR BOTÓN ELIMINAR
+    function createDeleteButton() {
+        const deleteBtn = document.createElement('div');
+        Object.assign(deleteBtn.style, {
+            position: 'absolute',
+            top: '-10px',
+            right: '-10px',
+            width: '24px',
+            height: '24px',
+            backgroundColor: '#ff4757',
+            color: '#fff',
+            cursor: 'pointer',
+            textAlign: 'center',
+            lineHeight: '22px',
+            fontSize: '12px',
+            borderRadius: '50%',
+            opacity: '0.7',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 2px 6px rgba(255,71,87,0.3)',
+            zIndex: '10'
+        });
+        deleteBtn.innerHTML = '✕';
+        
+        return deleteBtn;
+    }
+    
+    // 🔧 FUNCIÓN: MENÚ RÁPIDO DE IMAGEN (DOBLE CLIC)
+    function showImageQuickMenu(img, imageCell) {
+        // Crear menú contextual rápido
+        const menu = document.createElement('div');
+        Object.assign(menu.style, {
+            position: 'fixed',
+            backgroundColor: 'white',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            padding: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: '1000',
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif'
+        });
+        
+        menu.innerHTML = `
+            <div style="margin-bottom: 6px; font-weight: bold; color: #333;">⚡ Ajustes Rápidos</div>
+            <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+                <button onclick="setImageSize('80px')" style="padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-size: 11px;">Mini</button>
+                <button onclick="setImageSize('150px')" style="padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-size: 11px;">Normal</button>
+                <button onclick="setImageSize('250px')" style="padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-size: 11px;">Grande</button>
+            </div>
+            <div style="margin-bottom: 6px;">
+                <div style="display: flex; gap: 4px;">
+                    <button onclick="setImagePosition('flex-start', 'flex-start')" style="padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-size: 11px;">⬉ Esquina</button>
+                    <button onclick="setImagePosition('center', 'center')" style="padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-size: 11px;">⬛ Centro</button>
+                </div>
+            </div>
+            <div style="margin-top: 6px;">
+                <label style="font-size: 11px;">Altura máx:</label>
+                <input type="range" min="60" max="300" value="${parseInt(img.style.maxHeight) || 200}" 
+                       onchange="setImageHeight(this.value)" 
+                       style="width: 100%; margin: 2px 0;">
+                <div style="text-align: center; font-size: 10px; color: #666;">${parseInt(img.style.maxHeight) || 200}px</div>
+            </div>
+        `;
+        
+        // Posicionar menú cerca del mouse
+        const rect = img.getBoundingClientRect();
+        menu.style.left = (rect.right + 10) + 'px';
+        menu.style.top = rect.top + 'px';
+        
+        document.body.appendChild(menu);
+        
+        // Funciones globales temporales
+        window.setImageSize = (width) => {
+            imageCell.style.flexBasis = width;
+            menu.remove();
+            delete window.setImageSize;
+            delete window.setImageHeight;
+            delete window.setImagePosition;
+        };
+        
+        window.setImageHeight = (height) => {
+            img.style.maxHeight = height + 'px';
+            menu.querySelector('input + div').textContent = height + 'px';
+        };
+        
+        // ✅ NUEVA FUNCIÓN: POSICIONAR IMAGEN
+        window.setImagePosition = (alignItems, justifyContent) => {
+            imageCell.style.alignItems = alignItems;
+            imageCell.style.justifyContent = justifyContent;
+            menu.remove();
+            delete window.setImageSize;
+            delete window.setImageHeight;
+            delete window.setImagePosition;
+        };
+        
+        // Cerrar menú al hacer clic fuera
+        setTimeout(() => {
+            document.addEventListener('click', function closeMenu(e) {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    delete window.setImageSize;
+                    delete window.setImageHeight;
+                    delete window.setImagePosition;
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }, 100);
+    }
+    
+    console.log('✅ Tabla imagen-texto PERFECTA: Sin límites + Bordes funcionando + Texto multilínea');
 }
+
 
 // ===== FUNCIÓN: PINTAR IMÁGEN =====
 function setupImagePaint() {
@@ -1215,16 +1695,18 @@ function setupVoiceDictation() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    // Configuración del reconocimiento
-    recognition.continuous = true;        // Escucha continua
-    recognition.interimResults = true;    // Resultados parciales
-    recognition.lang = 'es-ES';          // Español
-    recognition.maxAlternatives = 1;      // Una alternativa
+    // 🔥 CONFIGURACIÓN OPTIMIZADA PARA TIEMPO REAL
+    recognition.continuous = true;        // Escucha continua SIN parar
+    recognition.interimResults = true;    // ✅ CLAVE: Resultados mientras hablas
+    recognition.lang = 'es-PE';          // Español peruano
+    recognition.maxAlternatives = 3;      // Múltiples alternativas para mejor precisión
     
-    // Variables de estado
+    // ⚡ VARIABLES DE ESTADO MEJORADAS
     let isListening = false;
+    let lastCursorPosition = null;       // 🎯 NUEVA: Posición del cursor
+    let interimSpan = null;              // 🎯 NUEVA: Span para texto temporal
     let finalTranscript = '';
-    let interimTranscript = '';
+    let recognitionTimeout = null;       // 🎯 NUEVA: Auto-restart
     
     // Obtener elementos
     const micBtn = document.getElementById('microphoneBtn');
@@ -1236,114 +1718,284 @@ function setupVoiceDictation() {
         return;
     }
 
-    // Función para insertar texto en el editor
-    function insertTextAtCursor(text) {
+    // 🎯 FUNCIÓN: INSERTAR TEXTO EN TIEMPO REAL
+    function insertRealtimeText(interimText, isFinal = false) {
         const selection = window.getSelection();
         
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(document.createTextNode(text));
-            range.collapse(false);
+        if (isFinal) {
+            // ✅ TEXTO FINAL: Reemplazar span temporal con texto definitivo
+            if (interimSpan) {
+                const finalTextNode = document.createTextNode(interimText + ' ');
+                interimSpan.parentNode.replaceChild(finalTextNode, interimSpan);
+                interimSpan = null;
+                
+                // Posicionar cursor después del texto final
+                const range = document.createRange();
+                range.setStartAfter(finalTextNode);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                console.log('✅ Texto final insertado:', interimText);
+            }
         } else {
-            // Si no hay selección, agregar al final
-            const textNode = document.createTextNode(text);
-            editor.appendChild(textNode);
+            // 🔄 TEXTO TEMPORAL: Mostrar mientras habla
+            if (!interimSpan) {
+                // Crear span temporal para texto parcial
+                interimSpan = document.createElement('span');
+                interimSpan.style.backgroundColor = '#e3f2fd';  // Azul claro
+                interimSpan.style.color = '#1976d2';            // Azul
+                interimSpan.style.fontStyle = 'italic';
+                interimSpan.className = 'interim-text';
+                
+                // Insertar en posición del cursor
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.insertNode(interimSpan);
+                } else {
+                    editor.appendChild(interimSpan);
+                }
+            }
+            
+            // Actualizar contenido del span temporal
+            interimSpan.textContent = interimText;
+            console.log('🗣️ Texto temporal:', interimText);
         }
         
+        // Mantener editor en foco
         editor.focus();
     }
 
-    // Función para actualizar UI del botón
+    // 🎯 FUNCIÓN: LIMPIAR TEXTO TEMPORAL
+    function clearInterimText() {
+        if (interimSpan) {
+            interimSpan.remove();
+            interimSpan = null;
+        }
+    }
+
+    // 🎯 FUNCIÓN: AUTO-REINICIO DEL RECONOCIMIENTO
+    function setupAutoRestart() {
+        // Auto-reiniciar cada 30 segundos para evitar timeouts
+        recognitionTimeout = setTimeout(() => {
+            if (isListening) {
+                console.log('🔄 Auto-reiniciando reconocimiento...');
+                recognition.stop();
+                setTimeout(() => {
+                    if (isListening) {
+                        recognition.start();
+                    }
+                }, 100);
+            }
+        }, 30000);
+    }
+
+    // 🎯 FUNCIÓN: ACTUALIZAR UI DEL BOTÓN
     function updateMicButton(listening) {
         if (listening) {
             micBtn.style.backgroundColor = '#e74c3c';
             micBtn.style.color = '#fff';
+            micBtn.style.animation = 'pulse 1.5s infinite';
             micIcon.className = 'fas fa-microphone-slash';
-            micBtn.title = 'Detener dictado (clic para parar)';
+            micBtn.title = 'Hablando... (clic para detener)';
+            
+            // Agregar indicador visual de grabación
+            if (!document.querySelector('.recording-indicator')) {
+                const indicator = document.createElement('div');
+                indicator.className = 'recording-indicator';
+                indicator.innerHTML = '🔴 GRABANDO';
+                indicator.style.cssText = `
+                    position: fixed;
+                    top: 10px;
+                    right: 10px;
+                    background: #e74c3c;
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 5px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    z-index: 9999;
+                    animation: blink 1s infinite;
+                `;
+                document.body.appendChild(indicator);
+            }
         } else {
             micBtn.style.backgroundColor = '';
             micBtn.style.color = '';
+            micBtn.style.animation = '';
             micIcon.className = 'fas fa-microphone';
-            micBtn.title = 'Dictado por voz';
+            micBtn.title = 'Dictado por voz en tiempo real';
+            
+            // Remover indicador visual
+            const indicator = document.querySelector('.recording-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
         }
     }
 
-    // Evento clic del botón
+    // 🎯 EVENTO: CLIC DEL BOTÓN
     micBtn.addEventListener('click', () => {
         if (isListening) {
             // Detener dictado
             recognition.stop();
+            clearTimeout(recognitionTimeout);
+            clearInterimText();
         } else {
             // Iniciar dictado
             finalTranscript = '';
-            interimTranscript = '';
+            clearInterimText();
             editor.focus();
-            recognition.start();
+            
+            try {
+                recognition.start();
+                setupAutoRestart();
+            } catch (error) {
+                console.error('❌ Error iniciando reconocimiento:', error);
+                isListening = false;
+                updateMicButton(false);
+            }
         }
     });
 
-    // Eventos del reconocimiento
+    // 🎯 EVENTOS DEL RECONOCIMIENTO - MEJORADOS
     recognition.onstart = () => {
         isListening = true;
         updateMicButton(true);
-        console.log('🎤 Dictado iniciado');
+        console.log('🎤 Dictado en tiempo real iniciado');
     };
 
     recognition.onend = () => {
         isListening = false;
         updateMicButton(false);
+        clearTimeout(recognitionTimeout);
+        clearInterimText();
         console.log('🎤 Dictado detenido');
+        
+        // Auto-reiniciar si estaba grabando y se detuvo inesperadamente
+        if (isListening) {
+            setTimeout(() => {
+                if (isListening) {
+                    recognition.start();
+                    setupAutoRestart();
+                }
+            }, 100);
+        }
     };
 
     recognition.onerror = (event) => {
         console.error('❌ Error en dictado:', event.error);
-        isListening = false;
-        updateMicButton(false);
         
-        // Mostrar error al usuario
-        if (event.error === 'not-allowed') {
-            alert('⚠️ Permiso de micrófono denegado.\n\nPor favor, permite el acceso al micrófono y recarga la página.');
-        } else if (event.error === 'no-speech') {
-            console.log('ℹ️ No se detectó voz, reintentando...');
+        // Manejar errores específicos
+        switch(event.error) {
+            case 'not-allowed':
+                alert('⚠️ Permiso de micrófono denegado.\n\nPor favor, permite el acceso al micrófono y recarga la página.');
+                isListening = false;
+                updateMicButton(false);
+                break;
+                
+            case 'no-speech':
+                console.log('ℹ️ No se detectó voz, continuando...');
+                // No cambiar estado, seguir escuchando
+                break;
+                
+            case 'network':
+                console.log('⚠️ Error de red, reintentando...');
+                setTimeout(() => {
+                    if (isListening) {
+                        recognition.start();
+                        setupAutoRestart();
+                    }
+                }, 1000);
+                break;
+                
+            default:
+                isListening = false;
+                updateMicButton(false);
+                clearInterimText();
+                break;
         }
     };
 
+    // 🔥 EVENTO PRINCIPAL: RESULTADOS EN TIEMPO REAL
     recognition.onresult = (event) => {
-        interimTranscript = '';
-        finalTranscript = '';
+        let interimTranscript = '';
+        let finalTranscript = '';
 
-        // Procesar resultados
+        // 🎯 PROCESAR RESULTADOS - MEJORADO
         for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
+            const confidence = event.results[i][0].confidence;
+            
+            console.log(`🗣️ Resultado ${i}: "${transcript}" (confianza: ${confidence})`);
             
             if (event.results[i].isFinal) {
-                finalTranscript += transcript + ' ';
+                finalTranscript += transcript;
             } else {
                 interimTranscript += transcript;
             }
         }
 
-        // Insertar texto final
+        // ✅ INSERTAR TEXTO FINAL (confirmado)
         if (finalTranscript) {
-            insertTextAtCursor(finalTranscript);
-            finalTranscript = '';
+            insertRealtimeText(finalTranscript, true);
+            console.log('✅ Texto final confirmado:', finalTranscript);
         }
 
-        console.log('🗣️ Texto reconocido:', finalTranscript || interimTranscript);
+        // 🔄 MOSTRAR TEXTO TEMPORAL (mientras habla)
+        if (interimTranscript) {
+            insertRealtimeText(interimTranscript, false);
+        }
     };
 
-    // Atajos de teclado
+    // 🎯 ATAJOS DE TECLADO MEJORADOS
     document.addEventListener('keydown', (e) => {
         // Ctrl + Shift + M para activar/desactivar micrófono
         if (e.ctrlKey && e.shiftKey && e.key === 'M') {
             e.preventDefault();
             micBtn.click();
         }
+        
+        // ESC para detener dictado rápidamente
+        if (e.key === 'Escape' && isListening) {
+            e.preventDefault();
+            micBtn.click();
+        }
     });
 
-    console.log('✅ Dictado por voz configurado');
-    console.log('ℹ️ Atajo: Ctrl + Shift + M');
+    // 🎯 AGREGAR ESTILOS CSS DINÁMICOS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+        
+        .interim-text {
+            background-color: #e3f2fd !important;
+            color: #1976d2 !important;
+            font-style: italic !important;
+            padding: 1px 3px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .microphone-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    `;
+    document.head.appendChild(style);
+
+    console.log('✅ Dictado en tiempo real configurado');
+    console.log('ℹ️ Atajos: Ctrl + Shift + M (activar/desactivar), ESC (detener)');
+    console.log('🎯 Funcionalidades: Escritura en tiempo real, auto-reinicio, indicadores visuales');
 }
 
 // ===== FUNCIÓN: FIRMA DIGITAL =====
