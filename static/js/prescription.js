@@ -3545,7 +3545,6 @@ function setupNuevaReceta() {
 
 
 
-
 if (!document.getElementById('prescription-refactored-styles')) {
     const style = document.createElement('style');
     style.id = 'prescription-refactored-styles';

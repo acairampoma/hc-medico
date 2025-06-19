@@ -67,6 +67,9 @@ function inicializarNotasMedicas() {
     // 14. CARGAR DATOS DE FIRMA
     setupCargarDatosFirma();
 
+    // 15. BOTÓN REGRESAR A RONDAS
+    setupRegresarRondas();
+
 }
 
 // ===== FUNCIÓN: ACTUALIZAR DATOS DEL PACIENTE =====
@@ -6890,6 +6893,159 @@ function llenarDatosFirma(datos) {
 }
 
 
+// setuptobackpageorounds.js
+function setupRegresarRondas() {
+    // Evitar múltiples inicializaciones
+    if (window.setupRegresarRondasInitialized) {
+        console.log('⚠️ Setup ya inicializado, omitiendo...');
+        return;
+    }
+    window.setupRegresarRondasInitialized = true;
+    
+    console.log('🔙 Configurando botón regresar a rondas...');
+    
+    // ===== FUNCIONES PRIVADAS =====
+    function configurarBoton() {
+        const backBtn = document.querySelector('.back-btn');
+        if (backBtn) {
+            // Remover eventos anteriores para evitar duplicados
+            backBtn.replaceWith(backBtn.cloneNode(true));
+            const newBackBtn = document.querySelector('.back-btn');
+            
+            newBackBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                regresarARondas();
+            });
+            console.log('✅ Botón regresar configurado');
+        } else {
+            console.warn('⚠️ Botón regresar no encontrado');
+        }
+    }
+    
+    function regresarARondas() {
+        console.log('🔙 Regresando a rondas médicas...');
+        
+        // Verificar si hay notas sin guardar
+        const editor = document.getElementById('medicalNoteEditor');
+        const hasContent = editor && editor.textContent.trim().length > 0;
+        
+        if (hasContent) {
+            if (confirm('¿Está seguro de salir? Se perderán las notas no guardadas.')) {
+                ejecutarRegreso();
+            }
+        } else {
+            ejecutarRegreso();
+        }
+    }
+    
+    function ejecutarRegreso() {
+        console.log('🧹 Ejecutando regreso a rondas...');
+        
+        try {
+            limpiarVariablesGlobales();
+            mostrarNotificacion('info', 'Regresando a rondas', 'Notas limpiadas correctamente');
+            
+            setTimeout(() => {
+                if (window.opener) {
+                    window.close();
+                } else {
+                    window.location.href = 'http://localhost:8000/medical/rounds';
+                }
+            }, 1000);
+            
+        } catch (error) {
+            console.error('❌ Error en regreso a rondas:', error);
+            window.location.href = 'http://localhost:8000/medical/rounds';
+        }
+    }
+    
+    function limpiarVariablesGlobales() {
+        console.log('🧹 Limpiando variables globales...');
+        
+        try {
+            // Limpiar editor de notas
+            const editor = document.getElementById('medicalNoteEditor');
+            if (editor) {
+                editor.innerHTML = '';
+            }
+            
+            // Limpiar firma
+            if (typeof signaturePad !== 'undefined' && signaturePad) {
+                signaturePad.clear();
+            }
+            
+            // Cerrar cualquier modal abierto
+            if (typeof window.cerrarModal === 'function') {
+                window.cerrarModal();
+            }
+            
+            console.log('✅ Variables globales limpiadas');
+            
+        } catch (error) {
+            console.error('❌ Error limpiando variables globales:', error);
+        }
+    }
+    
+    function configurarEventosVentana() {
+        // Detectar cierre de ventana para limpiar
+        window.addEventListener('beforeunload', function(e) {
+            const editor = document.getElementById('medicalNoteEditor');
+            const hasContent = editor && editor.textContent.trim().length > 0;
+            
+            if (hasContent) {
+                e.preventDefault();
+                e.returnValue = '¿Está seguro de salir? Se perderán las notas no guardadas.';
+                return e.returnValue;
+            }
+        });
+        
+        // Limpiar al cerrar ventana
+        window.addEventListener('unload', function() {
+            if (window.opener) {
+                limpiarVariablesGlobales();
+            }
+        });
+        
+        // Ctrl+B = volver rápido
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                regresarARondas();
+            }
+        });
+    }
+    
+    
+    // ===== INICIALIZACIÓN =====
+    configurarBoton();
+    configurarEventosVentana();
+    
+    console.log('✅ Regresar a rondas configurado');
+}
+
+// Función para mostrar notificaciones (compartida)
+function mostrarNotificacion(tipo, titulo, mensaje) {
+    console.log(`${tipo.toUpperCase()}: ${titulo} - ${mensaje}`);
+    
+    if (window.Swal) {
+        Swal.fire({
+            icon: tipo,
+            title: titulo,
+            text: mensaje,
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    } else {
+        alert(`${titulo}: ${mensaje}`);
+    }
+}
+// Ejecutar cuando esté listo el DOM
+document.addEventListener('DOMContentLoaded', setupRegresarRondas);
+
+// Ejecutar cuando esté listo el DOM
+document.addEventListener('DOMContentLoaded', setupRegresarRondas);
 
 
 // ===== AUTO-EJECUTAR CUANDO CARGUE LA PÁGINA =====
