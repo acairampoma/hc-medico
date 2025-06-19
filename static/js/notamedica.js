@@ -593,11 +593,7 @@ function setupImageTable() {
         // ✅ CLICK EN IMAGEN TAMBIÉN MUESTRA BORDES
         img.addEventListener('click', (e) => {
             e.stopPropagation();
-            
-            // ✅ MOSTRAR BORDES AL HACER CLICK EN IMAGEN (CORREGIDO)
-            container.style.border = '2px solid #2c5aa0';
-            container.style.borderBottom = '2px solid #2c5aa0';
-            container.style.borderRadius = '8px';
+            mostrarControles();
         });
         
         // ✅ DOBLE CLIC PARA AJUSTES RÁPIDOS DE IMAGEN
@@ -646,12 +642,7 @@ function setupImageTable() {
         // ✅ HACER TODA EL ÁREA CLICKEABLE + GESTIÓN DE BORDES
         textCell.addEventListener('click', (e) => {
             e.stopPropagation();
-            
-            // ✅ MOSTRAR BORDES AL HACER CLICK DENTRO
-            container.style.border = '2px solid #2c5aa0';
-            container.style.borderBottom = '2px solid #2c5aa0';
-            container.style.borderRadius = '8px';
-            
+            mostrarControles();
             textContent.focus();
             
             // Si está vacío o con placeholder, posicionar cursor
@@ -672,11 +663,7 @@ function setupImageTable() {
                 textContent.innerHTML = '<p style="margin:0; color:#333; font-size:14px;"><br></p>';
             }
             
-            // ✅ MOSTRAR BORDES AL ENFOCAR
-            container.style.border = '2px solid #2c5aa0';
-            container.style.borderBottom = '2px solid #2c5aa0';
-            container.style.borderRadius = '8px';
-            
+            mostrarControles();
             textContent.style.backgroundColor = '#f8f9ff';  // ✅ AZUL MUY SUTIL AL EDITAR
             textContent.style.borderColor = '#2c5aa0';      
         });
@@ -714,15 +701,19 @@ function setupImageTable() {
         
         // Efectos hover del botón eliminar
         deleteBtn.addEventListener('mouseenter', () => {
-            deleteBtn.style.opacity = '1';
-            deleteBtn.style.transform = 'scale(1.1)';
-            deleteBtn.style.backgroundColor = '#ff3838';
+            if (deleteBtn.style.display !== 'none') {
+                deleteBtn.style.opacity = '1';
+                deleteBtn.style.transform = 'scale(1.1)';
+                deleteBtn.style.backgroundColor = '#ff3838';
+            }
         });
         
         deleteBtn.addEventListener('mouseleave', () => {
-            deleteBtn.style.opacity = '0.7';
-            deleteBtn.style.transform = 'scale(1)';
-            deleteBtn.style.backgroundColor = '#ff4757';
+            if (deleteBtn.style.display !== 'none') {
+                deleteBtn.style.opacity = '0.7';
+                deleteBtn.style.transform = 'scale(1)';
+                deleteBtn.style.backgroundColor = '#ff4757';
+            }
         });
         
         deleteBtn.addEventListener('click', () => {
@@ -751,12 +742,75 @@ function setupImageTable() {
         
         container.appendChild(table);
         
-        // ✅ GESTIÓN GLOBAL DE CLICKS PARA MOSTRAR/OCULTAR BORDES
-        setupBorderToggle(container);
-        
         // 🔧 CREAR HANDLES DE RESIZE PARA TODA LA TABLA
         const resizeHandles = createTableResizeHandles(container, imageCell, textCell, position);
         container.appendChild(deleteBtn);
+        
+        // ✅ FUNCIONES LOCALES PARA MOSTRAR/OCULTAR CONTROLES
+        function mostrarControles() {
+            // Mostrar bordes
+            container.style.border = '2px solid #2c5aa0';
+            container.style.borderBottom = '2px solid #2c5aa0';
+            container.style.borderRadius = '8px';
+            
+            // ✅ MOSTRAR HANDLES DE RESIZE COMPLETAMENTE
+            const proportionHandle = container.querySelector('[title="Ajustar proporción imagen/texto"]');
+            const sizeHandle = container.querySelector('[title="Redimensionar tabla completa"]');
+            
+            if (proportionHandle) {
+                proportionHandle.style.display = 'flex';
+                proportionHandle.style.opacity = '0.7';
+            }
+            if (sizeHandle) {
+                sizeHandle.style.display = 'flex';
+                sizeHandle.style.opacity = '0.7';
+            }
+            
+            // Mostrar botón eliminar
+            if (deleteBtn) {
+                deleteBtn.style.display = 'block';
+                deleteBtn.style.opacity = '0.7';
+                deleteBtn.style.pointerEvents = 'auto';
+            }
+            
+            console.log('🔄 Controles mostrados: Bordes + Handles + Botón eliminar');
+        }
+        
+        function ocultarControles() {
+            // Quitar bordes
+            container.style.border = 'none';
+            container.style.borderBottom = '1px solid #e0e0e0';
+            container.style.borderRadius = '0px';
+            
+            // ✅ OCULTAR HANDLES DE RESIZE COMPLETAMENTE
+            const proportionHandle = container.querySelector('[title="Ajustar proporción imagen/texto"]');
+            const sizeHandle = container.querySelector('[title="Redimensionar tabla completa"]');
+            const allHandles = container.querySelectorAll('div[style*="cursor: ew-resize"], div[style*="cursor: nw-resize"]');
+            
+            if (proportionHandle) {
+                proportionHandle.style.display = 'none';
+            }
+            if (sizeHandle) {
+                sizeHandle.style.display = 'none';
+            }
+            
+            // ✅ OCULTAR CUALQUIER HANDLE ADICIONAL
+            allHandles.forEach(handle => {
+                handle.style.display = 'none';
+            });
+            
+            // Ocultar botón eliminar
+            if (deleteBtn) {
+                deleteBtn.style.display = 'none';
+                deleteBtn.style.opacity = '0';
+                deleteBtn.style.pointerEvents = 'none';
+            }
+            
+            console.log('🔄 Controles ocultos: Sin bordes + Sin handles + Sin botón eliminar');
+        }
+        
+        // ✅ GESTIÓN GLOBAL DE CLICKS PARA MOSTRAR/OCULTAR BORDES
+        setupBorderToggle(container, mostrarControles, ocultarControles);
         
         // 📄 INSERTAR EN EDITOR CON ESPACIO ARRIBA CLICKEABLE
         const editor = document.getElementById('medicalNoteEditor');
@@ -802,49 +856,29 @@ function setupImageTable() {
         }, 100);
     }
     
-    // 🔄 FUNCIÓN: GESTIÓN DE BORDES Y BOTÓN ELIMINAR
-    function setupBorderToggle(container) {
-        const deleteBtn = container._deleteBtn;
-        
-        // ✅ CLICK FUERA DE TABLA → QUITAR BORDES Y OCULTAR BOTÓN
+    // 🔄 FUNCIÓN: GESTIÓN DE BORDES Y CONTROLES DE REDIMENSIONAMIENTO
+    function setupBorderToggle(container, mostrarControles, ocultarControles) {
+        // ✅ CLICK FUERA DE TABLA → OCULTAR CONTROLES
         function handleGlobalClick(e) {
             // Si el click no es dentro del container Y no es en algún handle o menú
             if (!container.contains(e.target) && 
                 !e.target.closest('.resize-handle') && 
-                !e.target.closest('[style*="position: fixed"]')) {
+                !e.target.closest('[style*="position: fixed"]') &&
+                !e.target.matches('[style*="cursor: ew-resize"]') &&
+                !e.target.matches('[style*="cursor: nw-resize"]')) {
                 
-                // ✅ QUITAR BORDES
-                container.style.border = 'none';
-                container.style.borderBottom = '1px solid #e0e0e0';
-                container.style.borderRadius = '0px';
-                
-                // ✅ OCULTAR BOTÓN ELIMINAR
-                if (deleteBtn) {
-                    deleteBtn.style.opacity = '0';
-                    deleteBtn.style.pointerEvents = 'none';
-                }
-                
-                console.log('🔄 Bordes quitados + Botón eliminar oculto');
+                ocultarControles();
             }
         }
         
-        // ✅ CLICK DENTRO DE TABLA → MOSTRAR BORDES Y BOTÓN
+        // ✅ CLICK DENTRO DE TABLA → MOSTRAR CONTROLES
         function handleContainerClick(e) {
             e.stopPropagation();
-            
-            // ✅ MOSTRAR BORDES PARA EDICIÓN
-            container.style.border = '2px solid #2c5aa0';
-            container.style.borderBottom = '2px solid #2c5aa0';
-            container.style.borderRadius = '8px';
-            
-            // ✅ MOSTRAR BOTÓN ELIMINAR
-            if (deleteBtn) {
-                deleteBtn.style.opacity = '0.7';
-                deleteBtn.style.pointerEvents = 'auto';
-            }
-            
-            console.log('🔄 Bordes mostrados + Botón eliminar visible');
+            mostrarControles();
         }
+        
+        // ✅ ESTADO INICIAL: CONTROLES OCULTOS
+        ocultarControles();
         
         // Agregar listeners
         document.addEventListener('click', handleGlobalClick, true);
@@ -856,7 +890,7 @@ function setupImageTable() {
             container.removeEventListener('click', handleContainerClick);
         };
         
-        console.log('✅ Bordes dinámicos + Botón eliminar: Click dentro = visible, Click fuera = oculto');
+        console.log('✅ Sistema de controles dinámicos: Click dentro = VISIBLE, Click fuera = OCULTO 100%');
     }
     
     // 🔧 FUNCIÓN: CREAR HANDLES DE RESIZE PARA TODA LA TABLA
@@ -875,10 +909,11 @@ function setupImageTable() {
             backgroundColor: '#2c5aa0',
             cursor: 'ew-resize',
             borderRadius: '4px',
-            opacity: '0.3',
+            // ✅ ESTADO INICIAL: OCULTO
+            display: 'none',
+            opacity: '0',
             transition: 'all 0.3s ease',
             zIndex: '5',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
@@ -899,10 +934,11 @@ function setupImageTable() {
             backgroundColor: '#e74c3c',
             cursor: 'nw-resize',
             borderRadius: '50%',
-            opacity: '0.3',
+            // ✅ ESTADO INICIAL: OCULTO
+            display: 'none',
+            opacity: '0',
             transition: 'all 0.3s ease',
             zIndex: '5',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
@@ -1003,16 +1039,18 @@ function setupImageTable() {
             document.addEventListener('mouseup', stopSizeDrag);
         });
         
-        // 🎨 EFECTOS HOVER
+        // 🎨 EFECTOS HOVER MEJORADOS
         [proportionHandle, sizeHandle].forEach(handle => {
             handle.addEventListener('mouseenter', () => {
-                handle.style.opacity = '1';
-                handle.style.transform = handle === proportionHandle ? 'translateY(-50%) scale(1.2)' : 'scale(1.2)';
+                if (handle.style.display !== 'none') {  // Solo si está visible
+                    handle.style.opacity = '1';
+                    handle.style.transform = handle === proportionHandle ? 'translateY(-50%) scale(1.2)' : 'scale(1.2)';
+                }
             });
             
             handle.addEventListener('mouseleave', () => {
-                if (!isDraggingProportion && !isDraggingSize) {
-                    handle.style.opacity = '0.3';
+                if (handle.style.display !== 'none') {  // Solo si está visible
+                    handle.style.opacity = '0.7';
                     handle.style.transform = handle === proportionHandle ? 'translateY(-50%) scale(1)' : 'scale(1)';
                 }
             });
@@ -1025,7 +1063,7 @@ function setupImageTable() {
         return handles;
     }
     
-    // 🗑️ FUNCIÓN: CREAR BOTÓN ELIMINAR
+    // 🗑️ FUNCIÓN: CREAR BOTÓN ELIMINAR CON ESTADO INICIAL OCULTO
     function createDeleteButton() {
         const deleteBtn = document.createElement('div');
         Object.assign(deleteBtn.style, {
@@ -1041,7 +1079,10 @@ function setupImageTable() {
             lineHeight: '22px',
             fontSize: '12px',
             borderRadius: '50%',
-            opacity: '0.7',
+            // ✅ ESTADO INICIAL: OCULTO
+            display: 'none',
+            opacity: '0',
+            pointerEvents: 'none',
             transition: 'all 0.3s ease',
             boxShadow: '0 2px 6px rgba(255,71,87,0.3)',
             zIndex: '10'
@@ -1134,9 +1175,8 @@ function setupImageTable() {
         }, 100);
     }
     
-    console.log('✅ Tabla imagen-texto PERFECTA: Sin límites + Bordes funcionando + Texto multilínea');
+    console.log('✅ Tabla imagen-texto PERFECTA: Sin límites + Controles dinámicos + Texto multilínea');
 }
-
 
 // ===== FUNCIÓN: PINTAR IMÁGEN =====
 function setupImagePaint() {
@@ -2369,81 +2409,107 @@ function setupMedicalNotePreview() {
     previewBtn.addEventListener('click', generatePreview);
     
     function generatePreview() {
-        console.log('🔍 Generando vista previa...');
+        console.log('🔍 Generando vista previa estilo Word...');
         
-        // Verificar que hay contenido
         const editor = document.getElementById('medicalNoteEditor');
         if (!editor) {
             alert('⚠️ Editor no encontrado.');
             return;
         }
         
-        // Generar HTML de previsualización sin tocar el original
-        const previewHTML = createPreviewHTML();
-        
-        // Abrir ventana de previsualización
+        const previewHTML = createWordStylePreviewHTML();
         openPreviewWindow(previewHTML);
         
-        console.log('👁️ Vista previa generada');
+        console.log('👁️ Vista previa generada exitosamente');
     }
     
-    // Función para capturar imágenes del editor
+
+
     function captureImagesFromEditor() {
-        const images = [];
+    const images = [];
+    
+    try {
+        // 🖼️ CAPTURAR IMÁGENES NORMALES
+        const imgElements = document.querySelectorAll('#medicalNoteEditor img');
+        imgElements.forEach((img, index) => {
+            if (img.src) {
+                images.push({
+                    type: 'img',
+                    index: index,
+                    tableIndex: findTableIndex(img), // ✅ NUEVO: índice de tabla
+                    src: img.src,
+                    alt: img.alt || `Imagen médica ${index + 1}`,
+                    width: img.naturalWidth || img.width,
+                    height: img.naturalHeight || img.height
+                });
+            }
+        });
         
-        try {
-            // Capturar imágenes normales
-            const imgElements = document.querySelectorAll('#medicalNoteEditor img');
-            imgElements.forEach((img, index) => {
-                if (img.src) {
+        // 🎨 CAPTURAR CANVAS CON ÍNDICE DE TABLA ESPECÍFICO
+        const canvasElements = document.querySelectorAll('#medicalNoteEditor canvas');
+        canvasElements.forEach((canvas, index) => {
+            try {
+                // ✅ VERIFICAR QUE NO ES CANVAS DE FIRMA
+                const isSignatureCanvas = canvas.id === 'signatureCanvas' || 
+                                        canvas.closest('.digital-signature-section') ||
+                                        canvas.closest('[id*="signature"]');
+                
+                if (!isSignatureCanvas && canvas.width > 0 && canvas.height > 0) {
+                    const tableIndex = findTableIndex(canvas);
+                    const dataURL = canvas.toDataURL('image/png', 1.0);
+                    
                     images.push({
-                        type: 'img',
+                        type: 'canvas',
                         index: index,
-                        src: img.src,
-                        id: `img_${index}`
+                        tableIndex: tableIndex, // ✅ CLAVE: índice específico de tabla
+                        canvasId: canvas.id || `canvas_${tableIndex}_${index}`, // ✅ ID único
+                        src: dataURL,
+                        width: canvas.width,
+                        height: canvas.height,
+                        alt: `Anotación médica en tabla ${tableIndex + 1}`
                     });
-                    console.log(`📸 Imagen ${index + 1} capturada`);
+                    
+                    console.log(`🎨 Canvas capturado: tabla ${tableIndex}, canvas ${index}`);
                 }
-            });
-            
-            // Capturar canvas (imágenes pintadas)
-            const canvasElements = document.querySelectorAll('#medicalNoteEditor canvas');
-            canvasElements.forEach((canvas, index) => {
-                try {
-                    if (canvas.width > 0 && canvas.height > 0) {
-                        const dataURL = canvas.toDataURL('image/png');
-                        images.push({
-                            type: 'canvas',
-                            index: index,
-                            src: dataURL,
-                            id: `canvas_${index}`
-                        });
-                        console.log(`🎨 Canvas ${index + 1} capturado`);
-                    }
-                } catch (error) {
-                    console.warn(`⚠️ No se pudo capturar canvas ${index + 1}:`, error);
-                }
-            });
-            
-            console.log(`📋 Total elementos capturados: ${images.length}`);
-            return images;
-            
-        } catch (error) {
-            console.error('❌ Error capturando imágenes:', error);
-            return [];
-        }
+            } catch (error) {
+                console.warn(`⚠️ No se pudo capturar canvas ${index}:`, error);
+            }
+        });
+        
+        return images;
+        
+    } catch (error) {
+        console.error('❌ Error capturando imágenes:', error);
+        return [];
+    }
     }
 
-    // Función para capturar la firma
+    function findTableIndex(element) {
+        const tableContainers = document.querySelectorAll('#medicalNoteEditor div[style*="display: flex"]');
+        
+        for (let i = 0; i < tableContainers.length; i++) {
+            if (tableContainers[i].contains(element)) {
+                return i;
+            }
+        }
+        return -1; // No está en ninguna tabla
+    }
+
+
+
+
     function captureSignatureImage() {
         try {
             const signatureCanvas = document.getElementById('signatureCanvas');
             if (signatureCanvas && window.signatureAPI && window.signatureAPI.isSigned()) {
-                const signatureData = signatureCanvas.toDataURL('image/png');
-                console.log('✍️ Firma capturada');
-                return signatureData;
+                const signatureData = signatureCanvas.toDataURL('image/png', 1.0);
+                return {
+                    src: signatureData,
+                    width: signatureCanvas.width,
+                    height: signatureCanvas.height,
+                    timestamp: new Date().toISOString()
+                };
             }
-            console.log('📝 Sin firma para capturar');
             return null;
         } catch (error) {
             console.warn('⚠️ Error capturando firma:', error);
@@ -2451,423 +2517,970 @@ function setupMedicalNotePreview() {
         }
     }
 
-    // Función para reemplazar imágenes en el contenido
-    function replaceImagesInContent(content, capturedImages) {
-        let updatedContent = content;
+    function processContentForPreview(content, capturedImages) {
+        let processedContent = content;
         
         try {
-            // Crear un DOM temporal para procesar
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // Reemplazar imágenes
-            const imgs = tempDiv.querySelectorAll('img');
-            imgs.forEach((img, index) => {
-                const captured = capturedImages.find(c => c.type === 'img' && c.index === index);
-                if (captured) {
-                    img.src = captured.src;
-                    img.style.cssText += ' max-width: 100% !important; height: auto !important;';
+            console.log('🔄 Auto-ajustando contenido SIN rayita y SIN bordes...');
+            
+            // ========================================
+            // 📏 CONFIGURACIÓN A4 LIMPIA
+            // ========================================
+            const PAGE_CONFIG = {
+                pageWidthMM: 210,              
+                pageHeightMM: 297,             
+                marginMM: 20,                  
+                mmToPx: 3.7795,                
+                
+                get contentWidthPx() {
+                    return (this.pageWidthMM - (this.marginMM * 2)) * this.mmToPx;
+                },
+                get contentHeightPx() {
+                    return (this.pageHeightMM - (this.marginMM * 2)) * this.mmToPx;
+                },
+                
+                maxImageWidth: 180,            
+                maxImageHeight: 200,           
+                maxTableHeight: 350,           
+                minTextWidth: 380,             
+                safePadding: 12
+            };
+            
+            // ========================================
+            // 🗑️ ELIMINAR CONTROLES DE EDICIÓN
+            // ========================================
+            const controlsToRemove = [
+                'div[style*="cursor: ew-resize"]',
+                'div[style*="cursor: nw-resize"]', 
+                'div[title*="proporción"]',
+                'div[title*="Redimensionar"]',
+                'div[style*="⟷"]',
+                'div[style*="⤡"]'
+            ];
+            
+            controlsToRemove.forEach(selector => {
+                tempDiv.querySelectorAll(selector).forEach(el => el.remove());
+            });
+            
+            tempDiv.querySelectorAll('div').forEach(div => {
+                if (div.innerHTML === '✕' || div.textContent === '✕') {
+                    div.remove();
                 }
             });
             
-            // Reemplazar canvas con imágenes
+            // ========================================
+            // 🎯 PROCESAR TABLAS CON CANVAS ESPECÍFICOS
+            // ========================================
+            
+            const imageTextTables = tempDiv.querySelectorAll('div[style*="display: flex"]');
+            let processedTables = 0;
+            
+            imageTextTables.forEach((container, tableIndex) => {
+                const hasImage = container.querySelector('img');
+                const hasTextContent = container.textContent.trim().length > 20;
+                const hasCanvas = container.querySelector('canvas');
+                
+                if ((hasImage || hasCanvas) && hasTextContent) {
+                    processedTables++;
+                    console.log(`📊 Procesando tabla ${tableIndex}: ${hasCanvas ? 'CON CANVAS' : 'SIN CANVAS'}`);
+                    
+                    // ✅ CONFIGURACIÓN BÁSICA SIN BORDES
+                    const maxWidth = Math.round(PAGE_CONFIG.contentWidthPx);
+                    container.style.width = maxWidth + 'px';
+                    container.style.maxWidth = maxWidth + 'px';
+                    container.style.minWidth = maxWidth + 'px';
+                    container.style.border = 'none';           // ✅ SIN BORDE
+                    container.style.borderRadius = '0';
+                    container.style.resize = 'none';
+                    container.style.cursor = 'default';
+                    container.style.margin = '0 0 15px 0';
+                    container.style.padding = '0';
+                    container.style.overflow = 'hidden';
+                    container.style.boxSizing = 'border-box';
+                    container.style.outline = 'none';          // ✅ SIN OUTLINE
+                    container.style.boxShadow = 'none';        // ✅ SIN SOMBRA
+                    
+                    const flexTable = container.querySelector('div[style*="display: flex"]');
+                    if (flexTable) {
+                        flexTable.style.width = '100%';
+                        flexTable.style.gap = '8px';
+                        flexTable.style.alignItems = 'flex-start';
+                        flexTable.style.border = 'none';       // ✅ SIN BORDE EN FLEX
+                    }
+                    
+                    // ✅ PROCESAMIENTO ESPECÍFICO POR TABLA
+                    const imageCell = container.querySelector('div[style*="flex: 0"]');
+                    let finalImageWidth = PAGE_CONFIG.maxImageWidth;
+                    
+                    if (imageCell) {
+                        const canvas = imageCell.querySelector('canvas');
+                        if (canvas) {
+                            console.log(`🎨 Convirtiendo canvas específico de tabla ${tableIndex}`);
+                            
+                            try {
+                                const capturedCanvas = capturedImages.find(c => 
+                                    c.type === 'canvas' && 
+                                    c.tableIndex === tableIndex && 
+                                    c.src && 
+                                    c.src.length > 100
+                                );
+                                
+                                if (capturedCanvas) {
+                                    const img = document.createElement('img');
+                                    img.src = capturedCanvas.src;
+                                    img.alt = `Imagen médica con anotaciones - Tabla ${tableIndex + 1}`;
+                                    
+                                    // ✅ IMAGEN SIN BORDES
+                                    img.style.width = '100%';
+                                    img.style.maxWidth = PAGE_CONFIG.maxImageWidth + 'px';
+                                    img.style.maxHeight = PAGE_CONFIG.maxImageHeight + 'px';
+                                    img.style.height = 'auto';
+                                    img.style.objectFit = 'contain';
+                                    img.style.display = 'block';
+                                    img.style.margin = '0';
+                                    img.style.border = 'none';           // ✅ SIN BORDE EN IMAGEN
+                                    img.style.borderRadius = '0';        // ✅ SIN ESQUINAS
+                                    img.style.outline = 'none';          // ✅ SIN OUTLINE
+                                    img.style.boxShadow = 'none';        // ✅ SIN SOMBRA
+                                    
+                                    canvas.parentNode.replaceChild(img, canvas);
+                                    console.log(`✅ Canvas tabla ${tableIndex} convertido SIN BORDES`);
+                                } else {
+                                    console.warn(`⚠️ No se encontró captura específica para tabla ${tableIndex}`);
+                                    canvas.remove();
+                                }
+                            } catch (error) {
+                                console.error(`❌ Error convirtiendo canvas tabla ${tableIndex}:`, error);
+                                canvas.remove();
+                            }
+                        }
+                        
+                        // ✅ IMAGEN NORMAL SIN BORDES
+                        const img = imageCell.querySelector('img');
+                        if (img) {
+                            const capturedImage = capturedImages.find(c => 
+                                c.type === 'img' && 
+                                c.tableIndex === tableIndex
+                            );
+                            if (capturedImage) {
+                                img.src = capturedImage.src;
+                                if (capturedImage.alt) img.alt = capturedImage.alt;
+                            }
+                            
+                            // ✅ ESTILOS LIMPIOS SIN BORDES
+                            img.style.width = '100%';
+                            img.style.maxWidth = PAGE_CONFIG.maxImageWidth + 'px';
+                            img.style.maxHeight = PAGE_CONFIG.maxImageHeight + 'px';
+                            img.style.height = 'auto';
+                            img.style.objectFit = 'contain';
+                            img.style.display = 'block';
+                            img.style.margin = '0';
+                            img.style.border = 'none';             // ✅ SIN BORDE
+                            img.style.borderRadius = '0';          // ✅ SIN ESQUINAS
+                            img.style.outline = 'none';            // ✅ SIN OUTLINE
+                            img.style.boxShadow = 'none';          // ✅ SIN SOMBRA
+                        }
+                        
+                        // ✅ CELDA IMAGEN SIN BORDES
+                        imageCell.style.flexBasis = finalImageWidth + 'px';
+                        imageCell.style.maxWidth = finalImageWidth + 'px';
+                        imageCell.style.minWidth = finalImageWidth + 'px';
+                        imageCell.style.width = finalImageWidth + 'px';
+                        imageCell.style.flexShrink = '0';
+                        imageCell.style.flexGrow = '0';
+                        imageCell.style.overflow = 'hidden';
+                        imageCell.style.padding = '8px';
+                        imageCell.style.boxSizing = 'border-box';
+                        imageCell.style.border = 'none';           // ✅ SIN BORDE EN CELDA
+                        imageCell.style.outline = 'none';          // ✅ SIN OUTLINE
+                        imageCell.style.backgroundColor = 'transparent'; // ✅ FONDO TRANSPARENTE
+                    }
+                    
+                    // ✅ CELDA TEXTO SIN BORDES
+                    const textCell = container.querySelector('div[style*="flex: 1"]');
+                    if (textCell) {
+                        const availableWidth = maxWidth - finalImageWidth - 16;
+                        
+                        textCell.style.flex = '1 1 ' + availableWidth + 'px';
+                        textCell.style.width = availableWidth + 'px';
+                        textCell.style.maxWidth = availableWidth + 'px';
+                        textCell.style.minWidth = '0';
+                        textCell.style.overflow = 'hidden';
+                        textCell.style.boxSizing = 'border-box';
+                        textCell.style.padding = '0';
+                        textCell.style.border = 'none';            // ✅ SIN BORDE EN CELDA TEXTO
+                        textCell.style.outline = 'none';           // ✅ SIN OUTLINE
+                        textCell.style.backgroundColor = 'transparent'; // ✅ FONDO TRANSPARENTE
+                        
+                        const textContent = textCell.querySelector('div[contenteditable], div');
+                        if (textContent) {
+                            textContent.removeAttribute('contenteditable');
+                            textContent.style.cursor = 'default';
+                            textContent.style.outline = 'none';
+                            textContent.style.border = 'none';     // ✅ SIN BORDE EN CONTENIDO
+                            textContent.style.borderRadius = '0';  // ✅ SIN ESQUINAS
+                            textContent.style.backgroundColor = 'transparent'; // ✅ FONDO TRANSPARENTE
+                            textContent.style.boxShadow = 'none';  // ✅ SIN SOMBRA
+                            
+                            if (textContent.innerHTML.includes('Escriba aquí el texto médico...')) {
+                                textContent.innerHTML = '<p style="margin:0; color:#333; font-size:11px;">Texto médico sin especificar</p>';
+                            }
+                            
+                            textContent.style.padding = PAGE_CONFIG.safePadding + 'px';
+                            textContent.style.fontSize = '11px';
+                            textContent.style.lineHeight = '1.4';
+                            textContent.style.wordWrap = 'break-word';
+                            textContent.style.overflowWrap = 'anywhere';
+                            textContent.style.hyphens = 'auto';
+                            textContent.style.width = '100%';
+                            textContent.style.maxHeight = PAGE_CONFIG.maxTableHeight + 'px';
+                            textContent.style.overflowY = 'hidden';
+                            textContent.style.boxSizing = 'border-box';
+                            
+                            const paragraphs = textContent.querySelectorAll('p');
+                            paragraphs.forEach(p => {
+                                p.style.margin = '0 0 8px 0';
+                                p.style.wordBreak = 'break-word';
+                            });
+                        }
+                    }
+                    
+                    const currentHeight = container.offsetHeight;
+                    if (currentHeight > PAGE_CONFIG.maxTableHeight) {
+                        container.style.maxHeight = PAGE_CONFIG.maxTableHeight + 'px';
+                        container.style.overflowY = 'hidden';
+                    }
+                    
+                    console.log(`✅ Tabla ${tableIndex} procesada SIN BORDES`);
+                }
+            });
+            
+            // ========================================
+            // 🖼️ PROCESAR IMÁGENES SUELTAS SIN BORDES
+            // ========================================
+            
+            const images = tempDiv.querySelectorAll('img');
+            images.forEach((img, index) => {
+                const isInTable = img.closest('div[style*="display: flex"]');
+                if (!isInTable) {
+                    const captured = capturedImages.find(c => c.type === 'img' && c.index === index);
+                    if (captured && captured.src) {
+                        img.src = captured.src;
+                        if (captured.alt) img.alt = captured.alt;
+                    }
+                    
+                    const maxWidth = Math.round(PAGE_CONFIG.contentWidthPx);
+                    img.style.maxWidth = maxWidth + 'px';
+                    img.style.width = 'auto';
+                    img.style.height = 'auto';
+                    img.style.display = 'block';
+                    img.style.margin = '10px 0';
+                    img.style.border = 'none';             // ✅ SIN BORDE
+                    img.style.borderRadius = '0';          // ✅ SIN ESQUINAS
+                    img.style.outline = 'none';            // ✅ SIN OUTLINE
+                    img.style.boxShadow = 'none';          // ✅ SIN SOMBRA
+                    
+                    console.log(`🖼️ Imagen suelta ${index + 1} SIN BORDES`);
+                }
+            });
+            
+            // ========================================
+            // 🎨 CONVERTIR CANVAS SUELTOS SIN BORDES
+            // ========================================
+            
             const canvases = tempDiv.querySelectorAll('canvas');
             canvases.forEach((canvas, index) => {
-                const captured = capturedImages.find(c => c.type === 'canvas' && c.index === index);
-                if (captured) {
-                    const img = document.createElement('img');
-                    img.src = captured.src;
-                    img.style.cssText = 'max-width: 100% !important; height: auto !important; border: 1px solid #ddd;';
-                    canvas.parentNode.replaceChild(img, canvas);
+                const isInTable = canvas.closest('div[style*="display: flex"]');
+                if (!isInTable) {
+                    const captured = capturedImages.find(c => c.type === 'canvas' && c.index === index);
+                    if (captured && captured.src) {
+                        const img = document.createElement('img');
+                        img.src = captured.src;
+                        img.alt = captured.alt || `Dibujo médico ${index + 1}`;
+                        
+                        const maxWidth = Math.round(PAGE_CONFIG.contentWidthPx);
+                        img.style.maxWidth = maxWidth + 'px';
+                        img.style.width = 'auto';
+                        img.style.height = 'auto';
+                        img.style.display = 'block';
+                        img.style.margin = '10px 0';
+                        img.style.border = 'none';         // ✅ SIN BORDE
+                        img.style.borderRadius = '0';      // ✅ SIN ESQUINAS
+                        img.style.outline = 'none';        // ✅ SIN OUTLINE
+                        img.style.boxShadow = 'none';      // ✅ SIN SOMBRA
+                        
+                        canvas.parentNode.replaceChild(img, canvas);
+                        console.log(`🎨 Canvas suelto ${index + 1} convertido SIN BORDES`);
+                    } else {
+                        canvas.remove();
+                    }
                 }
             });
             
-            updatedContent = tempDiv.innerHTML;
-            console.log('🔄 Contenido actualizado con imágenes capturadas');
+            processedContent = tempDiv.innerHTML;
+            
+            console.log('✅ Procesamiento LIMPIO completado:', {
+                tablasConCanvas: processedTables,
+                sinBordes: true,
+                sinRayita: true
+            });
             
         } catch (error) {
-            console.error('❌ Error reemplazando imágenes:', error);
+            console.error('❌ Error en procesamiento limpio:', error);
+            processedContent = content;
         }
         
-        return updatedContent;
+        return processedContent;
     }
+
     
-    function createPreviewHTML() {
-        // Obtener datos básicos de forma segura
-        const hospitalName = 'Hospital Central';
-        const noteTitle = 'NOTA DE EVOLUCIÓN MÉDICA';
-        const patientName = 'Carlos García Mendoza';
-        const hc = 'HC-2024-001234';
-        const edad = '58 años';
-        const sexo = 'Masculino';
-        const cama = '101A';
-        const servicio = 'Medicina Interna';
-        const diagnostico = 'Diabetes Mellitus Tipo 2 + Hipertensión Arterial';
+    function createWordStylePreviewHTML() {
+
+        const patientData = extractPatientData();
+        const doctorData = extractDoctorData();
         
-        // Obtener contenido del editor SIN modificarlo
-        let editorContent = document.getElementById('medicalNoteEditor')?.innerHTML || '<p>Sin contenido</p>';
+        let editorContent = document.getElementById('medicalNoteEditor')?.innerHTML || '<p>Sin contenido en la nota médica.</p>';
         
-        // CAPTURAR IMÁGENES Y FIRMA de forma segura
         const capturedImages = captureImagesFromEditor();
-        const signatureImage = captureSignatureImage();
+        const signatureData = captureSignatureImage();
         
-        // Reemplazar referencias en el contenido
-        editorContent = replaceImagesInContent(editorContent, capturedImages);
+        editorContent = processContentForPreview(editorContent, capturedImages);
         
-        // Crear fecha actual
         const now = new Date();
-        const fecha = now.toLocaleDateString('es-ES');
-        const hora = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        const fecha = now.toLocaleDateString('es-ES', { 
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric'
+        }).replace(/\//g, '/');
+        const hora = now.toLocaleTimeString('es-ES', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+        }).replace(':', '');
         
-        return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vista Previa - Nota Médica</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 1.5cm;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 11px;
-            line-height: 1.3;
-            color: #333;
-            background: white;
-            margin: 0;
-            padding: 15px;
-            border: 2px solid #2c5aa0;
-            min-height: 26cm;
-            box-sizing: border-box;
-        }
-        
-        /* Numeración de líneas estilo Word */
-        .content-area {
-            counter-reset: line-number;
-            position: relative;
-            padding-left: 35px;
-            margin: 15px 0;
-        }
-        
-        .content-area p,
-        .content-area div:not(.signature-container),
-        .content-area table,
-        .content-area ul,
-        .content-area hr {
-            counter-increment: line-number;
-            position: relative;
-            margin: 8px 0;
-        }
-        
-        .content-area p::before,
-        .content-area div:not(.signature-container)::before,
-        .content-area table::before,
-        .content-area ul::before,
-        .content-area hr::before {
-            content: counter(line-number);
-            position: absolute;
-            left: -30px;
-            width: 25px;
-            text-align: right;
-            color: #999;
-            font-size: 9px;
-            font-family: monospace;
-        }
-        
-        /* Header */
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #2c5aa0;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .header h1 {
-            color: #2c5aa0;
-            font-size: 16px;
-            margin: 0 0 5px 0;
-        }
-        
-        .header h2 {
-            color: #2c5aa0;
-            font-size: 14px;
-            margin: 8px 0 0 0;
-        }
-        
-        /* Datos del paciente */
-        .patient-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 12px;
-            padding: 8px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            font-size: 10px;
-        }
-        
-        .patient-info div {
-            padding: 2px 0;
-        }
-        
-        .patient-info strong {
-            color: #2c5aa0;
-        }
-        
-        .patient-info .full-width {
-            grid-column: 1 / -1;
-        }
-        
-        /* Signos vitales */
-        .vital-signs {
-            background-color: #e8f4fd;
-            border: 1px solid #2c5aa0;
-            border-radius: 3px;
-            padding: 8px;
-            margin-bottom: 12px;
-            font-size: 10px;
-        }
-        
-        .vital-signs h3 {
-            color: #2c5aa0;
-            font-size: 11px;
-            margin: 0 0 5px 0;
-        }
-        
-        /* Contenido principal - estilos para elementos comunes */
-        .main-content img {
-            max-width: 100% !important;
-            height: auto !important;
-            border: 1px solid #ddd;
-            margin: 5px 0;
-        }
-        
-        .main-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 8px 0;
-        }
-        
-        .main-content table td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            vertical-align: top;
-            font-size: 10px;
-        }
-        
-        .main-content table img {
-            max-width: 150px !important;
-            height: auto !important;
-        }
-        
-        .main-content ul {
-            margin: 8px 0;
-            padding-left: 15px;
-        }
-        
-        .main-content hr {
-            border: none;
-            border-top: 1px solid #2c5aa0;
-            margin: 10px 0;
-        }
-        
-        /* Firma */
-        .signature-area {
-            position: fixed;
-            bottom: 30px;
-            right: 20px;
-            left: 20px;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-            background: white;
-        }
-        
-        .signature-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: end;
-        }
-        
-        .doctor-info {
-            font-size: 9px;
-            color: #666;
-        }
-        
-        .signature-box {
-            text-align: center;
-            border: 1px solid #ddd;
-            padding: 15px;
-            background-color: #fafafa;
-            min-width: 180px;
-        }
-        
-        .signature-line {
-            width: 150px;
-            border-bottom: 1px solid #333;
-            margin: 20px auto 5px auto;
-        }
-        
-        /* Botones de acción */
-        .actions {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 1000;
-            background: white;
-            padding: 8px;
-            border-radius: 5px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .actions button {
-            margin: 0 3px;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-        
-        .btn-print {
-            background-color: #27ae60;
-            color: white;
-        }
-        
-        .btn-close {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        @media print {
-            .actions {
-                display: none !important;
+        return `<!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nota Médica - ${patientData.patientName}</title>
+        <style>
+            /* 🔧 VARIABLES CSS SIMPLIFICADAS */
+            :root {
+                --zoom-scale: 1;
+                --page-width: 21cm;
+                --page-height: 29.7cm;
+                --margin: 2cm;
+            }
+            
+            /* 📏 RESET BÁSICO */
+            * { 
+                margin: 0; 
+                padding: 0; 
+                box-sizing: border-box; 
+            }
+            
+            html {
+                width: 100%;
+                height: 100%;
             }
             
             body {
-                border: 2px solid #2c5aa0;
+                font-family: 'Times New Roman', serif;
+                font-size: 12px;
+                line-height: 1.4;
+                color: #000;
+                background: #e5e5e5;
+                padding: 20px;
+                width: 100%;
+                min-height: 100vh;
+                /* 🔥 NO OVERFLOW HIDDEN - PERMITE VER TODO */
+                overflow-x: auto;
+                overflow-y: auto;
+                transform-origin: top left;
+                transform: scale(var(--zoom-scale));
+            }
+            
+            /* 📄 CONTENEDOR PRINCIPAL */
+            .page-container {
+                width: var(--page-width);
+                margin: 0 auto;
+                position: relative;
+                /* 🔥 SIN RESTRICCIONES DE OVERFLOW */
+            }
+            
+            /* 📄 DOCUMENTO A4 */
+            .document {
+                width: 100%;
+                min-height: var(--page-height);
+                background: white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+                padding: var(--margin);
+                position: relative;
+                border-radius: 2px;
+                /* 🔥 PERMITIR CONTENIDO LARGO SIN RESTRICCIONES */
+                overflow: visible;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            /* 👤 CABECERA DATOS PACIENTE */
+            .patient-header {
+                margin-bottom: 15px;
+                font-style: italic;
+                width: 100%;
+                /* 🔥 SIN RESTRICCIONES */
+            }
+            
+            .patient-line {
+                margin-bottom: 3px;
+                font-size: 13px;
+                line-height: 1.4;
+                /* 🔥 PERMITIR WRAP NATURAL */
+                word-break: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            /* 📝 CONTENIDO MÉDICO - SIN RESTRICCIONES */
+            .medical-content {
+                font-size: 12px;
+                line-height: 1.6;
+                text-align: justify;
+                font-style: italic;
+                width: 100%;
+                margin-bottom: 20px;
+                background: white;
+                border: none;
+                padding: 0;
+                /* 🔥 MOSTRAR TODO EL CONTENIDO SIN OCULTAR */
+                overflow: visible;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            .medical-content p {
+                margin-bottom: 8px;
+                width: 100%;
+                /* 🔥 SIN RESTRICCIONES DE ALTURA */
+            }
+            
+            /* 🖼️ IMÁGENES SIN RESTRICCIONES */
+            .medical-content img {
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                margin: 10px 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                height: auto !important;
+                display: block;
+            }
+            
+            /* 📊 TABLAS SIN RESTRICCIONES */
+            .medical-content table {
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                margin: 10px 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                width: 100% !important;
+                border-collapse: collapse;
+                /* 🔥 TABLA NORMAL SIN FIXED LAYOUT */
+                table-layout: auto;
+            }
+            
+            .medical-content table td,
+            .medical-content table th {
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 8px !important;
+                background: transparent !important;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                vertical-align: top;
+                /* 🔥 SIN RESTRICCIONES DE ANCHO */
+            }
+            
+            /* ✍️ FIRMA MÉDICO */
+            .doctor-signature {
+                font-size: 14px;
+                line-height: 1.4;
+                float: right;
+                clear: both;
+                margin-top: 20px;
+                text-align: center;
+                position: relative;
+                width: 200px;
+            }
+            
+            .signature-image {
+                display: block;
+                max-width: 100%;
+                height: auto;
+                margin: 0 auto 10px auto;
+            }
+            
+            .signature-line {
+                border-top: 2px solid #000;
+                width: 100%;
+                margin: 0 auto 10px auto;
+            }
+            
+            .doctor-name {
+                font-weight: bold;
+                margin-bottom: 5px;
+                font-style: normal;
+                font-size: 14px;
+            }
+            
+            .doctor-specialty {
+                margin-bottom: 5px;
+                font-style: italic;
+                font-size: 13px;
+            }
+            
+            .doctor-cmp {
+                font-size: 12px;
+                font-style: normal;
+            }
+            
+            /* 🔧 CONTROLES FLOTANTES */
+            .zoom-controls {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                background: rgba(0,0,0,0.8);
                 padding: 10px;
+                border-radius: 8px;
             }
             
-            .signature-area {
-                position: absolute;
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: bold;
+                color: white;
+                background: #3498db;
+                transition: all 0.2s ease;
             }
-        }
-    </style>
-</head>
-<body>
-    <div class="actions">
-        <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
-        <button class="btn-close" onclick="window.close()">❌ Cerrar</button>
-    </div>
-
-    <!-- Header -->
-    <div class="header">
-        <h1>${hospitalName}</h1>
-        <div style="font-size: 9px; color: #666;">Av. Hospitales 123 - Telef. 01-2016500</div>
-        <h2>${noteTitle}</h2>
-        <div style="font-size: 9px; color: #666;">N° NE2024010001 - 01/01/2024</div>
-    </div>
-
-    <!-- Datos del paciente -->
-    <div class="patient-info">
-        <div><strong>PACIENTE:</strong> ${patientName}</div>
-        <div><strong>HC:</strong> ${hc}</div>
-        <div><strong>EDAD:</strong> ${edad}</div>
-        <div><strong>SEXO:</strong> ${sexo}</div>
-        <div><strong>CAMA:</strong> ${cama}</div>
-        <div><strong>SERVICIO:</strong> ${servicio}</div>
-        <div class="full-width"><strong>DIAGNÓSTICO:</strong> ${diagnostico}</div>
-    </div>
-
-    <!-- Signos vitales -->
-    <div class="vital-signs">
-        <h3>📊 SIGNOS VITALES ACTUALES - 14:30</h3>
-        <div>PA: 140/90 mmHg &nbsp;&nbsp; FC: 78 lpm &nbsp;&nbsp; FR: 18 rpm &nbsp;&nbsp; T°: 36.8°C &nbsp;&nbsp; SpO2: 98%</div>
-    </div>
-
-    <!-- Contenido principal con numeración -->
-    <div class="content-area">
-        <div class="main-content">
-            ${editorContent}
-        </div>
-    </div>
-
-    <!-- Firma -->
-    <div class="signature-area">
-        <div class="signature-container">
-            <div class="doctor-info">
-                <p><strong>Fecha:</strong> ${fecha}</p>
-                <p><strong>Hora:</strong> ${hora}</p>
-                <p><strong>Médico:</strong> Dr. Alan Cairampoma Carrillo</p>
-                <p><strong>CMP:</strong> 12345</p>
-                <p><strong>Especialidad:</strong> Medicina Interna</p>
-            </div>
             
-            <div class="signature-box">
-                ${signatureImage ? 
-                    `<img src="${signatureImage}" style="max-width: 150px; height: auto; margin: 5px 0;">
-                     <div class="signature-line"></div>
-                     <div style="font-size: 9px; color: #666;">Firma Digital</div>` :
-                    `<div style="height: 40px; color: #999; font-size: 9px; padding-top: 15px;">📝 Sin firma</div>
-                     <div class="signature-line"></div>
-                     <div style="font-size: 9px; color: #666;">Firma Digital</div>`
+            .zoom-btn:hover {
+                background: #2980b9;
+                transform: translateY(-2px);
+            }
+            
+            .zoom-indicator {
+                color: white;
+                text-align: center;
+                font-size: 12px;
+                padding: 2px;
+                background: rgba(255,255,255,0.2);
+                border-radius: 4px;
+            }
+            
+            .actions {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                display: flex;
+                gap: 10px;
+            }
+            
+            .action-btn {
+                padding: 10px 15px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: bold;
+                color: white;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                transition: all 0.2s ease;
+            }
+            
+            .btn-print {
+                background: linear-gradient(135deg, #27ae60, #2ecc71);
+            }
+            
+            .btn-close {
+                background: linear-gradient(135deg, #e74c3c, #c0392b);
+            }
+            
+            .action-btn:hover { 
+                transform: translateY(-2px); 
+            }
+            
+            /* 📱 RESPONSIVE PARA MÓVILES */
+            @media (max-width: 900px) {
+                body {
+                    padding: 10px;
                 }
+                
+                .page-container {
+                    width: 100%;
+                }
+                
+                .document {
+                    padding: 1cm;
+                }
+                
+                .actions, .zoom-controls {
+                    position: relative;
+                    margin-bottom: 15px;
+                    justify-content: center;
+                }
+                
+                .zoom-controls {
+                    flex-direction: row;
+                    background: transparent;
+                    padding: 0;
+                }
+                
+                .doctor-signature {
+                    float: none;
+                    margin: 30px auto 0 auto;
+                    width: 100%;
+                    max-width: 200px;
+                }
+            }
+            
+            /* 🖨️ IMPRESIÓN EXACTA */
+            @media print {
+                body {
+                    background: white;
+                    padding: 0;
+                    transform: none !important;
+                    overflow: visible;
+                }
+                
+                .page-container {
+                    width: 100%;
+                    transform: none;
+                }
+                
+                .document {
+                    box-shadow: none;
+                    border: none;
+                    margin: 0;
+                    padding: 2cm;
+                    width: 100%;
+                }
+                
+                .actions, .zoom-controls {
+                    display: none !important;
+                }
+                
+                .patient-line, .medical-content {
+                    font-size: 12px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 🎯 CONTROLES DE ZOOM MEJORADOS -->
+        <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomOut()" title="Reducir zoom">−</button>
+            <div class="zoom-indicator" id="zoomLevel">100%</div>
+            <button class="zoom-btn" onclick="zoomIn()" title="Aumentar zoom">+</button>
+            <button class="zoom-btn" onclick="resetZoom()" title="Zoom original">⌂</button>
+        </div>
+    
+        <div class="actions">
+            <button class="action-btn btn-print" onclick="window.print()">🖨️ Imprimir</button>
+            <button class="action-btn btn-close" onclick="window.close()">✕ Cerrar</button>
+        </div>
+    
+        <div class="page-container" id="pageContainer">
+            <div class="document">
+                <!-- CABECERA DATOS PACIENTE -->
+                <div class="patient-header">
+                    <div class="patient-line">
+                        <strong>Fecha:</strong> ${fecha} &nbsp;&nbsp;&nbsp; <strong>Hora:</strong> ${hora} &nbsp;&nbsp;&nbsp; <strong>HC:</strong> ${patientData.hc} &nbsp;&nbsp;&nbsp; <strong>Paciente:</strong> ${patientData.patientName} &nbsp;&nbsp;&nbsp; <strong>Edad:</strong> ${patientData.edad} &nbsp;&nbsp;&nbsp; <strong>Sexo:</strong> ${patientData.sexo} &nbsp;&nbsp;&nbsp; <strong>Cama:</strong> ${patientData.cama}
+                    </div>
+                    <div class="patient-line">
+                        <strong>Servicio:</strong> ${patientData.servicio} &nbsp;&nbsp;&nbsp; <strong>Diagnóstico:</strong> ${patientData.diagnostico}
+                    </div>
+                </div>
+                
+                <!-- CONTENIDO MÉDICO - TODO VISIBLE -->
+                <div class="medical-content">
+                    ${editorContent}
+                </div>
+                
+                <!-- FIRMA MÉDICO -->
+                <div class="doctor-signature">
+                    ${signatureData ? 
+                        `<img src="${signatureData.src}" class="signature-image" alt="Firma digital">` : 
+                        ''
+                    }
+                    <div class="signature-line"></div>
+                    <div class="doctor-name">${doctorData.doctorName}</div>
+                    <div class="doctor-specialty">${doctorData.specialty}</div>
+                    <div class="doctor-cmp">CMP: ${doctorData.cmp}</div>
+                </div>
             </div>
         </div>
-    </div>
+    
+        <script>
+            let currentZoom = 1;
+            
+            function zoomIn() {
+                currentZoom = Math.min(3, currentZoom + 0.1);
+                applyZoom();
+            }
+            
+            function zoomOut() {
+                currentZoom = Math.max(0.3, currentZoom - 0.1);
+                applyZoom();
+            }
+            
+            function resetZoom() {
+                currentZoom = 1;
+                applyZoom();
+            }
+            
+            function applyZoom() {
+                // 🔥 USAR TRANSFORM SCALE SIMPLE - NO CAMBIAR LAYOUT
+                const body = document.body;
+                body.style.transform = \`scale(\${currentZoom})\`;
+                
+                // Actualizar indicador
+                const indicator = document.getElementById('zoomLevel');
+                indicator.textContent = Math.round(currentZoom * 100) + '%';
+                
+                console.log('🔍 Zoom aplicado:', Math.round(currentZoom * 100) + '%');
+            }
+            
+            // 🖱️ Zoom con rueda del ratón + Ctrl
+            document.addEventListener('wheel', function(e) {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    if (e.deltaY > 0) {
+                        zoomOut();
+                    } else {
+                        zoomIn();
+                    }
+                }
+            });
+            
+            // ⌨️ Atajos de teclado
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey) {
+                    if (e.key === '+' || e.key === '=') {
+                        e.preventDefault();
+                        zoomIn();
+                    } else if (e.key === '-') {
+                        e.preventDefault();
+                        zoomOut();
+                    } else if (e.key === '0') {
+                        e.preventDefault();
+                        resetZoom();
+                    } else if (e.key === 'p') {
+                        e.preventDefault();
+                        window.print();
+                    }
+                }
+                if (e.key === 'Escape') {
+                    window.close();
+                }
+            });
+            
+            // 📱 Zoom por gestos táctiles (móvil)
+            let initialDistance = 0;
+            let isZooming = false;
+            
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    isZooming = true;
+                    initialDistance = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('touchmove', function(e) {
+                if (isZooming && e.touches.length === 2) {
+                    const currentDistance = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                    
+                    const delta = (currentDistance - initialDistance) / 100;
+                    currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta));
+                    applyZoom();
+                    
+                    initialDistance = currentDistance;
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('touchend', function(e) {
+                if (e.touches.length < 2) {
+                    isZooming = false;
+                }
+            });
+            
+            // 🚀 Inicialización
+            window.onload = function() {
+                console.log('📄 Vista previa con contenido completo cargada');
+                document.title = 'Nota Médica - ${patientData.patientName}';
+                
+                // Verificar que todo el contenido está visible
+                const content = document.querySelector('.medical-content');
+                console.log('📝 Contenido detectado:', {
+                    textLength: content ? content.textContent.length : 0,
+                    hasImages: content ? content.querySelectorAll('img').length : 0,
+                    hasTables: content ? content.querySelectorAll('table').length : 0
+                });
+            };
+        </script>
+    </body>
+    </html>`;
+    }
 
-    <script>
-        window.onload = function() {
-            console.log('📄 Vista previa cargada correctamente');
-        };
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'p') {
-                e.preventDefault();
-                window.print();
+
+    
+    function extractPatientData() {
+        // 📋 EXTRAER DATOS REALES DEL LOCALSTORAGE
+        try {
+            const currentPatientData = JSON.parse(localStorage.getItem('currentPatientData') || '{}');
+            const userCompleto = JSON.parse(localStorage.getItem('userCompleto') || '{}');
+            
+            console.log('📊 Datos extraídos:', { currentPatientData, userCompleto });
+            
+            return {
+                // 🏥 HOSPITAL
+                hospitalName: currentPatientData.hospital?.name || 'Hospital Central San José',
+                hospitalAddress: currentPatientData.hospital?.address || 'Av. Angamos Este 2520, Surquillo, Lima',
+                hospitalPhone: currentPatientData.hospital?.phone || '(01) 2016500',
+                
+                // 📄 DOCUMENTO
+                documentNumber: currentPatientData.numero_cuenta || 'NE' + new Date().getFullYear() + '010001',
+                
+                // 👤 PACIENTE
+                patientName: currentPatientData.fullName || currentPatientData.firstName + ' ' + currentPatientData.lastName || 'Paciente Anónimo',
+                hc: currentPatientData.medicalRecord || currentPatientData.patientId || '000000',
+                edad: currentPatientData.age || 'N/A',
+                sexo: currentPatientData.gender === 'Femenino' ? 'F' : currentPatientData.gender === 'Masculino' ? 'M' : currentPatientData.gender || 'N/A',
+                cama: currentPatientData.bedNumber || 'N/A',
+                servicio: currentPatientData.attendingPhysician || currentPatientData.specialty || 'Medicina',
+                
+                // 🩺 DIAGNÓSTICO CON CIE-10
+                diagnostico: currentPatientData.diagnosisCode && currentPatientData.primaryDiagnosis ? 
+                    `${currentPatientData.diagnosisCode} - ${currentPatientData.primaryDiagnosis}` : 
+                    currentPatientData.primaryDiagnosis || 'Sin diagnóstico',
+                
+                // 📅 DATOS ADICIONALES
+                dni: currentPatientData.dni || currentPatientData.patientId || 'N/A',
+                admissionDate: currentPatientData.admissionDate || new Date().toISOString().split('T')[0],
+                allergies: currentPatientData.allergies || 'No reporta'
+            };
+        } catch (error) {
+            console.warn('⚠️ Error extrayendo datos del localStorage:', error);
+            // 🔄 DATOS DE FALLBACK
+            return {
+                hospitalName: 'Hospital Central San José',
+                hospitalAddress: 'Av. Angamos Este 2520, Surquillo, Lima',
+                hospitalPhone: '(01) 2016500',
+                documentNumber: 'NE' + new Date().getFullYear() + '010001',
+                patientName: 'Paciente Anónimo',
+                hc: '000000',
+                edad: 'N/A',
+                sexo: 'N/A',
+                cama: 'N/A',
+                servicio: 'Medicina',
+                diagnostico: 'Sin diagnóstico',
+                dni: 'N/A',
+                admissionDate: new Date().toISOString().split('T')[0],
+                allergies: 'No reporta'
+            };
+        }
+    }
+    
+    function extractDoctorData() {
+        // 👨‍⚕️ EXTRAER DATOS REALES DEL MÉDICO DEL LOCALSTORAGE
+        try {
+            const userCompleto = JSON.parse(localStorage.getItem('userCompleto') || '{}');
+            const currentPatientData = JSON.parse(localStorage.getItem('currentPatientData') || '{}');
+            
+            // Parsear datos profesionales si existen
+            let datosProfesional = {};
+            if (userCompleto.datosProfesional) {
+                try {
+                    datosProfesional = JSON.parse(userCompleto.datosProfesional);
+                } catch (e) {
+                    datosProfesional = userCompleto.datosProfesional_parsed || {};
+                }
             }
-            if (e.key === 'Escape') {
-                window.close();
-            }
-        });
-    </script>
-</body>
-</html>`;
+            
+            return {
+                doctorName: `Dr. ${userCompleto.firstName || ''} ${userCompleto.lastName || ''}`.trim() || 
+                           currentPatientData.doctor?.name || 'Dr. Médico Tratante',
+                specialty: datosProfesional.especialidad_principal || 
+                          currentPatientData.doctor?.specialty || 
+                          userCompleto.specialty || 'Medicina Interna',
+                cmp: datosProfesional.cmp || '65382',
+                areaWork: datosProfesional.area_trabajo || 'Hospitalización',
+                tipo: datosProfesional.tipo || 'MED'
+            };
+        } catch (error) {
+            console.warn('⚠️ Error extrayendo datos del médico:', error);
+            // 🔄 DATOS DE FALLBACK
+            return {
+                doctorName: 'Dr. Médico Tratante',
+                specialty: 'Medicina Interna',
+                cmp: '65382',
+                areaWork: 'Hospitalización',
+                tipo: 'MED'
+            };
+        }
     }
     
     function openPreviewWindow(htmlContent) {
         try {
-            const width = 800;
-            const height = 900;
+            const width = 1000;
+            const height = 1200;
             const left = Math.max(0, (screen.width - width) / 2);
             const top = Math.max(0, (screen.height - height) / 2);
             
             const previewWindow = window.open('', '_blank', 
-                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,status=no`);
+                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,status=no,location=no`);
             
             if (!previewWindow) {
-                alert('⚠️ El navegador bloqueó la ventana emergente.\n\nPermita ventanas emergentes para esta página.');
+                alert('⚠️ Ventana bloqueada. Permite ventanas emergentes e intenta nuevamente.');
                 return;
             }
             
             previewWindow.document.write(htmlContent);
             previewWindow.document.close();
+            previewWindow.document.title = 'Vista Previa - Nota Médica';
             previewWindow.focus();
             
-            console.log('✅ Ventana de previsualización abierta');
+            console.log('✅ Vista previa estilo Word generada exitosamente');
             
         } catch (error) {
-            console.error('❌ Error abriendo ventana de previsualización:', error);
-            alert('Error al abrir la vista previa. Verifique que las ventanas emergentes estén permitidas.');
+            console.error('❌ Error abriendo vista previa:', error);
+            alert('❌ Error generando vista previa. Revisa la consola.');
         }
     }
     
-    console.log('✅ Sistema de previsualización SEGURA configurado');
+    console.log('✅ Sistema de previsualización ESTILO WORD configurado');
 }
 
 // ===== FUNCIÓN: CONFIGURAR GRABADORA DE VOZ =====
