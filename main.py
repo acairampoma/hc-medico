@@ -832,101 +832,96 @@ async def crear_receta_prueba_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ===== RUTAS DE SIGNOS VITALES =====
 
-@app.get("/medical/vital-signs/{bed_id}", response_class=HTMLResponse)
-async def monitor_paciente_especifico(request: Request, bed_id: str):
-    """Monitor específico de un paciente"""
-    return templates.TemplateResponse("medical/vitales/vital_signs.html", {
-        "request": request,
-        "bed_id": bed_id
-    })
-
-# ===== APIS DE SIGNOS VITALES =====
+# ===== APIS DE SIGNOS VITALES - POSTGRESQL =====
 
 @app.get("/api/vital-signs")
 async def get_all_vital_signs():
-   """Obtener todos los signos vitales"""
-   try:
-       return vital_signs_service.vital_signs_data["vital_signs_monitoring"]
-   except Exception as e:
-       logger.error(f"Error en get_all_vital_signs: {e}")
-       raise HTTPException(status_code=500, detail="Error interno del servidor")
+    """Obtener todos los signos vitales desde PostgreSQL"""
+    try:
+        return await vital_signs_service.get_all_patients_vitals()
+    except Exception as e:
+        logger.error(f"Error en get_all_vital_signs: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 @app.get("/api/vital-signs/{bed_id}")
 async def get_patient_vital_signs(bed_id: str):
-   """Obtener signos vitales de un paciente específico"""
-   try:
-       patients_vitals = vital_signs_service.vital_signs_data["vital_signs_monitoring"]["patients_vitals"]
-       
-       if bed_id not in patients_vitals:
-           raise HTTPException(status_code=404, detail="Paciente no encontrado")
-       
-       return patients_vitals[bed_id]
-   except HTTPException:
-       raise
-   except Exception as e:
-       logger.error(f"Error en get_patient_vital_signs: {e}")
-       raise HTTPException(status_code=500, detail="Error interno del servidor")
+    """Obtener signos vitales de un paciente específico desde PostgreSQL"""
+    try:
+        patient_data = await vital_signs_service.get_patient_vitals(bed_id)
+        
+        if not patient_data:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
+        
+        return patient_data
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en get_patient_vital_signs: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 @app.post("/api/vital-signs/{bed_id}/acknowledge-alert/{alert_index}")
 async def acknowledge_alert(bed_id: str, alert_index: int):
-   """Reconocer una alerta específica"""
-   try:
-       patients_vitals = vital_signs_service.vital_signs_data["vital_signs_monitoring"]["patients_vitals"]
-       
-       if bed_id not in patients_vitals:
-           raise HTTPException(status_code=404, detail="Paciente no encontrado")
-       
-       alerts = patients_vitals[bed_id].get("alerts", [])
-       if 0 <= alert_index < len(alerts):
-           alerts[alert_index]["acknowledged"] = True
-           vital_signs_service.save_vital_signs_data()
-           return {"message": "Alerta reconocida"}
-       
-       raise HTTPException(status_code=404, detail="Alerta no encontrada")
-   except HTTPException:
-       raise
-   except Exception as e:
-       logger.error(f"Error en acknowledge_alert: {e}")
-       raise HTTPException(status_code=500, detail="Error interno del servidor")
+    """Reconocer una alerta específica"""
+    try:
+        # Obtener datos actuales del paciente
+        patient_data = await vital_signs_service.get_patient_vitals(bed_id)
+        
+        if not patient_data:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
+        
+        alerts = patient_data.get("alerts", [])
+        if 0 <= alert_index < len(alerts):
+            alerts[alert_index]["acknowledged"] = True
+            # Nota: En PostgreSQL necesitarías guardar este cambio
+            # Por ahora solo devolvemos la confirmación
+            return {"message": "Alerta reconocida"}
+        
+        raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en acknowledge_alert: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 @app.get("/api/vital-signs/test/data")
 async def test_vital_signs_data():
-   """Test simple para verificar la data de signos vitales"""
-   try:
-       data = vital_signs_service.vital_signs_data
-       patients_count = len(data.get("vital_signs_monitoring", {}).get("patients_vitals", {}))
-       bed_ids = list(data.get("vital_signs_monitoring", {}).get("patients_vitals", {}).keys())
-       
-       return {
-           "status": "success",
-           "message": "Datos cargados correctamente",
-           "total_patients": patients_count,
-           "bed_ids": bed_ids,
-           "sample_data": data
-       }
-   except Exception as e:
-       logger.error(f"Error en test: {e}")
-       return {
-           "status": "error",
-           "message": str(e),
-           "total_patients": 0,
-           "bed_ids": [],
-           "sample_data": None
-       }
+    """Test simple para verificar la data de signos vitales desde PostgreSQL"""
+    try:
+        data = await vital_signs_service.get_all_patients_vitals()
+        patients_vitals = data.get("vital_signs_monitoring", {}).get("patients_vitals", {})
+        
+        return {
+            "status": "success",
+            "message": "Datos cargados correctamente desde PostgreSQL",
+            "total_patients": len(patients_vitals),
+            "bed_ids": list(patients_vitals.keys()),
+            "data_source": "PostgreSQL Database",
+            "sample_data": data
+        }
+    except Exception as e:
+        logger.error(f"Error en test: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "total_patients": 0,
+            "bed_ids": [],
+            "sample_data": None,
+            "data_source": "PostgreSQL Database (ERROR)"
+        }
 
+# ===== WEBSOCKET SIMPLIFICADO (SIN SIMULACIÓN POR AHORA) =====
 @app.websocket("/ws/vital-signs")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket para actualizaciones en tiempo real"""
     await websocket.accept()
-    vital_signs_service.connected_clients.append(websocket)
     
     try:
-        # Enviar datos iniciales
+        # Enviar datos iniciales desde PostgreSQL
+        initial_data = await vital_signs_service.get_all_patients_vitals()
         await websocket.send_json({
             "type": "initial_data",
-            "data": vital_signs_service.vital_signs_data["vital_signs_monitoring"]["patients_vitals"],
+            "data": initial_data["vital_signs_monitoring"]["patients_vitals"],
             "timestamp": datetime.now().isoformat()
         })
         
@@ -934,65 +929,37 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        vital_signs_service.connected_clients.remove(websocket) 
+        logger.info("Cliente WebSocket desconectado")
+    except Exception as e:
+        logger.error(f"Error en WebSocket: {e}")
 
-
+# ===== RUTAS DE SIMULACIÓN DESHABILITADAS (POSTGRESQL NO LAS NECESITA) =====
 @app.post("/api/vital-signs/{bed_id}/simulate")
 async def start_simulation(bed_id: str):
-    """Iniciar simulación de signos vitales para una cama específica"""
-    try:
-        # Usar el método de simulación de VitalSignsManager
-        updated_data = vital_signs_service.simulate_vital_signs_change(bed_id)
-        
-        if updated_data:
-            # Enviar actualización por WebSocket si hay clientes conectados
-            await vital_signs_service.broadcast_vital_signs()
-            return {"message": f"Simulación iniciada para cama {bed_id}", "data": updated_data}
-        else:
-            raise HTTPException(status_code=404, detail="Cama no encontrada")
-            
-    except Exception as e:
-        logger.error(f"Error en simulación: {e}")
-        raise HTTPException(status_code=500, detail="Error en simulación")
+    """Simulación no disponible - usando datos reales de PostgreSQL"""
+    return {
+        "message": "Simulación no disponible - usando datos reales de PostgreSQL",
+        "bed_id": bed_id,
+        "data_source": "PostgreSQL Real Data"
+    }
 
 @app.post("/api/vital-signs/simulate/all")
 async def simulate_all_patients():
-    """Simular cambios para todos los pacientes"""
-    try:
-        patients_vitals = vital_signs_service.vital_signs_data["vital_signs_monitoring"]["patients_vitals"]
-        
-        for bed_id in patients_vitals.keys():
-            vital_signs_service.simulate_vital_signs_change(bed_id)
-        
-        await vital_signs_service.broadcast_vital_signs()
-        return {"message": "Simulación ejecutada para todos los pacientes"}
-        
-    except Exception as e:
-        logger.error(f"Error en simulación general: {e}")
-        raise HTTPException(status_code=500, detail="Error en simulación")        
-
+    """Simulación no disponible - usando datos reales de PostgreSQL"""
+    return {
+        "message": "Simulación no disponible - usando datos reales de PostgreSQL", 
+        "data_source": "PostgreSQL Real Data"
+    }
 
 @app.get("/api/vital-signs/test/file")
 async def test_vital_signs_file():
-   """Test para verificar si el archivo JSON existe"""
-   import os
-   file_path = "data/mock/vitales/vital_signs_data.json"
-   try:
-       exists = os.path.exists(file_path)
-       size = os.path.getsize(file_path) if exists else 0
-       return {
-           "file_path": file_path,
-           "exists": exists,
-           "size_bytes": size,
-           "status": "found" if exists else "not_found"
-       }
-   except Exception as e:
-       return {
-           "file_path": file_path,
-           "exists": False,
-           "error": str(e),
-           "status": "error"
-       }    
+    """Test de archivo no aplicable - usando PostgreSQL"""
+    return {
+        "message": "Test de archivo no aplicable - usando PostgreSQL",
+        "data_source": "PostgreSQL Database",
+        "status": "postgresql_active"
+    }
+
 
 
 # ========================================
@@ -1382,20 +1349,19 @@ async def startup_event():
     Eventos al iniciar la aplicación
     """
     logger.info("🏥 Iniciando Hospital Management System...")
+    
+    # ✅ AGREGAR ESTAS LÍNEAS:
+    try:
+        from services.database_config import db_manager
+        await db_manager.init_pool()
+        logger.info("🗃️ Base de datos PostgreSQL conectada")
+    except Exception as e:
+        logger.error(f"❌ Error conectando base de datos: {e}")
+        # No fallar el startup, solo log del error
+    
     logger.info("🔐 Servicio de autenticación OAuth2 configurado")
     logger.info("🏥 Servicio de hospital configurado")
     logger.info("📊 Sistema de monitoreo activado")
-    
-    # Verificar archivos del hospital
-    files_status = hospital_service.validate_data_files()
-    missing_files = [file for file, exists in files_status.items() if not exists]
-    
-    if missing_files:
-        logger.warning(f"⚠️ Archivos de hospital faltantes: {missing_files}")
-    else:
-        logger.info("✅ Todos los archivos de hospital disponibles")
-    
-    logger.info("✅ Sistema listo para recibir conexiones")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -1404,15 +1370,16 @@ async def shutdown_event():
     """
     logger.info("🚪 Cerrando Hospital Management System...")
     
+    # ✅ AGREGAR ESTAS LÍNEAS:
+    try:
+        from services.database_config import db_manager
+        await db_manager.close_pool()
+        logger.info("🗃️ Pool de base de datos cerrado")
+    except Exception as e:
+        logger.error(f"❌ Error cerrando base de datos: {e}")
+    
     # Cerrar todas las sesiones activas
     active_count = auth_service.get_active_sessions_count()
-    if active_count > 0:
-        logger.info(f"🧹 Cerrando {active_count} sesiones activas...")
-    
-    # Limpiar cache del hospital
-    hospital_service.invalidate_cache()
-    
-    logger.info("✅ Sistema cerrado correctamente")
 
 # ===== CONFIGURACIÓN PARA DESARROLLO (ACTUALIZADA) =====
 

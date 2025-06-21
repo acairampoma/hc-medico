@@ -1,7 +1,7 @@
 /**
  * ===============================================
  * MONITOR DE SIGNOS VITALES - CANVAS NATIVO
- * Sin Chart.js - Usando canvas puro como tu ejemplo hermoso
+ * Refactorizado con datos reales + localStorage
  * Compatible con FastAPI + WebSocket + Alpine.js
  * ===============================================
  */
@@ -17,11 +17,15 @@ document.addEventListener('alpine:init', () => {
         lastUpdate: 'Nunca',
         isLoading: false,
         
+        // === DATOS DEL PACIENTE ACTUAL (LOCALSTORAGE) ===
+        currentPatientData: null,
+        userCompleto: null,
+        
         // === FILTROS ===
         selectedRoom: '',
         alertFilter: '',
         
-        // === CANVAS NATIVO (COMO TU EJEMPLO HERMOSO) ===
+        // === CANVAS NATIVO ===
         canvasCharts: {},
         vitalSignsData: {},
         updateInterval: null,
@@ -35,6 +39,9 @@ document.addEventListener('alpine:init', () => {
         // === INICIALIZACIÓN ===
         async init() {
             console.log('🏥 Iniciando Monitor de Signos Vitales con Canvas Nativo...');
+            
+            // Cargar datos del localStorage
+            this.loadLocalStorageData();
             
             await this.loadInitialData();
             this.initializeWebSocket();
@@ -52,6 +59,27 @@ document.addEventListener('alpine:init', () => {
             });
         },
         
+        // === CARGAR DATOS DEL LOCALSTORAGE ===
+        loadLocalStorageData() {
+            try {
+                // Cargar datos del paciente actual desde medical rounds
+                const currentPatientStr = localStorage.getItem('currentPatientData');
+                if (currentPatientStr) {
+                    this.currentPatientData = JSON.parse(currentPatientStr);
+                    console.log('📋 Datos del paciente actual cargados:', this.currentPatientData);
+                }
+                
+                // Cargar datos del usuario
+                const userCompletoStr = localStorage.getItem('userCompleto');
+                if (userCompletoStr) {
+                    this.userCompleto = JSON.parse(userCompletoStr);
+                    console.log('👤 Datos del usuario cargados:', this.userCompleto);
+                }
+            } catch (error) {
+                console.warn('⚠️ Error cargando datos del localStorage:', error);
+            }
+        },
+        
         // === CARGA DE DATOS ===
         async loadInitialData() {
             this.isLoading = true;
@@ -62,17 +90,28 @@ document.addEventListener('alpine:init', () => {
                 console.log('📡 Cargando datos desde:', '/api/vital-signs');
                 const response = await fetch('/api/vital-signs');
                 const data = await response.json();
+                console.log('🔍 Datos recibidos:', data);
                 
-                // Filtrar por cama si se especifica
-                if (bedNumber && data.patients_vitals[bedNumber]) {
-                    this.filteredPatients = [data.patients_vitals[bedNumber]];
-                    console.log(`🎯 Mostrando solo paciente en cama: ${bedNumber}`);
+                // ✅ CORREGIDO: Acceder a la estructura correcta
+                const patientsVitals = data.vital_signs_monitoring?.patients_vitals || {};
+                
+                // Filtrar por cama si se especifica (desde URL o localStorage)
+                const targetBedNumber = bedNumber || this.currentPatientData?.bedNumber;
+                
+                if (targetBedNumber && patientsVitals[targetBedNumber]) {
+                    this.filteredPatients = [patientsVitals[targetBedNumber]];
+                    console.log(`🎯 Mostrando solo paciente en cama: ${targetBedNumber}`);
                 } else {
-                    this.filteredPatients = Object.values(data.patients_vitals || {});
+                    this.filteredPatients = Object.values(patientsVitals);
                     console.log(`👥 Mostrando ${this.filteredPatients.length} pacientes`);
                 }
                 
-                this.patientsData = data.patients_vitals || {};
+                // ✅ CORREGIDO: Asignar datos correctamente
+                this.patientsData = patientsVitals;
+                
+                // Enriquecer datos con información del localStorage
+                this.enrichPatientsWithLocalStorageData();
+                
                 this.initializeVitalSignsData();
                 this.countTotalAlerts();
                 this.lastUpdate = this.formatTime(new Date().toISOString());
@@ -90,7 +129,74 @@ document.addEventListener('alpine:init', () => {
             }
         },
         
-        // === INICIALIZAR DATOS HISTÓRICOS (COMO TU EJEMPLO) ===
+        // === ENRIQUECER DATOS CON LOCALSTORAGE ===
+        enrichPatientsWithLocalStorageData() {
+            if (!this.currentPatientData) return;
+            
+            // Buscar el paciente que coincida con los datos del localStorage
+            const targetBed = this.currentPatientData.bedNumber;
+            const targetDni = this.currentPatientData.dni || this.currentPatientData.patientId;
+            
+            // Enriquecer datos del paciente si existe en los signos vitales
+            if (this.patientsData[targetBed]) {
+                const patient = this.patientsData[targetBed];
+                
+                // Actualizar información del paciente con datos más completos
+                patient.patient_info = {
+                    ...patient.patient_info,
+                    // Datos más completos del localStorage
+                    name: this.currentPatientData.fullName || patient.patient_info.name,
+                    age: this.currentPatientData.age || patient.patient_info.age,
+                    gender: this.mapGender(this.currentPatientData.gender) || patient.patient_info.gender,
+                    document_number: targetDni || patient.patient_info.document_number,
+                    admission_date: this.currentPatientData.admissionDate || patient.patient_info.admission_date,
+                    attending_physician: this.formatPhysicianName(),
+                    specialty: this.currentPatientData.specialty || patient.patient_info.specialty,
+                    diagnosis: this.formatDiagnosis(),
+                    // Datos adicionales del localStorage
+                    medical_record: this.currentPatientData.medicalRecord,
+                    allergies: this.currentPatientData.allergies,
+                    numero_cuenta: this.currentPatientData.numero_cuenta,
+                    hospitalizacion_id: this.currentPatientData.hospitalizacion_id,
+                    hospital_info: this.currentPatientData.hospital
+                };
+                
+                console.log('✅ Datos del paciente enriquecidos:', patient.patient_info);
+            }
+        },
+        
+        // === MAPEAR GÉNERO ===
+        mapGender(gender) {
+            if (!gender) return 'M';
+            const genderLower = gender.toLowerCase();
+            if (genderLower.includes('femen') || genderLower === 'f') return 'F';
+            if (genderLower.includes('mascul') || genderLower === 'm') return 'M';
+            return gender;
+        },
+        
+        // === FORMATEAR NOMBRE DEL MÉDICO ===
+        formatPhysicianName() {
+            if (this.userCompleto && this.userCompleto.firstName && this.userCompleto.lastName) {
+                return `Dr. ${this.userCompleto.firstName} ${this.userCompleto.lastName}`;
+            }
+            if (this.currentPatientData?.doctor?.name) {
+                return `Dr. ${this.currentPatientData.doctor.name}`;
+            }
+            return "Dr. Sistema HL7";
+        },
+        
+        // === FORMATEAR DIAGNÓSTICO ===
+        formatDiagnosis() {
+            if (this.currentPatientData?.diagnosisCode && this.currentPatientData?.primaryDiagnosis) {
+                return `${this.currentPatientData.diagnosisCode} - ${this.currentPatientData.primaryDiagnosis}`;
+            }
+            if (this.currentPatientData?.primaryDiagnosis) {
+                return this.currentPatientData.primaryDiagnosis;
+            }
+            return "En evaluación médica";
+        },
+        
+        // === INICIALIZAR DATOS HISTÓRICOS ===
         initializeVitalSignsData() {
             this.filteredPatients.forEach(patient => {
                 const bedId = patient.patient_info.bed;
@@ -159,18 +265,18 @@ document.addEventListener('alpine:init', () => {
         
         getVariationForVital(vitalType) {
             const variations = {
-                heartRate: 8,      // ±8 bpm (más variación para alertas)
-                systolic: 12,      // ±12 mmHg (puede triggear crisis hipertensiva)
+                heartRate: 8,      // ±8 bpm
+                systolic: 12,      // ±12 mmHg
                 diastolic: 8,      // ±8 mmHg
-                oxygenSat: 3,      // ±3% (puede bajar a <90%)
-                temperature: 0.8,  // ±0.8°C (puede subir a >39°C)
-                respiratoryRate: 5, // ±5 rpm (puede triggear taquipnea)
-                painScale: 2       // ±2 puntos (puede subir a 8+)
+                oxygenSat: 3,      // ±3%
+                temperature: 0.8,  // ±0.8°C
+                respiratoryRate: 5, // ±5 rpm
+                painScale: 2       // ±2 puntos
             };
             return variations[vitalType] || 3;
         },
         
-        // === CANVAS CHARTS (COMO TU EJEMPLO HERMOSO) ===
+        // === CANVAS CHARTS ===
         initializeCanvasCharts() {
             console.log('📊 Inicializando gráficos canvas nativos...');
             
@@ -239,14 +345,20 @@ document.addEventListener('alpine:init', () => {
         
         updatePatientsData(newData) {
             const previousData = { ...this.patientsData };
-            this.patientsData = newData;
+            
+            // ✅ CORREGIDO: Acceder a la estructura correcta del WebSocket
+            if (newData.vital_signs_monitoring) {
+                this.patientsData = newData.vital_signs_monitoring.patients_vitals;
+            } else {
+                this.patientsData = newData;
+            }
             
             // Actualizar datos locales con nuevos valores
-            this.syncVitalSignsWithNewData(newData);
+            this.syncVitalSignsWithNewData(this.patientsData);
             
             // Aplicar filtros existentes
             this.applyFilters();
-            this.detectCriticalAlerts(previousData, newData);
+            this.detectCriticalAlerts(previousData, this.patientsData);
             this.countTotalAlerts();
         },
         
@@ -268,7 +380,7 @@ document.addEventListener('alpine:init', () => {
             });
         },
         
-        // === ACTUALIZACIÓN DE GRÁFICOS Y VALORES (COMO TU EJEMPLO) ===
+        // === ACTUALIZACIÓN DE GRÁFICOS Y VALORES ===
         updateCharts() {
             this.filteredPatients.forEach(patient => {
                 const bedId = patient.patient_info.bed;
@@ -277,7 +389,7 @@ document.addEventListener('alpine:init', () => {
                 
                 if (!bedData || !charts) return;
                 
-                // Agregar variación realista a los datos y actualizar gráficos
+                // Agregar variación realista a los datos
                 this.updateVitalData(bedId, 'heartRate');
                 this.updateVitalData(bedId, 'systolic');
                 this.updateVitalData(bedId, 'diastolic');
@@ -286,7 +398,7 @@ document.addEventListener('alpine:init', () => {
                 this.updateVitalData(bedId, 'respiratoryRate');
                 this.updateVitalData(bedId, 'painScale');
                 
-                // ✅ ACTUALIZAR VALORES EN PANTALLA (ESTO FALTABA!)
+                // ✅ ACTUALIZAR VALORES EN PANTALLA
                 this.updateDisplayValues(bedId, patient);
                 
                 // Dibujar gráficos actualizados
@@ -299,7 +411,7 @@ document.addEventListener('alpine:init', () => {
             });
         },
         
-        // ✅ NUEVA FUNCIÓN PARA ACTUALIZAR LOS VALORES NUMÉRICOS
+        // ✅ ACTUALIZAR LOS VALORES NUMÉRICOS
         updateDisplayValues(bedId, patient) {
             const bedData = this.vitalSignsData[bedId];
             if (!bedData) return;
@@ -420,7 +532,6 @@ document.addEventListener('alpine:init', () => {
         // 🚨 SISTEMA DE ALERTAS AUTOMÁTICAS
         checkAndCreateAutoAlerts(patient, oldValues, newValues) {
             const patientName = patient.patient_info.name;
-            const bedId = patient.patient_info.bed;
             
             // Inicializar alertas si no existen
             if (!patient.alerts) {
@@ -500,18 +611,13 @@ document.addEventListener('alpine:init', () => {
             console.log(`🚨 Nueva alerta ${type}: ${patient.patient_info.name} - ${message}`);
         },
         
-        // ✅ TOAST DE ALERTA WARNING
-        showWarningToast(title, message) {
-            this.addToast('warning', title, message, 6000);
-        },
-        
         updateVitalData(bedId, vitalType) {
             const vital = this.vitalSignsData[bedId][vitalType];
             const baseValue = vital.value;
             const variation = this.getVariationForVital(vitalType);
             
             // Generar variación sutil para efecto de movimiento continuo
-            const randomVariation = (Math.random() - 0.5) * variation * 0.8; // Aumento la variación
+            const randomVariation = (Math.random() - 0.5) * variation * 0.8;
             let newValue = baseValue + randomVariation;
             
             // Aplicar límites realistas por tipo de vital
@@ -551,8 +657,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
         
-        // === DIBUJAR GRÁFICOS (COMO TU EJEMPLO HERMOSO) ===
-        // En tu archivo vital_signs.js, reemplaza la función drawChart:
+        // === DIBUJAR GRÁFICOS ===
         drawChart(ctx, data, color) {
             if (!ctx || !data || data.length < 2) return;
             
@@ -568,12 +673,12 @@ document.addEventListener('alpine:init', () => {
             
             // ✅ LÍNEAS MÁS NÍTIDAS Y SUAVES
             ctx.strokeStyle = color;
-            ctx.lineWidth = 1.5; // Reducido de 2 a 1.5
+            ctx.lineWidth = 1.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
             // ✅ REDUCIR BRILLO/INTENSIDAD
-            ctx.globalAlpha = 0.8; // Hacer menos intenso
+            ctx.globalAlpha = 0.8;
             
             // ✅ QUITAR SOMBRA (causa borrosidad)
             ctx.shadowColor = 'transparent';
@@ -583,7 +688,7 @@ document.addEventListener('alpine:init', () => {
             const minVal = Math.min(...data);
             const maxVal = Math.max(...data);
             const range = maxVal - minVal || 1;
-            const padding = 8; // Reducido de 10 a 8
+            const padding = 8;
             
             ctx.beginPath();
             
@@ -612,7 +717,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.filteredPatients.length > 0) {
                     this.updateCharts();
                 }
-            }, 1000); // Cada segundo como tu ejemplo
+            }, 1000); // Cada segundo
             
             console.log('🔄 Loop de actualización iniciado (cada 1 segundo)');
         },
@@ -638,9 +743,9 @@ document.addEventListener('alpine:init', () => {
             }
         },
         
-        // === ESTADO DE SALUD (COMO TU EJEMPLO) ===
+        // === ESTADO DE SALUD ===
         getHealthStatus(vital, value) {
-            const vitalData = this.vitalSignsData[Object.keys(this.vitalSignsData)[0]]; // Usar el primer paciente como referencia
+            const vitalData = this.vitalSignsData[Object.keys(this.vitalSignsData)[0]];
             if (!vitalData || !vitalData[vital]) return 'normal';
             
             const normal = vitalData[vital].normal;
@@ -657,9 +762,10 @@ document.addEventListener('alpine:init', () => {
         applyFilters() {
             const urlParams = new URLSearchParams(window.location.search);
             const bedNumber = urlParams.get('bedNumber');
+            const targetBedNumber = bedNumber || this.currentPatientData?.bedNumber;
             
-            if (bedNumber && this.patientsData[bedNumber]) {
-                this.filteredPatients = [this.patientsData[bedNumber]];
+            if (targetBedNumber && this.patientsData[targetBedNumber]) {
+                this.filteredPatients = [this.patientsData[targetBedNumber]];
                 return;
             }
             
@@ -867,21 +973,21 @@ document.addEventListener('alpine:init', () => {
                 // Frecuencias según tipo de alerta
                 switch(type) {
                     case 'critical':
-                        oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // Sonido agudo
+                        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
                         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
                         break;
                     case 'warning':
-                        oscillator.frequency.setValueAtTime(600, audioContext.currentTime); // Sonido medio
+                        oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
                         gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
                         break;
                     default:
-                        oscillator.frequency.setValueAtTime(400, audioContext.currentTime); // Sonido suave
+                        oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
                         gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
                         break;
                 }
                 
                 oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.2); // Beep corto
+                oscillator.stop(audioContext.currentTime + 0.2);
             } catch (error) {
                 console.warn('No se pudo reproducir sonido de alerta:', error);
             }
@@ -958,6 +1064,56 @@ document.addEventListener('alpine:init', () => {
             }
         },
         
+        // === INFORMACIÓN ADICIONAL DEL PACIENTE ===
+        getPatientAdditionalInfo(patient) {
+            const info = patient.patient_info;
+            return {
+                medicalRecord: info.medical_record || 'N/A',
+                allergies: info.allergies || 'Ninguna conocida',
+                numeroTarjeta: info.numero_cuenta || 'N/A',
+                hospitalizacionId: info.hospitalizacion_id || 'N/A',
+                hospitalInfo: info.hospital_info || null
+            };
+        },
+        
+        // === ESTADO DE CONEXIÓN MEJORADO ===
+        getConnectionStatusText(patient) {
+            const connection = patient.monitor_connection;
+            if (!connection) return 'Sin información';
+            
+            switch (connection.status) {
+                case 'connected':
+                    return '🟢 Monitor conectado';
+                case 'available_not_connected':
+                    return '🟡 Monitor disponible';
+                case 'no_monitor':
+                    return '🔴 Sin monitor';
+                default:
+                    return '⚪ Estado desconocido';
+            }
+        },
+        
+        getLastReadingText(patient) {
+            const connection = patient.monitor_connection;
+            if (!connection?.last_reading) return 'Sin lecturas';
+            
+            try {
+                const lastReading = new Date(connection.last_reading);
+                const now = new Date();
+                const diffSeconds = Math.floor((now - lastReading) / 1000);
+                
+                if (diffSeconds < 60) {
+                    return `Hace ${diffSeconds} segundos`;
+                } else if (diffSeconds < 3600) {
+                    return `Hace ${Math.floor(diffSeconds / 60)} minutos`;
+                } else {
+                    return `Hace ${Math.floor(diffSeconds / 3600)} horas`;
+                }
+            } catch (error) {
+                return 'Tiempo inválido';
+            }
+        },
+        
         // === LIMPIEZA ===
         cleanup() {
             console.log('🧹 Iniciando limpieza...');
@@ -986,7 +1142,7 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
-console.log('✅ Monitor de Signos Vitales Canvas Nativo - ¡Como tu ejemplo hermoso pero con WebSocket! 🏥✨');
+console.log('✅ Monitor de Signos Vitales Canvas Nativo - Refactorizado con datos reales + localStorage! 🏥✨');
 
 /**
  * Configura los botones de volver para la página de signos vitales
