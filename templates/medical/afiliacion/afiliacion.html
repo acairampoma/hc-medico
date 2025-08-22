@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Afiliación de Pacientes - Sistema Hospitalario</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/afiliacion.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="afiliacion-container">
+        <!-- HEADER HOSPITALARIO PERUANO -->
+        <div class="header">
+            <button class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Volver
+            </button>
+            
+            <div class="header-content">
+                <h1>
+                    <i class="fas fa-user-plus"></i>
+                    Afiliación de Pacientes
+                </h1>
+                <p class="subtitle">Sistema Hospitalario Digital - Norma Técnica Peruana</p>
+                <div class="peru-flag">
+                    <i class="fas fa-flag"></i>
+                    🇵🇪 Certificado MINSA - República del Perú
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="main-content">
+            <!-- INDICADOR DE PROGRESO -->
+            <div class="progress-container">
+                <div class="progress-steps">
+                    <div class="progress-step">
+                        <div class="step-circle active" id="step-1-circle">1</div>
+                        <div class="step-label active">Datos Personales</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-circle" id="step-2-circle">2</div>
+                        <div class="step-label">Información Médica</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-circle" id="step-3-circle">3</div>
+                        <div class="step-label">Seguros y Contactos</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-circle" id="step-4-circle">4</div>
+                        <div class="step-label">Confirmación</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORMULARIO MULTI-PASO -->
+            <form id="afiliacion-form">
+                <!-- PASO 1: DATOS PERSONALES -->
+                <div class="form-section fade-in" id="step-1">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Datos Personales</h2>
+                            <p class="section-subtitle">Información básica del paciente según norma técnica MINSA</p>
+                        </div>
+                    </div>
+
+                    <div class="medical-alert medical-alert--info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Norma Técnica Peruana:</strong> Los campos marcados con (*) son obligatorios según la R.M. N° 614-2004/MINSA
+                        </div>
+                    </div>
+
+                    <div class="medical-grid medical-grid--2">
+                        <div class="form-group">
+                            <label class="form-label required">Tipo de Documento</label>
+                            <select class="medical-select" id="tipo-documento" required>
+                                <option value="">Seleccionar tipo</option>
+                                <option value="DNI">DNI - Documento Nacional de Identidad</option>
+                                <option value="CE">CE - Carnet de Extranjería</option>
+                                <option value="PAS">Pasaporte</option>
+                                <option value="RUC">RUC - Registro Único de Contribuyentes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Número de Documento</label>
+                            <input type="text" class="medical-input" id="numero-documento" 
+                                   placeholder="Ej: 12345678" maxlength="15" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Nombres</label>
+                            <input type="text" class="medical-input" id="nombres" 
+                                   placeholder="Nombres completos" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Apellidos</label>
+                            <input type="text" class="medical-input" id="apellidos" 
+                                   placeholder="Apellidos completos" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Fecha de Nacimiento</label>
+                            <input type="date" class="medical-input" id="fecha-nacimiento" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Sexo</label>
+                            <select class="medical-select" id="sexo" required>
+                                <option value="">Seleccionar sexo</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Estado Civil</label>
+                            <select class="medical-select" id="estado-civil">
+                                <option value="">Cargando estados civiles...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Ocupación</label>
+                            <select class="medical-select" id="ocupacion">
+                                <option value="">Cargando ocupaciones...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: INFORMACIÓN MÉDICA -->
+                <div class="form-section hidden" id="step-2">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Información Médica</h2>
+                            <p class="section-subtitle">Antecedentes y datos clínicos relevantes</p>
+                        </div>
+                    </div>
+
+
+
+                    <div class="medical-grid medical-grid--2">
+                        <div class="form-group">
+                            <label class="form-label">Grupo Sanguíneo</label>
+                            <select class="medical-select" id="grupo-sanguineo">
+                                <option value="">Seleccionar grupo</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Factor RH</label>
+                            <select class="medical-select" id="factor-rh">
+                                <option value="">Seleccionar factor</option>
+                                <option value="POS">Positivo</option>
+                                <option value="NEG">Negativo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ALERGIAS -->
+                    <div class="form-group">
+                        <label class="form-label">Alergias Conocidas</label>
+                        <div class="dynamic-section" id="alergias-container">
+                            <div class="dynamic-item">
+                                <div class="medical-grid medical-grid--2">
+                                    <div class="form-group">
+                                        <label class="form-label">Tipo de Alergia</label>
+                                        <select class="medical-select alergia-tipo">
+                                            <option value="">Seleccionar tipo</option>
+                                            <option value="MEDICAMENTO">Medicamento</option>
+                                            <option value="ALIMENTO">Alimento</option>
+                                            <option value="AMBIENTAL">Ambiental</option>
+                                            <option value="CONTACTO">Contacto</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Descripción</label>
+                                        <input type="text" class="medical-input alergia-descripcion" 
+                                               placeholder="Ej: Penicilina, Mariscos">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="medical-btn medical-btn--outline">
+                            <i class="fas fa-plus"></i> Agregar Alergia
+                        </button>
+                    </div>
+
+                    <!-- DIAGNÓSTICO PRESUNTIVO -->
+                    <div class="form-group">
+                        <label class="form-label">Diagnóstico Presuntivo</label>
+                        <div class="medical-grid medical-grid--2">
+                            <div class="form-group">
+                                <label class="form-label">Buscar Diagnóstico (CIE-10)</label>
+                                <input type="text" class="medical-input" id="diagnostico-buscar" 
+                                       placeholder="Buscar por código o descripción...">
+                                <div id="diagnosticos-sugerencias" class="sugerencias-container" style="display: none;"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Diagnóstico Seleccionado</label>
+                                <input type="text" class="medical-input" id="diagnostico-seleccionado" 
+                                       placeholder="Diagnóstico seleccionado" readonly>
+                                <input type="hidden" id="diagnostico-codigo">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANTECEDENTES -->
+                    <div class="form-group">
+                        <label class="form-label">Antecedentes Médicos</label>
+                        <textarea class="medical-textarea" id="antecedentes" 
+                                  placeholder="Describa enfermedades previas, cirugías, hospitalizaciones..."></textarea>
+                    </div>
+                </div>
+
+                <!-- PASO 3: SEGUROS Y CONTACTOS -->
+                <div class="form-section hidden" id="step-3">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Seguros y Contactos</h2>
+                            <p class="section-subtitle">Información de aseguramiento y contacto de emergencia</p>
+                        </div>
+                    </div>
+
+                    <!-- SEGUROS -->
+                    <div class="form-group">
+                        <label class="form-label">Seguros de Salud</label>
+                        <div class="dynamic-section" id="seguros-container">
+                            <div class="dynamic-item">
+                                <div class="medical-grid medical-grid--3">
+                                    <div class="form-group">
+                                        <label class="form-label">Tipo de Seguro</label>
+                                        <select class="medical-select seguro-tipo">
+                                            <option value="">Seleccionar seguro</option>
+                                            <option value="SIS">SIS - Seguro Integral de Salud</option>
+                                            <option value="ESSALUD">EsSalud</option>
+                                            <option value="PRIVADO">Seguro Privado</option>
+                                            <option value="FFAA">Fuerzas Armadas</option>
+                                            <option value="PARTICULAR">Particular</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Número de Afiliación</label>
+                                        <input type="text" class="medical-input seguro-numero" 
+                                               placeholder="Número de afiliado">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Condición</label>
+                                        <select class="medical-select seguro-condicion">
+                                            <option value="">Seleccionar condición</option>
+                                            <option value="TITULAR">Titular</option>
+                                            <option value="BENEFICIARIO">Beneficiario</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="medical-btn medical-btn--outline">
+                            <i class="fas fa-plus"></i> Agregar Seguro
+                        </button>
+                    </div>
+
+                    <!-- CONTACTOS -->
+                    <div class="medical-grid medical-grid--2">
+                        <div class="form-group">
+                            <label class="form-label">Teléfono Principal</label>
+                            <input type="tel" class="medical-input" id="telefono" 
+                                   placeholder="Ej: 987654321">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="medical-input" id="email" 
+                                   placeholder="paciente@email.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" class="medical-input" id="direccion" 
+                                   placeholder="Dirección completa">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Distrito</label>
+                            <select class="medical-select" id="distrito">
+                                <option value="">Seleccionar distrito</option>
+                                <option value="LIMA">Lima</option>
+                                <option value="MIRAFLORES">Miraflores</option>
+                                <option value="SAN_ISIDRO">San Isidro</option>
+                                <option value="SURCO">Santiago de Surco</option>
+                                <option value="LA_MOLINA">La Molina</option>
+                                <option value="SAN_BORJA">San Borja</option>
+                                <option value="CALLAO">Callao</option>
+                                <option value="OTROS">Otros</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- CONTACTO DE EMERGENCIA -->
+                    <div class="medical-alert medical-alert--warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Contacto de Emergencia:</strong> Es importante registrar un contacto según las normas hospitalarias.
+                        </div>
+                    </div>
+
+                    <div class="medical-grid medical-grid--3">
+                        <div class="form-group">
+                            <label class="form-label">Nombre del Contacto</label>
+                            <input type="text" class="medical-input" id="contacto-nombre" 
+                                   placeholder="Nombre completo">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Parentesco</label>
+                            <select class="medical-select" id="contacto-parentesco">
+                                <option value="">Seleccionar parentesco</option>
+                                <option value="PADRE">Padre</option>
+                                <option value="MADRE">Madre</option>
+                                <option value="ESPOSO">Esposo(a)</option>
+                                <option value="HIJO">Hijo(a)</option>
+                                <option value="HERMANO">Hermano(a)</option>
+                                <option value="AMIGO">Amigo(a)</option>
+                                <option value="OTROS">Otros</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Teléfono de Emergencia</label>
+                            <input type="tel" class="medical-input" id="contacto-telefono" 
+                                   placeholder="Ej: 987654321">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 4: CONFIRMACIÓN -->
+                <div class="form-section hidden" id="step-4">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Confirmación de Datos</h2>
+                            <p class="section-subtitle">Revise la información antes de proceder con la afiliación</p>
+                        </div>
+                    </div>
+
+                    <div class="medical-alert medical-alert--info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Verificación Final:</strong> Por favor revise cuidadosamente todos los datos antes de confirmar la afiliación.
+                        </div>
+                    </div>
+
+                    <!-- RESUMEN DE DATOS -->
+                    <div id="resumen-datos" class="medical-grid medical-grid--2">
+                        <!-- Se llenará dinámicamente con JavaScript -->
+                    </div>
+                </div>
+
+                <!-- NAVEGACIÓN DE PASOS -->
+                <div class="step-navigation">
+                    <button type="button" class="medical-btn medical-btn--secondary" id="btn-anterior" 
+                            style="display: none;">
+                        <i class="fas fa-arrow-left"></i>
+                        Anterior
+                    </button>
+
+                    <div class="navigation-info">
+                        <span id="step-info">Paso 1 de 4</span>
+                    </div>
+
+                    <button type="button" class="medical-btn medical-btn--primary" id="btn-siguiente">
+                        Siguiente
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+
+                    <button type="submit" class="medical-btn medical-btn--success" id="btn-afiliar" 
+                            style="display: none;">
+                        <i class="fas fa-user-plus"></i>
+                        Confirmar Afiliación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script src="/static/js/medical_module_base.js"></script>
+    <script src="/static/js/common_navigation.js"></script>
+    <script src="/static/js/afiliacion.js"></script>
+</body>
+</html>

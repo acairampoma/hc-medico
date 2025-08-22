@@ -1,4 +1,21 @@
-from fastapi import FastAPI, Request, HTTPException, Depends, Body, Path, Query, Header
+"""
+🏥 HOSPITAL MANAGEMENT SYSTEM - MAIN APPLICATION
+=================================================
+Sistema hospitalario completo con autenticación OAuth2, gestión de pacientes,
+rondas médicas, recetas, signos vitales y visualización DICOM.
+
+Estructura organizada por módulos:
+- Autenticación y Seguridad
+- Templates y Páginas Web
+- APIs de Hospital y Pacientes
+- APIs de Recetas/Prescripciones
+- APIs de Signos Vitales
+- APIs de DICOM/PACS
+- Health Checks y Monitoreo
+"""
+
+# ===== IMPORTS Y CONFIGURACIÓN INICIAL =====
+from fastapi import FastAPI, Request, HTTPException, Depends, Body, Path, Query, Header, WebSocket, WebSocketDisconnect
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, Response, FileResponse
@@ -10,67 +27,53 @@ from typing import Dict, List, Optional, Any
 import io
 import asyncio
 
+# ===== CONFIGURACIÓN DE ENTORNO =====
 os.environ["DEVELOPMENT_MODE"] = "false"
 os.environ["SECURITY_ENABLED"] = "true"
 print("🔧 FORZADO: Modo producción activado")
-# 🔧 CARGAR VARIABLES DE ENTORNO
+
 from dotenv import load_dotenv
-load_dotenv()  # Carga el archivo .env
+load_dotenv()
 
-# ===== 🆕 IMPORTAR MIDDLEWARE (AGREGAR ESTA LÍNEA) =====
+# ===== IMPORTS DE SERVICIOS =====
 from middleware import AuthMiddleware
-
-# ===== TUS SERVICIOS EXISTENTES (CONSERVAMOS TODO) =====
 from services.auth_service import auth_service, LoginResult
 from services.oauth2_client import oauth2_client
-
-# ===== NUEVO SERVICIO DE HOSPITAL (AGREGAMOS SIN TOCAR NADA) =====
 from services.hospital_service import HospitalService
-
-# ===== NUEVO SERVICIO DE RECETAS (CORREGIDO) =====
 from services.prescription_service import prescription_service
-
-# ===== NUEVO SERVICIO DE SIGNOS VITALES (AGREGAMOS SIN TOCAR NADA) =====
 from services.vital_signs_service import VitalSignsManager
-
-from fastapi import WebSocket, WebSocketDisconnect
-
-# ===== NUEVO SERVICIO DE DICOM =====
 from services.dicom_service import DicomService
+from services.afiliacion_service import afiliacion_manager
+from services.catalogos_service import get_catalogos_service
 
-
-# Configurar logging
+# ===== CONFIGURACIÓN DE LOGGING =====
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Crear la instancia de FastAPI
+# ===== INICIALIZACIÓN DE FASTAPI =====
 app = FastAPI(
     title="Hospital Management System",
     description="Sistema hospitalario con autenticación OAuth2 y Rondas Médicas",
     version="1.0.0"
 )
 
-# ===== 🔐 AGREGAR MIDDLEWARE DE SEGURIDAD (AGREGAR ESTAS LÍNEAS) =====
+# ===== MIDDLEWARE DE SEGURIDAD =====
 app.add_middleware(AuthMiddleware)
 logger.info("🔐 Middleware de seguridad agregado exitosamente")
 
-# Configurar archivos estáticos y templates
+# ===== CONFIGURACIÓN DE ARCHIVOS ESTÁTICOS Y TEMPLATES =====
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# ===== INICIALIZAR SERVICIOS =====
+# ===== INICIALIZACIÓN DE SERVICIOS =====
 hospital_service = HospitalService()
-
-# ===== NUEVO SERVICIO DE SIGNOS VITALES (AGREGAMOS SIN TOCAR NADA) =====
 vital_signs_service = VitalSignsManager()
-
-# ===== NUEVO SERVICIO DE DICOM =====
 dicom_service = DicomService()
 
-# ===== TUS MODELOS EXISTENTES (CONSERVAMOS) =====
+# ===== MODELOS PYDANTIC =====
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -79,7 +82,6 @@ class LoginRequest(BaseModel):
 class LogoutRequest(BaseModel):
     username: str
 
-# ===== NUEVOS MODELOS PARA HOSPITAL =====
 class MedicalNote(BaseModel):
     bed_number: str
     patient_id: str
@@ -103,8 +105,277 @@ class MedicalOrder(BaseModel):
     doctor_id: str
 
 
+# ===== MODELOS PYDANTIC PARA AFILIACIÓN =====
+class FiltrosAfiliacion(BaseModel):
+    """Modelo para filtros de búsqueda de afiliación"""
+    filtro_nombre: Optional[str] = None
+    filtro_tipo_doc: Optional[str] = None
+    filtro_numero_doc: Optional[str] = None
+    filtro_tipo_paciente: Optional[str] = None
+    hospital_id: Optional[int] = None
+    estado: Optional[str] = None
 
-# ===== TUS RUTAS EXISTENTES (CONSERVAMOS TODO) =====
+class PaginacionRequest(BaseModel):
+    """Modelo para paginación"""
+    pagina: int = 1
+    limite: int = 20
+
+
+
+# ========================================
+# 📊 API ENDPOINTS - AFILIACIÓN
+# ========================================
+
+@app.get("/api/afiliacion/test")
+async def test_afiliacion_api():
+    """Endpoint de prueba para afiliación"""
+    return {"success": True, "message": "API de afiliación funcionando"}
+
+@app.get("/api/afiliacion/paciente/{paciente_id}")
+async def obtener_paciente_afiliacion(paciente_id: int):
+    """Obtener datos de paciente para edición"""
+    try:
+        resultado = await afiliacion_manager.obtener_paciente_para_edicion(paciente_id)
+        return JSONResponse(content=resultado)
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo paciente {paciente_id}: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+# 🔍 ENDPOINT PARA BÚSQUEDA DE PACIENTES - ALAN & CLAUDE DEV
+@app.post("/api/afiliacion/buscar-pacientes")
+async def buscar_pacientes_afiliacion(datos: Dict[str, Any] = Body(...)):
+    """
+    🔍 BÚSQUEDA DE PACIENTES CON FILTROS
+    Usa la función PostgreSQL fn_buscar_pacientes_afiliacion
+    """
+    try:
+        filtros = datos.get('filtros', {})
+        limite = datos.get('limite', 20)
+        offset = datos.get('offset', 0)
+        pagina = (offset // limite) + 1
+        
+        logger.info(f"🔍 Buscando pacientes - Página: {pagina}, Límite: {limite}")
+        
+        resultado = await afiliacion_manager.buscar_pacientes_afiliacion(
+            filtros=filtros,
+            pagina=pagina,
+            limite=limite
+        )
+        
+        return JSONResponse(content=resultado)
+        
+    except Exception as e:
+        logger.error(f"❌ Error buscando pacientes: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": f"Error en búsqueda: {str(e)}",
+                "data": [],
+                "pagination": {"total_registros": 0}
+            }
+        )
+
+@app.post("/api/afiliacion/crear")
+async def crear_paciente_afiliacion(datos: Dict[str, Any] = Body(...)):
+    """Crear nuevo paciente"""
+    try:
+        resultado = await afiliacion_manager.afiliar_paciente_completo(datos)
+        return JSONResponse(content=resultado)
+    except Exception as e:
+        logger.error(f"❌ Error creando paciente: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+@app.put("/api/afiliacion/actualizar/{paciente_id}")
+async def actualizar_paciente_afiliacion(paciente_id: int, datos: Dict[str, Any] = Body(...)):
+    """Actualizar paciente existente"""
+    try:
+        datos['paciente_id'] = paciente_id
+        datos['modo_edicion'] = True
+        resultado = await afiliacion_manager.afiliar_paciente_completo(datos)
+        return JSONResponse(content=resultado)
+    except Exception as e:
+        logger.error(f"❌ Error actualizando paciente {paciente_id}: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+@app.post("/api/afiliacion/validar-documento")
+async def validar_documento_afiliacion(datos: Dict[str, Any] = Body(...)):
+    """Validar si documento ya existe"""
+    try:
+        tipo_doc = datos.get('tipo_doc')
+        numero_doc = datos.get('numero_doc')
+        excluir_id = datos.get('excluir_id')
+        
+        resultado = await afiliacion_manager.validar_documento_existente(
+            tipo_doc, numero_doc, excluir_id
+        )
+        return JSONResponse(content=resultado)
+    except Exception as e:
+        logger.error(f"❌ Error validando documento: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+@app.get("/api/afiliacion/catalogos")
+async def obtener_catalogos_afiliacion():
+    """🔥 OBTENER CATÁLOGOS DINÁMICOS - Sistema Dual Alan"""
+    try:
+        resultado = await afiliacion_manager.obtener_catalogos()
+        return JSONResponse(content=resultado)
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo catálogos: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+@app.get("/api/afiliacion/diagnosticos/buscar")
+async def buscar_diagnosticos_afiliacion(
+    q: str = Query(..., min_length=2, description="Término de búsqueda"),
+    limite: int = Query(10, ge=1, le=50, description="Límite de resultados")
+):
+    """🔍 BÚSQUEDA DE DIAGNÓSTICOS CIE-10"""
+    try:
+        resultado = await afiliacion_manager.buscar_diagnosticos(q, limite)
+        return JSONResponse(content=resultado)
+    except Exception as e:
+        logger.error(f"❌ Error buscando diagnósticos: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+@app.post("/api/afiliacion/crear-externo-rapido")
+async def crear_paciente_externo_rapido(datos: Dict[str, Any] = Body(...)):
+    """⚡ CREAR PACIENTE EXTERNO RÁPIDO - Técnica Alan"""
+    try:
+        resultado = await afiliacion_manager.crear_paciente_externo_rapido(datos)
+        return JSONResponse(content=resultado)
+    except Exception as e:
+        logger.error(f"❌ Error creando paciente externo: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+# 🔥 NUEVO ENDPOINT PACIENTE EXTERNO - ALAN & CLAUDE DEV
+@app.get("/api/catalogos-frontend")
+async def obtener_catalogos_frontend():
+    """
+    🌉 BRIDGE ENDPOINT - Expone catálogos del microservicio al JavaScript
+    """
+    try:
+        # Usar servicio existente de catálogos
+        catalogos_service = get_catalogos_service()
+        
+        resultado = {
+            "success": True,
+            "data": {
+                "tipos_documento": catalogos_service.obtener_tipos_documento_para_select(),
+                "estados_civiles": catalogos_service.obtener_estados_civiles_para_select(),
+                "ocupaciones": catalogos_service.obtener_ocupaciones_para_select(),
+                "tipos_sangre": catalogos_service.obtener_tipos_sangre_para_select(),
+                "tipos_alergia": catalogos_service.obtener_tipos_alergia_para_select(),
+                "tipos_seguro": catalogos_service.obtener_tipos_seguro_para_select(),
+                "tipos_contacto": catalogos_service.obtener_tipos_contacto_para_select()
+            },
+            "metadata": {
+                "cache_info": catalogos_service.obtener_estadisticas(),
+                "timestamp": datetime.now().isoformat(),
+                "servicio_disponible": True
+            }
+        }
+        
+        logger.info(f"✅ Catálogos cargados para frontend: {len(resultado['data'])} tipos")
+        return JSONResponse(content=resultado)
+        
+    except Exception as e:
+        logger.error(f"❌ Error bridge catálogos: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": f"Error cargando catálogos: {str(e)}",
+                "data": {},
+                "fallback": {
+                    "tipos_documento": [
+                        {"value": "001", "text": "001 - DNI", "label": "DNI"},
+                        {"value": "002", "text": "002 - Carnet Extranjería", "label": "CE"},
+                        {"value": "003", "text": "003 - Pasaporte", "label": "PAS"}
+                    ]
+                }
+            }
+        )
+
+@app.post("/api/validar-documento")
+async def validar_documento_api(datos: Dict[str, Any] = Body(...)):
+    """
+    🔍 VALIDAR DOCUMENTO DUPLICADO
+    """
+    try:
+        tipo_doc = datos.get('tipo_doc')
+        numero_doc = datos.get('numero_doc')
+        
+        resultado = await afiliacion_manager.validar_documento_existente(tipo_doc, numero_doc)
+        return JSONResponse(content=resultado)
+        
+    except Exception as e:
+        logger.error(f"❌ Error validando documento: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+@app.post("/api/afiliar-paciente-externo")
+async def afiliar_paciente_externo(datos: Dict[str, Any] = Body(...)):
+    """
+    📞 CREAR PACIENTE EXTERNO (LLAMADA TELEFÓNICA)
+    Solo datos básicos de pestaña 1 con prefix dinámico EXT
+    """
+    try:
+        logger.info(f"📞 Recibiendo datos paciente externo: {datos}")
+        
+        # ✅ AGREGAR TIPO_ADMISION AUTOMÁTICAMENTE
+        datos['tipo_admision'] = 'EXT'
+        datos['hospital_id'] = 1
+        datos['usuario_creacion'] = 1  # TODO: Obtener de JWT
+        
+        # ✅ USAR MÉTODO EXISTENTE CON DATOS MÍNIMOS
+        resultado = await afiliacion_manager.afiliar_paciente_completo(datos)
+        
+        if resultado.get('success'):
+            resultado['tipo_registro'] = 'EXTERNO'
+            resultado['mensaje_usuario'] = 'Paciente externo registrado para cita telefónica'
+            logger.info(f"✅ Paciente externo creado exitosamente: {resultado.get('data', {}).get('historia_clinica')}")
+        else:
+            logger.error(f"❌ Error creando paciente externo: {resultado.get('message')}")
+        
+        return JSONResponse(content=resultado)
+        
+    except Exception as e:
+        logger.error(f"❌ Error inesperado creando paciente externo: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": f"Error creando paciente externo: {str(e)}",
+                "error_type": "INTERNAL_ERROR"
+            }
+        )
+
+# ========================================
+# 🏠 PÁGINAS WEB Y TEMPLATES
+# ========================================
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -121,7 +392,82 @@ async def dashboard_page(request: Request):
     """Dashboard después del login exitoso"""
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
-# ===== TUS APIs DE AUTENTICACIÓN (CONSERVAMOS) =====
+@app.get("/modulos_ejecutiva", response_class=HTMLResponse)
+async def modulos_ejecutiva_page(request: Request):
+    """Página de modulos ejecutiva"""
+    return templates.TemplateResponse("modulos_ejecutiva.html", {"request": request})
+
+@app.get("/access-denied", response_class=HTMLResponse)
+async def access_denied(request: Request):
+    """Página de acceso denegado"""
+    return templates.TemplateResponse("access_denied.html", {"request": request})
+
+# ===== PÁGINAS MÉDICAS ESPECÍFICAS =====
+
+@app.get("/medical/rounds", response_class=HTMLResponse)
+async def medical_rounds_page(request: Request):
+    """Página de rondas médicas"""
+    return templates.TemplateResponse("medical/rounds/medical_rounds.html", {"request": request})
+
+@app.get("/medical/prescriptions", response_class=HTMLResponse)
+async def prescriptions_page(request: Request):
+    """Página de recetas médicas"""
+    return templates.TemplateResponse("medical/prescriptions/prescription_form.html", {"request": request})
+
+@app.get("/medical/orders/exams", response_class=HTMLResponse)
+async def exam_orders_form(request: Request):
+    """Página de órdenes de exámenes"""
+    return templates.TemplateResponse("medical/orders/exam_orders_form.html", {"request": request})
+
+@app.get("/medical/vital-signs", response_class=HTMLResponse)
+async def vital_signs_page(request: Request):
+    """Página de signos vitales"""
+    return templates.TemplateResponse("medical/vitales/vital_signs.html", {"request": request})
+
+@app.get("/medical/dicom", response_class=HTMLResponse)
+async def dicom_page(request: Request):
+    """Página de visualización DICOM"""
+    return templates.TemplateResponse("medical/pacs/dicom_viewer.html", {"request": request})
+
+@app.get("/medical/notes", response_class=HTMLResponse)
+async def notes_page(request: Request, bed_number: str = None, patient_id: str = None):
+    """Página de notas médicas"""
+    return templates.TemplateResponse("medical/notes/medical_notes.html", {
+        "request": request,
+        "bed_number": bed_number,
+        "patient_id": patient_id
+    })
+
+# ===== PÁGINAS DE AFILIACIÓN =====
+
+@app.get("/medical/afiliacion", response_class=HTMLResponse)
+async def afiliacion_lista_page(request: Request):
+    """Página principal de afiliación - Lista de pacientes"""
+    return templates.TemplateResponse("medical/afiliacion/afiliacion_lista.html", {"request": request})
+
+@app.get("/medical/afiliacion/nueva", response_class=HTMLResponse)
+async def afiliacion_nueva_page(request: Request):
+    """Página de nueva afiliación - Formulario de afiliación"""
+    return templates.TemplateResponse("medical/afiliacion/afiliacion.html", {"request": request})
+
+@app.get("/medical/afiliacion/nuevo", response_class=HTMLResponse)
+async def afiliacion_nuevo_page(request: Request):
+    """Página de nuevo paciente - Formulario de afiliación (alias)"""
+    return templates.TemplateResponse("medical/afiliacion/afiliacion.html", {"request": request})
+
+@app.get("/medical/afiliacion/editar/{paciente_id}", response_class=HTMLResponse)
+async def afiliacion_editar_page(request: Request, paciente_id: int):
+    """Página de edición de paciente - Formulario de afiliación"""
+    return templates.TemplateResponse("medical/afiliacion/afiliacion.html", {
+        "request": request, 
+        "paciente_id": paciente_id,
+        "modo": "editar"
+    })
+
+
+# ========================================
+# 🔐 AUTENTICACIÓN Y SEGURIDAD
+# ========================================
 
 @app.post("/api/login")
 async def login_api(login_data: LoginRequest, response: Response):
@@ -186,47 +532,6 @@ async def login_api(login_data: LoginRequest, response: Response):
             }
         )
 
-# ===== RUTAS DE PÁGINAS MÉDICAS =====
-
-@app.get("/access-denied", response_class=HTMLResponse)
-async def access_denied(request: Request):
-    return templates.TemplateResponse("access_denied.html", {"request": request})
-
-@app.get("/medical/rounds", response_class=HTMLResponse)
-async def medical_rounds_page(request: Request):
-    """Página de rondas médicas"""
-    return templates.TemplateResponse("medical/rounds/medical_rounds.html", {"request": request})
-
-@app.get("/medical/prescriptions", response_class=HTMLResponse)
-async def prescriptions_page(request: Request):
-    """Página de recetas médicas"""
-    return templates.TemplateResponse("medical/prescriptions/prescription_form.html", {"request": request})
-
-@app.get("/medical/orders/exams", response_class=HTMLResponse)  # 🆕 Nueva ruta
-async def exam_orders_form(request: Request):
-    
-    return templates.TemplateResponse("medical/orders/exam_orders_form.html", {"request": request})
-
-@app.get("/medical/vital-signs", response_class=HTMLResponse)
-async def vital_signs_page(request: Request):
-    """Página de signos vitales"""
-    return templates.TemplateResponse("medical/vitales/vital_signs.html", {"request": request})
-
-@app.get("/medical/dicom", response_class=HTMLResponse)
-async def dicom_page(request: Request):
-    """Página de dicom"""
-    return templates.TemplateResponse("medical/pacs/dicom_viewer.html", {"request": request})
-
-@app.get("/medical/notes", response_class=HTMLResponse)
-async def notes_page(request: Request, bed_number: str = None, patient_id: str = None):
-    """Página de notas médicas"""
-    return templates.TemplateResponse("medical/notes/medical_notes.html", {
-        "request": request,
-        "bed_number": bed_number,
-        "patient_id": patient_id
-    })
-
-# ===== TUS OTRAS RUTAS EXISTENTES (CONSERVAMOS) ===== 
 @app.post("/api/logout")
 async def logout_endpoint(request: Request):
     """Logout completo con invalidación de token"""
@@ -299,9 +604,7 @@ async def logout_endpoint(request: Request):
 
 @app.get("/api/user/{username}")
 async def get_user_info(username: str):
-    """
-    Obtiene información del usuario autenticado
-    """
+    """Obtiene información del usuario autenticado"""
     try:
         user_session = auth_service.get_user_session(username)
         
@@ -334,9 +637,7 @@ async def get_user_info(username: str):
 
 @app.get("/api/user/{username}/detailed")
 async def get_detailed_user_info(username: str):
-    """
-    Obtiene información detallada del usuario desde el microservicio
-    """
+    """Obtiene información detallada del usuario desde el microservicio"""
     try:
         user_session = auth_service.get_user_session(username)
         
@@ -385,9 +686,7 @@ async def get_detailed_user_info(username: str):
 
 @app.post("/api/refresh-token")
 async def refresh_token_api(username: str):
-    """
-    Renueva el token de un usuario
-    """
+    """Renueva el token de un usuario"""
     try:
         new_token = await auth_service.refresh_user_token(username)
         
@@ -419,62 +718,80 @@ async def refresh_token_api(username: str):
             }
         )
 
-# ===== NUEVAS APIs PARA HOSPITAL (AGREGAMOS SIN TOCAR NADA) =====
-
-# ===== NUEVAS APIs PARA DICOM =====
-@app.get("/api/dicom/studies")
-async def get_dicom_studies():
-    """Obtener lista de estudios DICOM disponibles"""
+@app.get("/api/protected/dashboard-data")
+async def get_dashboard_data(username: str):
+    """Endpoint protegido que requiere autenticación con datos reales del usuario"""
     try:
-        studies = dicom_service.get_dicom_studies()
-        return studies
-    except Exception as e:
-        logger.error(f"Error obteniendo estudios DICOM: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error obteniendo estudios DICOM: {str(e)}")
-
-@app.get("/api/dicom/image")
-async def get_dicom_image(file_path: str):
-    """Convertir archivo DICOM a imagen PNG - VERSIÓN CORREGIDA"""
-    try:
-        logger.info(f"🖼️ Solicitud de imagen DICOM: {file_path}")
+        user_session = await get_current_user(username)
         
-        # ✅ CORRECCIÓN: NO validar archivo aquí, dejar que DicomService lo maneje
-        # El DicomService tiene la lógica completa de búsqueda de archivos
+        # Obtener información fresca del usuario
+        success, detailed_user, error = await oauth2_client.get_user_info(
+            username=username,
+            token=user_session.token.access_token
+        )
         
-        # Obtener los bytes de la imagen directamente del servicio
-        image_bytes = dicom_service.get_dicom_image(file_path)
+        # Preparar mensaje de bienvenida personalizado
+        display_name = user_session.name
+        if detailed_user:
+            first_name = detailed_user.get('firstName', '')
+            last_name = detailed_user.get('lastName', '')
+            if first_name or last_name:
+                display_name = f"Dr. {first_name} {last_name}".strip()
         
-        logger.info(f"✅ Imagen DICOM convertida: {file_path} ({len(image_bytes)} bytes)")
+        # Obtener estadísticas del hospital
+        hospital_stats = hospital_service.get_hospital_stats()
         
-        return StreamingResponse(
-            io.BytesIO(image_bytes),
-            media_type="image/png",
-            headers={
-                "Cache-Control": "max-age=3600",
-                "Content-Type": "image/png"
+        # Datos del dashboard personalizados por rol
+        dashboard_data = {
+            "welcome_message": f"Bienvenido, {display_name}",
+            "role": user_session.role,
+            "role_display": {
+                "admin": "Administrador del Sistema",
+                "doctor": "Médico Especialista", 
+                "nurse": "Enfermero/a Profesional",
+                "user": "Usuario del Sistema"
+            }.get(user_session.role, "Usuario"),
+            "permissions": user_session.permissions,
+            "user_info": {
+                "id": user_session.user_id,
+                "username": user_session.username,
+                "email": user_session.email,
+                "full_name": display_name,
+                "enabled": detailed_user.get('enabled', True) if detailed_user else True,
+                "roles": detailed_user.get('roles', []) if detailed_user else []
+            },
+            "stats": _get_role_based_stats(user_session.role),
+            "hospital_stats": hospital_stats,
+            "recent_activity": _get_role_based_activity(user_session.role),
+            "quick_actions": _get_role_based_actions(user_session.role, user_session.permissions)
+        }
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "data": dashboard_data,
+                "user": user_session.to_dict(),
+                "detailed_user": detailed_user if detailed_user else None
             }
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
-        # Logging detallado del error
-        logger.error(f"💥 Error en endpoint DICOM: {str(e)}")
-        logger.error(f"💥 Tipo de error: {type(e).__name__}")
-        
-        # Si es FileNotFoundError, devolver 404
-        if isinstance(e, FileNotFoundError):
-            logger.error(f"📁 Archivo no encontrado: {file_path}")
-            raise HTTPException(status_code=404, detail=f"Archivo DICOM no encontrado: {file_path}")
-        
-        # Para otros errores, devolver 500 con mensaje detallado
-        error_detail = f"Error procesando imagen DICOM: {str(e)}"
-        logger.error(f"🚨 Error 500: {error_detail}")
-        raise HTTPException(status_code=500, detail=error_detail)
+        logger.error(f"💥 Error obteniendo datos del dashboard: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error obteniendo datos del dashboard"
+            }
+        )
 
-        
-@app.get("/api/dicom/health")
-async def dicom_health_check():
-    """Health check para servicio DICOM"""
-    return dicom_service.health_check()
+
+# ========================================
+# 🏥 APIS DE HOSPITAL Y PACIENTES
+# ========================================
 
 @app.get("/api/hospital/structure")
 async def get_hospital_structure():
@@ -520,7 +837,6 @@ async def get_patients_database():
         logger.error(f"Error en get_patients_database: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-# ✅ PRIMERO: El endpoint específico
 @app.get("/api/patients/beds")
 async def get_patients_by_beds():
     """Obtener pacientes organizados por cama"""
@@ -530,7 +846,6 @@ async def get_patients_by_beds():
         logger.error(f"Error en get_patients_by_beds: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-# ✅ DESPUÉS: El endpoint con parámetro
 @app.get("/api/patients/{patient_id}")
 async def get_patient_data(patient_id: str):
     """Obtener datos de un paciente específico"""
@@ -544,6 +859,44 @@ async def get_patient_data(patient_id: str):
     except Exception as e:
         logger.error(f"Error en get_patient_data: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+@app.get("/api/pacientes/cama/{bed_number}")
+async def obtener_datos_cama_endpoint(
+    bed_number: str = Path(...),
+    token: str = Header(..., alias="Authorization")
+):
+    """🏥 OBTENER DATOS por número de cama"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            datos = await service.obtener_datos_cama(bed_number, clean_token)
+            if not datos:
+                raise HTTPException(status_code=404, detail="Cama no encontrada")
+            return {
+                "success": True,
+                "data": datos,
+                "message": "Datos de cama obtenidos",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/medical/notes")
+async def create_medical_note(note: MedicalNote):
+    """Crear nueva nota médica"""
+    try:
+        result = hospital_service.save_medical_note(note.dict())
+        if result["success"]:
+            return {"message": "Nota médica guardada exitosamente", "data": result}
+        else:
+            raise HTTPException(status_code=500, detail=result.get("error", "Error desconocido"))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en create_medical_note: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+# ===== APIS DE FARMACIA Y MEDICAMENTOS =====
 
 @app.get("/api/pharmacy/medications")
 async def get_medications():
@@ -593,6 +946,8 @@ async def advanced_medication_search(
         logger.error(f"Error en búsqueda avanzada de medicamentos: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
+# ===== APIS DE EXÁMENES Y ÓRDENES MÉDICAS =====
+
 @app.get("/api/medical/exams")
 async def get_exams_database():
     """Obtener base de datos de exámenes"""
@@ -611,22 +966,10 @@ async def get_medical_orders():
         logger.error(f"Error en get_medical_orders: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.post("/api/medical/notes")
-async def create_medical_note(note: MedicalNote):
-    """Crear nueva nota médica"""
-    try:
-        result = hospital_service.save_medical_note(note.dict())
-        if result["success"]:
-            return {"message": "Nota médica guardada exitosamente", "data": result}
-        else:
-            raise HTTPException(status_code=500, detail=result.get("error", "Error desconocido"))
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error en create_medical_note: {e}")
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-# ===== RUTAS DE RECETAS (CORREGIDAS PARA FUNCIONAL) =====
+# ========================================
+# 💊 APIS DE RECETAS/PRESCRIPCIONES
+# ========================================
 
 @app.post("/api/recetas/crear")
 async def crear_receta_endpoint(
@@ -708,6 +1051,26 @@ async def actualizar_receta_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/recetas/generar-pdf")
+async def generar_pdf_endpoint(
+    receta_id: int = Query(..., gt=0),
+    token: str = Header(..., alias="Authorization")
+):
+    """📄 GENERAR PDF con datos reales"""
+    try:
+        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
+        async with prescription_service as service:
+            pdf_bytes = await service.generate_prescription_pdf_from_microservice(receta_id, clean_token)
+            return Response(
+                pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=receta_{receta_id}.pdf"}
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== BÚSQUEDAS Y CATÁLOGOS PARA RECETAS =====
+
 @app.get("/api/catalogos/medicamentos/buscar")
 async def buscar_medicamentos_endpoint(
     q: Optional[str] = Query(None),
@@ -746,44 +1109,7 @@ async def buscar_diagnosticos_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/recetas/generar-pdf")
-async def generar_pdf_endpoint(
-    receta_id: int = Query(..., gt=0),
-    token: str = Header(..., alias="Authorization")
-):
-    """📄 GENERAR PDF con datos reales"""
-    try:
-        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
-        async with prescription_service as service:
-            pdf_bytes = await service.generate_prescription_pdf_from_microservice(receta_id, clean_token)
-            return Response(
-                pdf_bytes,
-                media_type="application/pdf",
-                headers={"Content-Disposition": f"attachment; filename=receta_{receta_id}.pdf"}
-            )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/pacientes/cama/{bed_number}")
-async def obtener_datos_cama_endpoint(
-    bed_number: str = Path(...),
-    token: str = Header(..., alias="Authorization")
-):
-    """🏥 OBTENER DATOS por número de cama"""
-    try:
-        clean_token = token.replace("Bearer ", "") if token.startswith("Bearer ") else token
-        async with prescription_service as service:
-            datos = await service.obtener_datos_cama(bed_number, clean_token)
-            if not datos:
-                raise HTTPException(status_code=404, detail="Cama no encontrada")
-            return {
-                "success": True,
-                "data": datos,
-                "message": "Datos de cama obtenidos",
-                "timestamp": datetime.now().isoformat()
-            }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# ===== ENDPOINTS DE PRUEBA PARA RECETAS =====
 
 @app.get("/api/recetas/health")
 async def health_check_recetas_endpoint():
@@ -833,7 +1159,9 @@ async def crear_receta_prueba_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ===== APIS DE SIGNOS VITALES - POSTGRESQL =====
+# ========================================
+# 📊 APIS DE SIGNOS VITALES
+# ========================================
 
 @app.get("/api/vital-signs")
 async def get_all_vital_signs():
@@ -884,6 +1212,32 @@ async def acknowledge_alert(bed_id: str, alert_index: int):
         logger.error(f"Error en acknowledge_alert: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
+# ===== WEBSOCKET PARA SIGNOS VITALES =====
+
+@app.websocket("/ws/vital-signs")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket para actualizaciones en tiempo real"""
+    await websocket.accept()
+    
+    try:
+        # Enviar datos iniciales desde PostgreSQL
+        initial_data = await vital_signs_service.get_all_patients_vitals()
+        await websocket.send_json({
+            "type": "initial_data",
+            "data": initial_data["vital_signs_monitoring"]["patients_vitals"],
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # Mantener conexión activa
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        logger.info("Cliente WebSocket desconectado")
+    except Exception as e:
+        logger.error(f"Error en WebSocket: {e}")
+
+# ===== ENDPOINTS DE PRUEBA PARA SIGNOS VITALES =====
+
 @app.get("/api/vital-signs/test/data")
 async def test_vital_signs_data():
     """Test simple para verificar la data de signos vitales desde PostgreSQL"""
@@ -910,30 +1264,17 @@ async def test_vital_signs_data():
             "data_source": "PostgreSQL Database (ERROR)"
         }
 
-# ===== WEBSOCKET SIMPLIFICADO (SIN SIMULACIÓN POR AHORA) =====
-@app.websocket("/ws/vital-signs")
-async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket para actualizaciones en tiempo real"""
-    await websocket.accept()
-    
-    try:
-        # Enviar datos iniciales desde PostgreSQL
-        initial_data = await vital_signs_service.get_all_patients_vitals()
-        await websocket.send_json({
-            "type": "initial_data",
-            "data": initial_data["vital_signs_monitoring"]["patients_vitals"],
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        # Mantener conexión activa
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        logger.info("Cliente WebSocket desconectado")
-    except Exception as e:
-        logger.error(f"Error en WebSocket: {e}")
+@app.get("/api/vital-signs/test/file")
+async def test_vital_signs_file():
+    """Test de archivo no aplicable - usando PostgreSQL"""
+    return {
+        "message": "Test de archivo no aplicable - usando PostgreSQL",
+        "data_source": "PostgreSQL Database",
+        "status": "postgresql_active"
+    }
 
-# ===== RUTAS DE SIMULACIÓN DESHABILITADAS (POSTGRESQL NO LAS NECESITA) =====
+# ===== SIMULACIÓN DESHABILITADA (DATOS REALES DE POSTGRESQL) =====
+
 @app.post("/api/vital-signs/{bed_id}/simulate")
 async def start_simulation(bed_id: str):
     """Simulación no disponible - usando datos reales de PostgreSQL"""
@@ -951,20 +1292,58 @@ async def simulate_all_patients():
         "data_source": "PostgreSQL Real Data"
     }
 
-@app.get("/api/vital-signs/test/file")
-async def test_vital_signs_file():
-    """Test de archivo no aplicable - usando PostgreSQL"""
-    return {
-        "message": "Test de archivo no aplicable - usando PostgreSQL",
-        "data_source": "PostgreSQL Database",
-        "status": "postgresql_active"
-    }
-
-
 
 # ========================================
-# 🩻 APIs DICOM (DUPLICADAS - LIMPIAR)
+# 🩻 APIS DE DICOM/PACS
 # ========================================
+
+@app.get("/api/dicom/studies")
+async def get_dicom_studies():
+    """Obtener lista de estudios DICOM disponibles"""
+    try:
+        studies = dicom_service.get_dicom_studies()
+        return studies
+    except Exception as e:
+        logger.error(f"Error obteniendo estudios DICOM: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo estudios DICOM: {str(e)}")
+
+@app.get("/api/dicom/image")
+async def get_dicom_image(file_path: str):
+    """Convertir archivo DICOM a imagen PNG - VERSIÓN CORREGIDA"""
+    try:
+        logger.info(f"🖼️ Solicitud de imagen DICOM: {file_path}")
+        
+        # ✅ CORRECCIÓN: NO validar archivo aquí, dejar que DicomService lo maneje
+        # El DicomService tiene la lógica completa de búsqueda de archivos
+        
+        # Obtener los bytes de la imagen directamente del servicio
+        image_bytes = dicom_service.get_dicom_image(file_path)
+        
+        logger.info(f"✅ Imagen DICOM convertida: {file_path} ({len(image_bytes)} bytes)")
+        
+        return StreamingResponse(
+            io.BytesIO(image_bytes),
+            media_type="image/png",
+            headers={
+                "Cache-Control": "max-age=3600",
+                "Content-Type": "image/png"
+            }
+        )
+        
+    except Exception as e:
+        # Logging detallado del error
+        logger.error(f"💥 Error en endpoint DICOM: {str(e)}")
+        logger.error(f"💥 Tipo de error: {type(e).__name__}")
+        
+        # Si es FileNotFoundError, devolver 404
+        if isinstance(e, FileNotFoundError):
+            logger.error(f"📁 Archivo no encontrado: {file_path}")
+            raise HTTPException(status_code=404, detail=f"Archivo DICOM no encontrado: {file_path}")
+        
+        # Para otros errores, devolver 500 con mensaje detallado
+        error_detail = f"Error procesando imagen DICOM: {str(e)}"
+        logger.error(f"🚨 Error 500: {error_detail}")
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @app.get("/api/dicom/metadata/{file_name}")
 async def get_dicom_metadata(file_name: str):
@@ -977,6 +1356,13 @@ async def get_dicom_metadata(file_name: str):
     except Exception as e:
         logger.error(f"Error obteniendo metadatos DICOM: {e}")
         raise HTTPException(status_code=500, detail="Error obteniendo metadatos DICOM")
+
+# ===== ENDPOINTS DE PRUEBA PARA DICOM =====
+
+@app.get("/api/dicom/health")
+async def dicom_health_check():
+    """Health check para servicio DICOM"""
+    return dicom_service.health_check()
 
 @app.get("/api/dicom/test")
 async def test_dicom_processing():
@@ -991,13 +1377,265 @@ async def test_dicom_processing():
             "timestamp": datetime.now().isoformat()
         }
 
-# ===== TUS ENDPOINTS DE MONITOREO (CONSERVAMOS) =====
+# ===== ENDPOINTS DE PRUEBA PARA AFILIACIÓN =====
+@app.get("/api/afiliacion/pacientes")
+async def buscar_pacientes_afiliacion_api(
+    request: Request,
+    filtro_nombre: Optional[str] = Query(None, description="Nombre o apellidos del paciente"),
+    filtro_tipo_doc: Optional[str] = Query(None, description="Tipo de documento"),
+    filtro_numero_doc: Optional[str] = Query(None, description="Número de documento"),
+    filtro_tipo_paciente: Optional[str] = Query(None, description="Tipo de paciente (EXT, HC, QTA)"),
+    hospital_id: Optional[int] = Query(None, description="ID del hospital"),
+    estado: Optional[str] = Query(None, description="Estado del paciente"),
+    pagina: int = Query(1, ge=1, description="Número de página"),
+    limite: int = Query(20, ge=1, le=100, description="Límite de registros por página")
+):
+    """
+    🔍 API para buscar pacientes afiliados con filtros dinámicos
+    Endpoint principal para la tabla de afiliacion_lista.html
+    """
+    try:
+        logger.info(f"🔍 Búsqueda de pacientes - Página: {pagina}, Límite: {limite}")
+        
+        # Construir filtros desde query parameters
+        filtros = {}
+        if filtro_nombre:
+            filtros['filtro-nombre'] = filtro_nombre.strip()
+        if filtro_tipo_doc:
+            filtros['filtro-tipo-doc'] = filtro_tipo_doc.strip()
+        if filtro_numero_doc:
+            filtros['filtro-numero-doc'] = filtro_numero_doc.strip()
+        if filtro_tipo_paciente:
+            filtros['filtro-tipo-paciente'] = filtro_tipo_paciente.strip()
+        if hospital_id:
+            filtros['hospital_id'] = hospital_id
+        if estado:
+            filtros['estado'] = estado.strip()
+        
+        # Buscar pacientes usando el servicio refactorizado
+        resultado = await afiliacion_manager.buscar_pacientes_afiliacion(
+            filtros=filtros,
+            pagina=pagina,
+            limite=limite
+        )
+        
+        if resultado.get('success'):
+            logger.info(f"✅ Búsqueda exitosa: {len(resultado.get('data', []))} pacientes encontrados")
+            return JSONResponse(
+                status_code=200,
+                content=resultado
+            )
+        else:
+            logger.warning(f"⚠️ Búsqueda sin resultados: {resultado.get('message')}")
+            return JSONResponse(
+                status_code=200,  # 200 porque no es error del servidor
+                content=resultado
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ Error en búsqueda de pacientes: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error interno del servidor",
+                "error": str(e),
+                "data": [],
+                "pagination": {
+                    "total_registros": 0,
+                    "pagina_actual": pagina,
+                    "total_paginas": 0
+                }
+            }
+        )
+
+@app.get("/api/afiliacion/pacientes/todos")
+async def obtener_todos_pacientes_api(
+    request: Request,
+    limite: int = Query(100, ge=1, le=500, description="Límite de registros")
+):
+    """
+    📋 API para obtener todos los pacientes (carga inicial de la tabla)
+    """
+    try:
+        logger.info(f"📋 Obteniendo todos los pacientes - Límite: {limite}")
+        
+        resultado = await afiliacion_manager.obtener_todos_pacientes(limite=limite)
+        
+        if resultado.get('success'):
+            logger.info(f"✅ Pacientes obtenidos: {len(resultado.get('data', []))}")
+            return JSONResponse(
+                status_code=200,
+                content=resultado
+            )
+        else:
+            return JSONResponse(
+                status_code=500,
+                content=resultado
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo todos los pacientes: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error interno del servidor",
+                "error": str(e),
+                "data": []
+            }
+        )
+
+@app.get("/api/afiliacion/pacientes/documento/{numero_doc}")
+async def buscar_por_documento_api(
+    numero_doc: str = Path(..., description="Número de documento a buscar")
+):
+    """
+    🆔 API para búsqueda rápida por número de documento
+    """
+    try:
+        logger.info(f"🆔 Búsqueda por documento: {numero_doc}")
+        
+        resultado = await afiliacion_manager.buscar_por_documento(numero_doc)
+        
+        return JSONResponse(
+            status_code=200,
+            content=resultado
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error en búsqueda por documento: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error interno del servidor",
+                "error": str(e)
+            }
+        )
+
+@app.get("/api/afiliacion/pacientes/historia/{historia_clinica}")
+async def buscar_por_historia_clinica_api(
+    historia_clinica: str = Path(..., description="Historia clínica a buscar")
+):
+    """
+    🏥 API para búsqueda rápida por historia clínica
+    """
+    try:
+        logger.info(f"🏥 Búsqueda por historia clínica: {historia_clinica}")
+        
+        resultado = await afiliacion_manager.buscar_por_historia_clinica(historia_clinica)
+        
+        return JSONResponse(
+            status_code=200,
+            content=resultado
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error en búsqueda por historia clínica: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error interno del servidor",
+                "error": str(e)
+            }
+        )
+
+@app.get("/api/afiliacion/estadisticas")
+async def obtener_estadisticas_afiliacion_api(request: Request):
+    """
+    📊 API para obtener estadísticas generales de afiliación
+    """
+    try:
+        logger.info("📊 Obteniendo estadísticas de afiliación")
+        
+        resultado = await afiliacion_manager.obtener_estadisticas_afiliacion()
+        
+        if resultado.get('success'):
+            logger.info("✅ Estadísticas obtenidas exitosamente")
+            return JSONResponse(
+                status_code=200,
+                content=resultado
+            )
+        else:
+            return JSONResponse(
+                status_code=500,
+                content=resultado
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo estadísticas: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error interno del servidor",
+                "error": str(e)
+            }
+        )
+
+@app.post("/api/afiliacion/buscar")
+async def buscar_pacientes_post_api(
+    request: Request,
+    filtros_data: Dict[str, Any] = Body(..., description="Filtros de búsqueda"),
+    paginacion: Dict[str, int] = Body({"pagina": 1, "limite": 20}, description="Datos de paginación")
+):
+    """
+    🔍 API POST para búsqueda avanzada de pacientes (para formularios complejos)
+    """
+    try:
+        logger.info(f"🔍 Búsqueda POST con filtros: {filtros_data}")
+        
+        pagina = paginacion.get('pagina', 1)
+        limite = paginacion.get('limite', 20)
+        
+        resultado = await afiliacion_manager.buscar_pacientes_afiliacion(
+            filtros=filtros_data,
+            pagina=pagina,
+            limite=limite
+        )
+        
+        return JSONResponse(
+            status_code=200,
+            content=resultado
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error en búsqueda POST: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error interno del servidor",
+                "error": str(e)
+            }
+        )
+
+@app.post("/api/afiliacion/buscar-pacientes")
+async def buscar_pacientes_endpoint(request: dict):
+    filtros = request.get('filtros', {})
+    limite = request.get('limite', 10)
+    offset = request.get('offset', 0)
+    
+    from services.afiliacion_service import afiliacion_manager
+    
+    pagina = (offset // limite) + 1
+    resultado = await afiliacion_manager.buscar_pacientes_afiliacion(
+        filtros=filtros,
+        pagina=pagina,
+        limite=limite
+    )
+    
+    return resultado
+
+# ========================================
+# 🔧 HEALTH CHECKS Y MONITOREO
+# ========================================
 
 @app.get("/api/health")
 async def health_check():
-    """
-    Health check del sistema
-    """
+    """Health check del sistema"""
     try:
         # Verificar conexión con OAuth2
         system_stats = auth_service.get_system_stats()
@@ -1031,9 +1669,7 @@ async def health_check():
 
 @app.get("/api/stats")
 async def get_system_stats():
-    """
-    Obtiene estadísticas del sistema de autenticación
-    """
+    """Obtiene estadísticas del sistema de autenticación"""
     try:
         auth_stats = auth_service.get_system_stats()
         hospital_stats = hospital_service.get_hospital_stats()
@@ -1057,12 +1693,13 @@ async def get_system_stats():
             }
         )
 
-# ===== TUS DEPENDENCIAS EXISTENTES (CONSERVAMOS) =====
+
+# ========================================
+# 🛠️ FUNCIONES AUXILIARES Y DEPENDENCIAS
+# ========================================
 
 async def get_current_user(username: str = None):
-    """
-    Dependencia para obtener el usuario actual autenticado
-    """
+    """Dependencia para obtener el usuario actual autenticado"""
     if not username:
         raise HTTPException(status_code=401, detail="Usuario no proporcionado")
     
@@ -1072,86 +1709,8 @@ async def get_current_user(username: str = None):
     
     return user_session
 
-# ===== TUS ENDPOINTS PROTEGIDOS (CONSERVAMOS Y MEJORAMOS) =====
-
-@app.get("/api/protected/dashboard-data")
-async def get_dashboard_data(username: str):
-    """
-    Endpoint protegido que requiere autenticación con datos reales del usuario
-    """
-    try:
-        user_session = await get_current_user(username)
-        
-        # Obtener información fresca del usuario
-        success, detailed_user, error = await oauth2_client.get_user_info(
-            username=username,
-            token=user_session.token.access_token
-        )
-        
-        # Preparar mensaje de bienvenida personalizado
-        display_name = user_session.name
-        if detailed_user:
-            first_name = detailed_user.get('firstName', '')
-            last_name = detailed_user.get('lastName', '')
-            if first_name or last_name:
-                display_name = f"Dr. {first_name} {last_name}".strip()
-        
-        # Obtener estadísticas del hospital
-        hospital_stats = hospital_service.get_hospital_stats()
-        
-        # Datos del dashboard personalizados por rol
-        dashboard_data = {
-            "welcome_message": f"Bienvenido, {display_name}",
-            "role": user_session.role,
-            "role_display": {
-                "admin": "Administrador del Sistema",
-                "doctor": "Médico Especialista", 
-                "nurse": "Enfermero/a Profesional",
-                "user": "Usuario del Sistema"
-            }.get(user_session.role, "Usuario"),
-            "permissions": user_session.permissions,
-            "user_info": {
-                "id": user_session.user_id,
-                "username": user_session.username,
-                "email": user_session.email,
-                "full_name": display_name,
-                "enabled": detailed_user.get('enabled', True) if detailed_user else True,
-                "roles": detailed_user.get('roles', []) if detailed_user else []
-            },
-            "stats": _get_role_based_stats(user_session.role),
-            "hospital_stats": hospital_stats,
-            "recent_activity": _get_role_based_activity(user_session.role),
-            "quick_actions": _get_role_based_actions(user_session.role, user_session.permissions)
-        }
-        
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": True,
-                "data": dashboard_data,
-                "user": user_session.to_dict(),
-                "detailed_user": detailed_user if detailed_user else None
-            }
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"💥 Error obteniendo datos del dashboard: {str(e)}")
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "message": "Error obteniendo datos del dashboard"
-            }
-        )
-
-# ===== TUS FUNCIONES AUXILIARES (CONSERVAMOS) =====
-
 def _get_role_based_stats(role: str) -> dict:
-    """
-    Obtiene estadísticas basadas en el rol del usuario
-    """
+    """Obtiene estadísticas basadas en el rol del usuario"""
     base_stats = {
         "patients_total": 1245,
         "appointments_today": 23,
@@ -1184,9 +1743,7 @@ def _get_role_based_stats(role: str) -> dict:
     return base_stats
 
 def _get_role_based_activity(role: str) -> list:
-    """
-    Obtiene actividad reciente basada en el rol
-    """
+    """Obtiene actividad reciente basada en el rol"""
     base_activity = [
         {
             "id": 1,
@@ -1252,9 +1809,7 @@ def _get_role_based_activity(role: str) -> list:
     return base_activity
 
 def _get_role_based_actions(role: str, permissions: list) -> list:
-    """
-    Obtiene acciones rápidas basadas en rol y permisos
-    """
+    """Obtiene acciones rápidas basadas en rol y permisos"""
     actions = []
     
     if "create_patients" in permissions:
@@ -1307,13 +1862,14 @@ def _get_role_based_actions(role: str, permissions: list) -> list:
     
     return actions
 
-# ===== TUS MANEJADORES DE ERRORES (CONSERVAMOS) =====
+
+# ========================================
+# 🚨 MANEJADORES DE ERRORES
+# ========================================
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """
-    Manejo personalizado de excepciones HTTP
-    """
+    """Manejo personalizado de excepciones HTTP"""
     logger.warning(f"❌ HTTP Exception: {exc.status_code} - {exc.detail}")
     
     return JSONResponse(
@@ -1327,9 +1883,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """
-    Manejo de excepciones generales
-    """
+    """Manejo de excepciones generales"""
     logger.error(f"💥 Excepción no manejada: {str(exc)}")
     
     return JSONResponse(
@@ -1341,16 +1895,17 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# ===== TUS EVENTOS (CONSERVAMOS Y MEJORAMOS) =====
+
+# ========================================
+# 🚀 EVENTOS DE INICIO Y CIERRE
+# ========================================
 
 @app.on_event("startup")
 async def startup_event():
-    """
-    Eventos al iniciar la aplicación
-    """
+    """Eventos al iniciar la aplicación"""
     logger.info("🏥 Iniciando Hospital Management System...")
     
-    # ✅ AGREGAR ESTAS LÍNEAS:
+    # Inicializar base de datos PostgreSQL
     try:
         from services.database_config import db_manager
         await db_manager.init_pool()
@@ -1361,16 +1916,17 @@ async def startup_event():
     
     logger.info("🔐 Servicio de autenticación OAuth2 configurado")
     logger.info("🏥 Servicio de hospital configurado")
+    logger.info("💊 Servicio de recetas configurado")
+    logger.info("📊 Servicio de signos vitales configurado")
+    logger.info("🩻 Servicio DICOM configurado")
     logger.info("📊 Sistema de monitoreo activado")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """
-    Eventos al cerrar la aplicación
-    """
+    """Eventos al cerrar la aplicación"""
     logger.info("🚪 Cerrando Hospital Management System...")
     
-    # ✅ AGREGAR ESTAS LÍNEAS:
+    # Cerrar pool de base de datos
     try:
         from services.database_config import db_manager
         await db_manager.close_pool()
@@ -1380,8 +1936,12 @@ async def shutdown_event():
     
     # Cerrar todas las sesiones activas
     active_count = auth_service.get_active_sessions_count()
+    logger.info(f"🔐 Cerrando {active_count} sesiones activas")
 
-# ===== CONFIGURACIÓN PARA DESARROLLO (ACTUALIZADA) =====
+
+# ========================================
+# 🚀 CONFIGURACIÓN PARA DESARROLLO
+# ========================================
 
 if __name__ == "__main__":
     import uvicorn
@@ -1390,12 +1950,14 @@ if __name__ == "__main__":
     print("🔐 OAuth2 Service: http://localhost:8090")
     print("📱 Web App: http://localhost:8000")
     print("🏥 Rondas Médicas: http://localhost:8000/medical/rounds")
+    print("💊 Recetas Médicas: http://localhost:8000/medical/prescriptions")
+    print("📊 Signos Vitales: http://localhost:8000/medical/vital-signs")
+    print("🩻 Visualizador DICOM: http://localhost:8000/medical/dicom")
     print("📋 API Docs: http://localhost:8000/docs")
     print("🔍 Health Check: http://localhost:8000/api/health")
     print("📊 Stats: http://localhost:8000/api/stats")
 
-
-     # 🆕 MOSTRAR CONFIGURACIÓN ACTUAL
+    # Mostrar configuración actual
     dev_mode = os.getenv("DEVELOPMENT_MODE", "false").lower() == "true"
     print(f"🔧 Modo: {'DESARROLLO' if dev_mode else 'PRODUCCIÓN'}")
     print(f"🛡️ Seguridad: {'DESHABILITADA' if dev_mode else 'ACTIVA'}")

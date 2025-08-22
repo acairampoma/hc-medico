@@ -96,6 +96,47 @@ function debugCookies() {
     console.log('🍪 ========================');
 }
 
+/**
+ * Extrae el username de la sesión actual
+ */
+function extractUsernameFromSession() {
+    try {
+        // Intentar obtener de localStorage
+        const userCompleto = localStorage.getItem('userCompleto');
+        if (userCompleto) {
+            const user = JSON.parse(userCompleto);
+            if (user.username) {
+                console.log('👤 Username desde localStorage:', user.username);
+                return user.username;
+            }
+        }
+        
+        // Intentar obtener de sessionStorage 
+        const sessionUser = sessionStorage.getItem('currentUser');
+        if (sessionUser) {
+            const user = JSON.parse(sessionUser);
+            if (user.username) {
+                console.log('👤 Username desde sessionStorage:', user.username);
+                return user.username;
+            }
+        }
+        
+        // Intentar obtener de cookies
+        const username = getCookieValue('username');
+        if (username) {
+            console.log('👤 Username desde cookie:', username);
+            return username;
+        }
+        
+        console.log('⚠️ No se encontró username en sesión, usando fallback');
+        return null;
+        
+    } catch (error) {
+        console.error('❌ Error extrayendo username:', error);
+        return null;
+    }
+}
+
 // ========================================
 // GESTIÓN DE DATOS DE USUARIO
 // ========================================
@@ -107,87 +148,108 @@ async function loadUserData() {
     try {
         console.log('📥 Cargando datos del usuario...');
         
-        // Por ahora usamos 'admin', en producción vendría de la sesión
-        currentUsername = 'admin';
+        // Extraer username de la sesión o usar fallback
+        currentUsername = extractUsernameFromSession() || 'admin';
+        console.log('👤 Username detectado:', currentUsername);
         
-        // Intentar obtener datos detallados del usuario
-        const response = await fetch(`/api/user/${currentUsername}/detailed`);
-        const result = await response.json();
+        // Llamar al endpoint correcto del ms-usuario
+        const response = await fetch(`/api/user/${currentUsername}`);
         
-        if (result.success && result.user_detailed) {
-            currentUser = result.user_detailed;
-            updateUserInterface(result.user_detailed, result.user_session);
-        } else {
-            // Fallback a datos básicos
-            const basicResponse = await fetch(`/api/user/${currentUsername}`);
-            const basicResult = await basicResponse.json();
-            
-            if (basicResult.success) {
-                updateUserInterface(null, basicResult.user);
-            }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        const apiResponse = await response.json();
+        console.log('📦 Respuesta ms-usuario:', apiResponse);
+        console.log('🔍 DEBUGGING EXTREMO apiResponse:');
+        console.log('🔍 apiResponse tipo:', typeof apiResponse);
+        console.log('🔍 apiResponse.success:', apiResponse.success);
+        console.log('🔍 apiResponse.data:', apiResponse.data);
+        console.log('🔍 apiResponse.user:', apiResponse.user);
+        console.log('🔍 apiResponse keys:', Object.keys(apiResponse));
+        
+        // Verificar estructura de la nueva respuesta apiResponse
+        if (apiResponse.success && apiResponse.data) {
+            console.log('✅ Datos encontrados en apiResponse.data');
+            currentUser = apiResponse.data;
+            updateUserInterface(apiResponse.data);
+        } else if (apiResponse.success && apiResponse.user) {
+            console.log('✅ Datos encontrados en apiResponse.user');
+            currentUser = apiResponse.user;
+            updateUserInterface(apiResponse.user);
+        } else if (apiResponse.user) {
+            console.log('✅ Datos encontrados directamente en user');
+            currentUser = apiResponse.user;
+            updateUserInterface(apiResponse.user);
+        } else if (apiResponse.data) {
+            console.log('✅ Datos encontrados directamente en data');
+            currentUser = apiResponse.data;
+            updateUserInterface(apiResponse.data);
+        } else {
+            console.warn('⚠️ Respuesta sin datos:', apiResponse);
+            updateUserInterface(null);
+        }
+        
     } catch (error) {
         console.error('❌ Error cargando datos del usuario:', error);
-        updateUserInterface(null, null);
+        updateUserInterface(null);
     }
 }
 
 /**
- * Actualiza la interfaz con los datos del usuario
+ * Actualiza la interfaz con los datos del usuario desde ms-usuario
  */
-function updateUserInterface(detailedUser, sessionUser) {
+function updateUserInterface(userData) {
     try {
         let displayName = 'Usuario';
         let role = 'Usuario del Sistema';
         let welcomeMessage = '¡Bienvenido al Sistema Hospitalario! 🏥';
 
-        if (detailedUser) {
-            // Usar datos del microservicio
-            const firstName = detailedUser.firstName || '';
-            const lastName = detailedUser.lastName || '';
-            displayName = `Dr. ${firstName} ${lastName}`.trim();
+        if (userData) {
+            console.log('📦 Procesando datos del ms-usuario:', userData);
             
-            // Determinar rol display
-            const roles = detailedUser.roles || [];
-            if (roles.includes('ROLE_ADMIN')) {
-                role = 'Administrador del Sistema';
-            } else if (roles.includes('ROLE_DOCTOR')) {
-                role = 'Médico Especialista';
-            } else if (roles.includes('ROLE_NURSE')) {
-                role = 'Enfermero/a Profesional';
+            // Extraer datos del usuario desde la nueva estructura apiResponse
+            const firstName = userData.firstName || userData.first_name || '';
+            const lastName = userData.lastName || userData.last_name || '';
+            const username = userData.username || '';
+            const email = userData.email || '';
+            
+            // Construir nombre para display
+            if (firstName && lastName) {
+                displayName = `Dr. ${firstName} ${lastName}`.trim();
+                welcomeMessage = `¡Bienvenido Dr. ${firstName} ${lastName}! 🏥`;
+            } else if (firstName) {
+                displayName = `Dr. ${firstName}`;
+                welcomeMessage = `¡Bienvenido Dr. ${firstName}! 🏥`;
+            } else if (lastName) {
+                displayName = `Dr. ${lastName}`;
+                welcomeMessage = `¡Bienvenido Dr. ${lastName}! 🏥`;
+            } else if (username) {
+                // 🔥 USAR USERNAME CUANDO NO HAY NOMBRES
+                const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
+                displayName = capitalizedUsername;
+                welcomeMessage = `¡Bienvenido ${capitalizedUsername}! 🏥`;
             }
             
-            welcomeMessage = `¡Bienvenido Dr. ${firstName} ${lastName}! 🏥`;
+            // 🔑 EXTRAER ROL desde la nueva estructura del ms-usuario
+            role = extractUserRole(userData);
             
-            // Crear y guardar userCompleto
-            createUserCompleto(detailedUser);
+            // 💾 CREAR Y GUARDAR userCompleto con la nueva estructura
+            createUserCompletoFromApiResponse(userData);
             
-        } else if (sessionUser) {
-            // Usar datos de la sesión
-            displayName = sessionUser.name || 'Usuario';
-            const userRole = sessionUser.role || 'user';
-            
-            const roleMap = {
-                'admin': 'Administrador del Sistema',
-                'doctor': 'Médico Especialista',
-                'nurse': 'Enfermero/a Profesional',
-                'user': 'Usuario del Sistema'
-            };
-            role = roleMap[userRole] || 'Usuario del Sistema';
-            
-            welcomeMessage = `¡Bienvenido ${displayName}! 🏥`;
-            
-            // Crear userCompleto con datos de sesión
-            createUserCompletoFromSession(sessionUser);
+        } else {
+            console.warn('⚠️ No hay datos de usuario, usando valores por defecto');
         }
 
         // Actualizar elementos del DOM
         updateDOMElements(displayName, role, welcomeMessage);
 
-        console.log('✅ Interfaz actualizada para:', displayName);
+        console.log('✅ Interfaz actualizada para:', displayName, '| Rol:', role);
 
     } catch (error) {
         console.error('❌ Error actualizando interfaz:', error);
+        // Fallback en caso de error
+        updateDOMElements('Usuario', 'Usuario del Sistema', '¡Bienvenido! 🏥');
     }
 }
 
@@ -195,16 +257,124 @@ function updateUserInterface(detailedUser, sessionUser) {
  * Actualiza los elementos del DOM con la información del usuario
  */
 function updateDOMElements(displayName, role, welcomeMessage) {
+    console.log('🎨 === ACTUALIZANDO DOM ===');
+    console.log('🎨 displayName:', displayName);
+    console.log('🎨 role:', role);
+    console.log('🎨 welcomeMessage:', welcomeMessage);
+    
     const userNameElement = document.getElementById('userName');
     const userRoleElement = document.getElementById('userRole');
     const welcomeMessageElement = document.getElementById('welcomeMessage');
     const welcomeSubtextElement = document.getElementById('welcomeSubtext');
+    
+    console.log('🎨 userNameElement:', userNameElement);
+    console.log('🎨 userRoleElement:', userRoleElement);
+    console.log('🎨 welcomeMessageElement:', welcomeMessageElement);
+    console.log('🎨 welcomeSubtextElement:', welcomeSubtextElement);
 
-    if (userNameElement) userNameElement.textContent = displayName;
-    if (userRoleElement) userRoleElement.textContent = role;
-    if (welcomeMessageElement) welcomeMessageElement.textContent = welcomeMessage;
+    if (userNameElement) {
+        userNameElement.textContent = displayName;
+        console.log('✅ userName actualizado a:', displayName);
+    } else {
+        console.error('❌ No se encontró elemento #userName');
+    }
+    
+    if (userRoleElement) {
+        userRoleElement.textContent = role;
+        console.log('✅ userRole actualizado a:', role);
+    } else {
+        console.error('❌ No se encontró elemento #userRole');
+    }
+    
+    if (welcomeMessageElement) {
+        welcomeMessageElement.textContent = welcomeMessage;
+        console.log('✅ welcomeMessage actualizado a:', welcomeMessage);
+    } else {
+        console.error('❌ No se encontró elemento #welcomeMessage');
+    }
+    
     if (welcomeSubtextElement) {
         welcomeSubtextElement.textContent = `Sistema funcionando perfectamente - ${new Date().toLocaleDateString()}`;
+        console.log('✅ welcomeSubtext actualizado');
+    } else {
+        console.error('❌ No se encontró elemento #welcomeSubtext');
+    }
+    
+    console.log('🎨 === DOM ACTUALIZADO ===');
+}
+
+/**
+ * Extrae el rol del usuario desde la nueva estructura del ms-usuario
+ */
+function extractUserRole(userData) {
+    try {
+        console.log('🔑 Extrayendo rol del usuario...', userData);
+        
+        // Buscar en diferentes posibles estructuras del rol
+        let userRole = null;
+        
+        // Opción 1: Array de roles (formato Spring Security)
+        if (userData.roles && Array.isArray(userData.roles)) {
+            const roles = userData.roles;
+            console.log('🔑 Roles encontrados (array):', roles);
+            
+            if (roles.includes('ROLE_ADMIN') || roles.includes('ADMIN')) {
+                userRole = 'Administrador del Sistema';
+            } else if (roles.includes('ROLE_DOCTOR') || roles.includes('DOCTOR')) {
+                userRole = 'Médico Especialista';
+            } else if (roles.includes('ROLE_NURSE') || roles.includes('NURSE')) {
+                userRole = 'Enfermero/a Profesional';
+            } else {
+                userRole = 'Usuario del Sistema';
+            }
+        }
+        // Opción 2: Campo role directo
+        else if (userData.role) {
+            console.log('🔑 Rol encontrado (string):', userData.role);
+            
+            const roleMap = {
+                'admin': 'Administrador del Sistema',
+                'doctor': 'Médico Especialista', 
+                'nurse': 'Enfermero/a Profesional',
+                'user': 'Usuario del Sistema',
+                'ADMIN': 'Administrador del Sistema',
+                'DOCTOR': 'Médico Especialista',
+                'NURSE': 'Enfermero/a Profesional'
+            };
+            userRole = roleMap[userData.role] || 'Usuario del Sistema';
+        }
+        // Opción 3: Dentro de authorities
+        else if (userData.authorities && Array.isArray(userData.authorities)) {
+            const authorities = userData.authorities;
+            console.log('🔑 Authorities encontradas:', authorities);
+            
+            const hasRole = (role) => authorities.some(auth => 
+                auth.authority === role || auth === role
+            );
+            
+            if (hasRole('ROLE_ADMIN') || hasRole('ADMIN')) {
+                userRole = 'Administrador del Sistema';
+            } else if (hasRole('ROLE_DOCTOR') || hasRole('DOCTOR')) {
+                userRole = 'Médico Especialista';
+            } else if (hasRole('ROLE_NURSE') || hasRole('NURSE')) {
+                userRole = 'Enfermero/a Profesional';
+            } else {
+                userRole = 'Usuario del Sistema';
+            }
+        }
+        
+        // Fallback
+        if (!userRole) {
+            console.warn('⚠️ No se pudo determinar el rol, usando por defecto');
+            userRole = 'Usuario del Sistema';
+        }
+        
+        console.log('✅ Rol extraído:', userRole);
+        return userRole;
+        
+    } catch (error) {
+        console.error('❌ Error extrayendo rol:', error);
+        return 'Usuario del Sistema';
     }
 }
 
@@ -263,6 +433,88 @@ function createUserCompleto(detailedUser) {
         return {};
     }
  }
+
+/**
+ * 🔄 NUEVA FUNCIÓN: Crea userCompleto desde la nueva estructura apiResponse
+ */
+function createUserCompletoFromApiResponse(userData) {
+    try {
+        console.log('🔄 Creando userCompleto desde nueva apiResponse...', userData);
+        
+        // 🧙 LIMPIAR Y FORMATEAR datos desde la nueva estructura
+        const userCompleto = {
+            id: userData.id || userData.user_id || 'unknown',
+            username: userData.username || 'unknown',
+            email: userData.email || '',
+            firstName: userData.firstName || userData.first_name || '',
+            lastName: userData.lastName || userData.last_name || '',
+            enabled: userData.enabled !== undefined ? userData.enabled : true,
+            
+            // 🔑 EXTRAER ROLES desde diferentes posibles estructuras
+            roles: extractRolesArray(userData),
+            
+            // 👨‍⚕️ DATOS PROFESIONALES
+            datosProfesional: userData.datosProfesional || userData.datosprofesional || '{}',
+            datosProfesional_parsed: parseDatosProfesional(
+                userData.datosProfesional || userData.datosprofesional || '{}'
+            ),
+            
+            // 🔥 METADATOS Útiles para el dashboard
+            displayRole: extractUserRole(userData),
+            lastLogin: userData.lastLogin || userData.last_login || null,
+            createdAt: userData.createdAt || userData.created_at || null,
+            
+            // 📅 TIMESTAMP de actualización
+            updatedAt: new Date().toISOString()
+        };
+        
+        console.log('✅ userCompleto desde apiResponse:', userCompleto);
+        
+        // 💾 GUARDAR en localStorage
+        localStorage.setItem('userCompleto', JSON.stringify(userCompleto));
+        
+        // 📊 GUARDAR TAMBIÉN datos originales para debug
+        localStorage.setItem('userRawData', JSON.stringify(userData));
+        
+        console.log('✅ userCompleto guardado exitosamente desde ms-usuario');
+        return userCompleto;
+        
+    } catch (error) {
+        console.error('❌ Error creando userCompleto desde apiResponse:', error);
+        return null;
+    }
+}
+
+/**
+ * Extrae array de roles desde diferentes estructuras posibles
+ */
+function extractRolesArray(userData) {
+    try {
+        // Opción 1: Ya es array
+        if (userData.roles && Array.isArray(userData.roles)) {
+            return userData.roles;
+        }
+        
+        // Opción 2: String único
+        if (userData.role && typeof userData.role === 'string') {
+            return [userData.role];
+        }
+        
+        // Opción 3: Desde authorities
+        if (userData.authorities && Array.isArray(userData.authorities)) {
+            return userData.authorities.map(auth => 
+                auth.authority || auth
+            );
+        }
+        
+        // Fallback
+        return ['ROLE_USER'];
+        
+    } catch (error) {
+        console.error('❌ Error extrayendo roles array:', error);
+        return ['ROLE_USER'];
+    }
+}
 
 /**
  * Crea userCompleto desde datos de sesión básicos

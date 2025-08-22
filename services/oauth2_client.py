@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OAuth2Config:
     """Configuración del cliente OAuth2"""
-    base_url: str = "http://localhost:8090"
+    base_url: str = "http://localhost:8090"  # 🔒 PUERTO DEL GATEWAY DE SEGURIDAD
     client_id: str = "gateway-client"
     client_secret: str = "123456"
     token_endpoint: str = "/oauth2/password-token"
@@ -209,18 +209,53 @@ class OAuth2Client:
                 'Accept': 'application/json'
             }
             
+            # 🔍 LOG DEBUGGING
+            url = f"{self.config.base_url}/api/usuarios/users/username/{username}"
+            logger.info(f"🌐 URL COMPLETA: {url}")
+            logger.info(f"🔑 Headers: {headers}")
+            
             async with httpx.AsyncClient(timeout=self.config.timeout) as client:
+                logger.info(f"🚀 Haciendo request a: {url}")
+                
                 response = await client.get(
-                    f"{self.config.base_url}/api/usuarios/users/username/{username}",
+                    url,
                     headers=headers
                 )
                 
-                logger.info(f"📡 Respuesta user info: {response.status_code}")
+                logger.info(f"📡 Status Code: {response.status_code}")
+                logger.info(f"📦 Response Headers: {dict(response.headers)}")
+                
+                # 🔍 LOG RESPONSE BODY COMPLETO
+                response_text = response.text
+                logger.info(f"📋 Response Body: {response_text}")
                 
                 if response.status_code == 200:
-                    user_data = response.json()
-                    logger.info(f"✅ Info obtenida para usuario: {username}")
-                    return True, user_data, None
+                    try:
+                        user_data = response.json()
+                        logger.info(f"✅ JSON Parseado: {user_data}")
+                        logger.info(f"🔍 Tipo de respuesta: {type(user_data)}")
+                        
+                        # 🔍 ANALIZAR ESTRUCTURA
+                        if isinstance(user_data, dict):
+                            logger.info(f"📋 Keys en respuesta: {list(user_data.keys())}")
+                            
+                            # Si viene en formato ApiResponse
+                            if 'data' in user_data:
+                                actual_data = user_data['data']
+                                logger.info(f"🎯 Datos en 'data': {actual_data}")
+                                return True, actual_data, None
+                            else:
+                                logger.info(f"🎯 Usando respuesta directa: {user_data}")
+                                return True, user_data, None
+                        else:
+                            logger.error(f"❌ Respuesta no es dict: {type(user_data)}")
+                            return False, None, "Formato de respuesta inválido"
+                            
+                    except json.JSONDecodeError as e:
+                        logger.error(f"❌ Error parseando JSON: {e}")
+                        logger.error(f"❌ Response text: {response_text}")
+                        return False, None, "Error parseando respuesta JSON"
+                        
                 elif response.status_code == 404:
                     error_msg = "Usuario no encontrado"
                     logger.warning(f"❌ {error_msg}: {username}")
@@ -232,6 +267,7 @@ class OAuth2Client:
                 else:
                     error_msg = f"Error del servidor: {response.status_code}"
                     logger.error(f"🚫 {error_msg}")
+                    logger.error(f"🚫 Response: {response_text}")
                     return False, None, error_msg
                     
         except httpx.ConnectError as e:

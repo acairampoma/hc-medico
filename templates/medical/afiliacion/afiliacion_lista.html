@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Gestión de Pacientes - Sistema de Afiliación</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/afiliacion_lista.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <!-- ===== HEADER HOSPITALARIO ===== -->
+    <div class="header-container">
+        <div class="header-content">
+            <div class="header-title-group">
+                <div class="header-icon">
+                    <i class="fas fa-user-injured"></i>
+                </div>
+                <div class="header-title-text">
+                    <h1 class="header-title-main">Gestión de Pacientes</h1>
+                    <p class="header-title-sub">Sistema de Afiliación - IAMEDICALSOLUTION</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-back" onclick="window.location.href='/modulos_ejecutiva'">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <button class="btn-nueva-afiliacion" onclick="window.location.href='/medical/afiliacion/nueva?tipo=HC'">
+                    <i class="fas fa-plus"></i> Nueva Afiliación (HC)
+                </button>
+                <!-- 🔥 NUEVO BOTÓN EXTERNO - ALAN & CLAUDE DEV -->
+                <button class="btn-paciente-externo" onclick="crearPacienteExterno()">
+                    <i class="fas fa-phone"></i> Paciente Externo (EXT)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CONTENIDO PRINCIPAL ===== -->
+    <div class="main-content">
+        <!-- ===== FILTROS DE BÚSQUEDA ===== -->
+        <div class="filtros-section fade-in">
+            <div class="filtros-title">
+                <i class="fas fa-filter"></i>
+                Filtros de Búsqueda
+            </div>
+            
+            <div class="filtros-grid">
+                <div class="filtro-group">
+                    <label class="filtro-label">Nombre o Apellidos</label>
+                    <input type="text" class="filtro-input" id="filtro-nombre" placeholder="Buscar por nombres o apellidos...">
+                </div>
+                <div class="filtro-group">
+                    <label class="filtro-label">Tipo de Documento</label>
+                    <select class="filtro-select" id="filtro-tipo-doc">
+                        <option value="">Todos los tipos</option>
+                        <option value="DNI">DNI</option>
+                        <option value="CE">Carné de Extranjería</option>
+                        <option value="PAS">Pasaporte</option>
+                        <option value="RUC">RUC</option>
+                    </select>
+                </div>
+                <div class="filtro-group">
+                    <label class="filtro-label">Número de Documento</label>
+                    <input type="text" class="filtro-input" id="filtro-numero-doc" placeholder="Número de documento...">
+                </div>
+                <div class="filtro-group">
+                    <label class="filtro-label">Tipo de Paciente</label>
+                    <select class="filtro-select" id="filtro-tipo-paciente">
+                        <option value="">Todos los tipos</option>
+                        <option value="EXT">Externo</option>
+                        <option value="HC">Historia Clínica</option>
+                        <option value="QUOTA">Quota</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filtros-acciones">
+                <button class="btn-filtrar" type="button" onclick="aplicarFiltros()">
+                    <i class="fas fa-search"></i> Buscar Pacientes
+                </button>
+                <button class="btn-limpiar" type="button" onclick="limpiarFiltros()">
+                    <i class="fas fa-eraser"></i> Limpiar Filtros
+                </button>
+            </div>
+            
+        </div>
+
+        <!-- ===== TABLA DE PACIENTES ===== -->
+        <div class="tabla-container fade-in">
+            <div class="tabla-header">
+                <div class="tabla-title">
+                    <i class="fas fa-list"></i>
+                    Lista de Pacientes Afiliados
+                </div>
+                <div class="tabla-stats" id="tabla-stats">
+                    Total: 156 pacientes
+                </div>
+            </div>
+
+            <!-- ===== LOADING ===== -->
+            <div class="loading-container" id="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Cargando pacientes...</p>
+            </div>
+
+            <!-- ===== NO RESULTADOS ===== -->
+            <div class="no-resultados" id="no-resultados">
+                <i class="fas fa-search"></i>
+                <h3>No se encontraron pacientes</h3>
+                <p>Intenta ajustar los filtros de búsqueda</p>
+            </div>
+
+            <!-- ===== TABLA DESKTOP ===== -->
+            <table class="pacientes-tabla" id="pacientes-tabla">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Historia Clínica</th>
+                        <th>Documento</th>
+                        <th>Nombre Completo</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="pacientes-tbody">
+                    <!-- Renderizado dinámico desde JS -->
+                </tbody>
+            </table>
+
+            <!-- ===== CARDS MÓVIL ===== -->
+            <div class="pacientes-cards" id="pacientes-cards">
+                <!-- Se llenará dinámicamente -->
+            </div>
+        </div>
+
+        <!-- ===== AQUÍ VA EL PAGINADOR ===== -->
+    <div id="paginacion-container" class="paginacion-container" style="display: none;">
+        <!-- Se llenará dinámicamente desde JavaScript -->
+    </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script src="/static/js/afiliacion_lista.js"></script>
+</body>
+</html>

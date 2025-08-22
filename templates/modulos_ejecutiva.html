@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Ejecutiva - Sistema Hospitalario</title>
+    <link rel="stylesheet" href="/static/css/modulos_ejecutiva.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">🏥</div>
+            <div>
+                <div class="hospital-name">Hospital Collique</div>
+                <div style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.8);">Sistema de Gestión Integral</div>
+            </div>
+        </div>
+        <div class="user-info">
+            <div class="user-avatar">MR</div>
+            <div>
+                <div style="font-weight: 600;">María Rodríguez</div>
+                <div style="font-size: 0.8rem; color: white;">Ejecutiva de Admisión</div>
+            </div>
+            <button class="logout-btn" onclick="logout()">Salir</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="welcome-section">
+            <p class="welcome-subtitle">Modulos Administrativos</p>
+        </section>
+        <section class="modules-grid">
+            <div class="module-card pulse" onclick="openModule('afiliacion')">
+                <div class="module-icon">🏥</div>
+                <h3 class="module-title">Afiliación</h3>
+                <p class="module-description">
+                    Registro y actualización de datos de pacientes, gestión de historias clínicas y documentación
+                </p>
+            </div>
+
+            <div class="module-card" onclick="openModule('programacion')">
+                <div class="module-icon">🗓️</div>
+                <h3 class="module-title">Programación</h3>
+                <p class="module-description">
+                    Gestión de horarios médicos, disponibilidad de especialistas y programación de consultas
+                </p>
+            </div>
+
+            <div class="module-card" onclick="openModule('cupos')">
+                <div class="module-icon">📊</div>
+                <h3 class="module-title">Cupos</h3>
+                <p class="module-description">
+                    Control de disponibilidad por especialidad, gestión de cupos y lista de espera
+                </p>
+            </div>
+
+            <div class="module-card" onclick="openModule('citas')">
+                <div class="module-icon">📅</div>
+                <h3 class="module-title">Citas</h3>
+                <p class="module-description">
+                    Programación de citas médicas, confirmaciones, reprogramaciones y cancelaciones
+                </p>
+            </div>
+
+            <div class="module-card" onclick="openModule('hospitalizacion')">
+                <div class="module-icon">🛏️</div>
+                <h3 class="module-title">Hospitalización</h3>
+                <p class="module-description">
+                    Gestión de ingresos, control de camas, movimientos y coordinación de altas
+                </p>
+            </div>
+
+            <div class="module-card" onclick="openModule('mantenimiento')">
+                <div class="module-icon">🔧</div>
+                <h3 class="module-title">Mantenimiento</h3>
+                <p class="module-description">
+                    Configuración del sistema, catálogos, usuarios y parámetros administrativos
+                </p>
+            </div>
+        </section>
+
+
+    </main>
+
+<script src="/static/js/modulos_ejecutiva.js"></script>
+</body>
+</html>
