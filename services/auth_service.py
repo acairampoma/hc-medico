@@ -1,6 +1,6 @@
 """
 Servicio principal de autenticación - VERSIÓN MEJORADA
-Maneja la lógica de negocio y coordina con OAuth2
+Maneja la lógica de negocio y coordina con Railway Backend
 SOLUCIÓN COMPLETA PARA ROLES EJECUTIVA
 """
 
@@ -143,7 +143,7 @@ class LoginResult:
         return result
 
 class AuthService:
-    """Servicio principal de autenticación - VERSIÓN MEJORADA"""
+    """Servicio principal de autenticación - VERSIÓN MEJORADA RAILWAY"""
     
     def __init__(self):
         self._active_sessions: Dict[str, UserSession] = {}
@@ -159,7 +159,7 @@ class AuthService:
         remember_me: bool = False
     ) -> LoginResult:
         """
-        Proceso completo de login - MEJORADO PARA ROLES
+        Proceso completo de login - RAILWAY BACKEND
         """
         try:
             logger.info(f"🔑 Iniciando login para: {username}")
@@ -240,7 +240,7 @@ class AuthService:
                         logger.info(f"✅ Login Railway exitoso para: {username}")
                         return True, token, None
                     else:
-                        error_msg = "Token no encontrado en respuesta OAuth2"
+                        error_msg = "Token no encontrado en respuesta"
                         logger.warning(f"❌ Login Railway fallido: {error_msg}")
                         return False, None, error_msg
                 else:
@@ -286,8 +286,7 @@ class AuthService:
         token_response: TokenResponse
     ) -> UserSession:
         """
-        Crea una sesión de usuario con información COMPLETA del microservicio
-        🔥 VERSIÓN MEJORADA PARA MANEJAR ROLES CORRECTAMENTE
+        Crea una sesión de usuario con información COMPLETA del Railway backend
         """
         try:
             # Obtener datos completos del microservicio
@@ -298,94 +297,33 @@ class AuthService:
                 token=token_response.access_token
             )
             
-            # 🔍 DEBUGGING EXTREMO
-            logger.info(f"📦 === DEBUGGING AUTH_SERVICE ====")
-            logger.info(f"📦 success: {success}")
-            logger.info(f"📦 error: {error}")
-            logger.info(f"📦 user_data COMPLETO: {user_data}")
-            logger.info(f"📦 user_data tipo: {type(user_data)}")
-            
-            if user_data:
-                logger.info(f"📦 user_data keys: {list(user_data.keys()) if isinstance(user_data, dict) else 'No es dict'}")
-                logger.info(f"📦 firstName en user_data: '{user_data.get('firstName', 'NO_EXISTE')}'")
-                logger.info(f"📦 lastName en user_data: '{user_data.get('lastName', 'NO_EXISTE')}'")
-                logger.info(f"📦 roles en user_data: {user_data.get('roles', 'NO_EXISTE')}")
-            
             if success and user_data:
-                logger.info(f"✅ Datos obtenidos del microservicio: {user_data}")
+                logger.info(f"✅ Datos obtenidos del Railway backend: {user_data}")
                 
-                # 🔥 OBTENER Y PROCESAR ROLES CORRECTAMENTE
-                roles_array = user_data.get('roles', ['ROLE_USER'])
-                logger.info(f"📋 ROLES RAW del microservicio: {roles_array}")
-                
-                # Extraer rol principal con nueva lógica
-                principal_role = self._extract_role_from_roles(roles_array)
-                logger.info(f"🎯 ROL PRINCIPAL DETECTADO: {principal_role}")
-                
-                # 🔥 PARSEAR datosProfesional AQUÍ EN EL BACKEND
-                datos_profesionales = {}
-                try:
-                    if 'datosProfesional' in user_data and user_data['datosProfesional']:
-                        raw_datos = user_data['datosProfesional']
-                        
-                        if isinstance(raw_datos, str):
-                            # Es string JSON, parsearlo
-                            datos_profesionales = json.loads(raw_datos)
-                            logger.info(f"✅ datosProfesional parseado: {datos_profesionales}")
-                        elif isinstance(raw_datos, dict):
-                            # Ya es dict
-                            datos_profesionales = raw_datos
-                        else:
-                            logger.warning(f"⚠️ datosProfesional tipo inesperado: {type(raw_datos)}")
-                            datos_profesionales = {}
-                    else:
-                        logger.warning(f"⚠️ No hay datosProfesional para {username}")
-                        datos_profesionales = {}
-                        
-                except json.JSONDecodeError as e:
-                    logger.error(f"❌ Error parseando datosProfesional: {e}")
-                    datos_profesionales = {}
-                
-                # Crear sesión con TODOS los datos Y ROLES CORREGIDOS
-                firstName = user_data.get('firstName', '')
-                lastName = user_data.get('lastName', '')
+                # Crear sesión con datos del backend
+                firstName = user_data.get('firstName', user_data.get('nombre_completo', '').split()[0] if user_data.get('nombre_completo') else '')
+                lastName = user_data.get('lastName', ' '.join(user_data.get('nombre_completo', '').split()[1:]) if user_data.get('nombre_completo') else '')
                 
                 user_session = UserSession(
                     user_id=str(user_data.get('id', f"user_{hash(username) % 10000}")),
                     username=user_data.get('username', username),
-                    name=f"{firstName} {lastName}".strip(),
+                    name=user_data.get('nombre_completo', f"{firstName} {lastName}".strip()),
                     email=user_data.get('email', f"{username}@hospital.com"),
-                    role=principal_role,  # 🔑 ROL PRINCIPAL CORRECTO (ROLE_EJECUTIVA)
-                    permissions=self._get_permissions_from_roles(roles_array),
+                    role="ROLE_ADMIN" if username.lower() == "admin" else "ROLE_USER",
+                    permissions=self._get_user_permissions("ROLE_ADMIN" if username.lower() == "admin" else "ROLE_USER"),
                     token=token_response,
                     firstName=firstName,
-                    lastName=lastName,
-                    roles_array=roles_array  # 🔑 ARRAY COMPLETO DE ROLES
+                    lastName=lastName
                 )
                 
-                # 🔥 AGREGAR LOS DATOS PROFESIONALES A LA SESIÓN
-                user_session.cmp = datos_profesionales.get('cmp', 'N/A')
-                user_session.tipo = datos_profesionales.get('tipo', 'N/A') 
-                user_session.hospital_id = datos_profesionales.get('hospital_id', None)
-                user_session.area_trabajo = datos_profesionales.get('area_trabajo', 'N/A')
-                user_session.especialidad_principal = datos_profesionales.get('especialidad_principal', 'N/A')
-                user_session.datos_profesional_raw = user_data.get('datosProfesional', '{}')
-                user_session.datos_profesional_parsed = datos_profesionales
-                
                 logger.info(f"👤 Sesión COMPLETA creada para {username}")
-                logger.info(f"🎯 ROL PRINCIPAL: {user_session.role}")
-                logger.info(f"📋 ROLES ARRAY: {user_session.roles_array}")
-                logger.info(f"🏥 CMP: {user_session.cmp}")
-                logger.info(f"⚕️ Especialidad: {user_session.especialidad_principal}")
-                logger.info(f"🏢 Área: {user_session.area_trabajo}")
-                
                 return user_session
             else:
                 logger.warning(f"⚠️ No se pudo obtener info del usuario {username}, usando datos básicos")
                 return self._create_basic_user_session(username, token_response)
                 
         except Exception as e:
-            logger.error(f"💥 Error creando sesión con datos del microservicio: {str(e)}")
+            logger.error(f"💥 Error creando sesión con datos del Railway backend: {str(e)}")
             return self._create_basic_user_session(username, token_response)
 
     def _create_basic_user_session(
@@ -399,13 +337,11 @@ class AuthService:
         # Determinar rol basado en username (fallback)
         if username.lower() == "admin":
             role = "ROLE_ADMIN"
-        elif username.lower() == "teresa":
-            role = "ROLE_EJECUTIVA"  # 🔑 FALLBACK PARA TERESA
         else:
             role = "ROLE_USER"
         
         # Determinar nombre display
-        name = f"Dr. {username.title()}" if role in ["ROLE_ADMIN", "ROLE_EJECUTIVA"] else username.title()
+        name = f"Dr. {username.title()}" if role in ["ROLE_ADMIN", "ROLE_MEDICO"] else username.title()
         
         user_session = UserSession(
             user_id=f"user_{hash(username) % 10000}",  # ID simple para demo
@@ -413,7 +349,7 @@ class AuthService:
             name=name,
             email=f"{username}@hospital.com",
             role=role,
-            permissions=self._get_permissions_from_roles([role]),
+            permissions=self._get_user_permissions(role),
             token=token_response,
             roles_array=[role]  # 🔑 ARRAY CON EL ROL
         )
@@ -421,95 +357,9 @@ class AuthService:
         logger.info(f"👤 Sesión básica creada para {username} con rol: {role}")
         return user_session
     
-    def _extract_role_from_roles(self, roles: list) -> str:
-        """
-        Extrae el rol principal desde la lista de roles del microservicio
-        🔥 VERSIÓN MEJORADA CON PRIORIDADES CORRECTAS
-        """
-        if not roles:
-            return "ROLE_USER"
-        
-        logger.info(f"🔍 Analizando roles: {roles}")
-        
-        # 🔥 ORDEN DE PRIORIDAD CORREGIDO (más específico primero)
-        priority_order = [
-            "ROLE_ADMIN",
-            "ROLE_EJECUTIVA",    # 🎯 ALTA PRIORIDAD PARA EJECUTIVA
-            "ROLE_MEDICO", 
-            "ROLE_DOCTOR",       # Alias para médico
-            "ROLE_NURSE",
-            "ROLE_MODERATOR",
-            "ROLE_USER"
-        ]
-        
-        # Buscar el rol más específico (prioridad: admin > ejecutiva > medico > nurse > user)
-        for priority_role in priority_order:
-            if priority_role in roles:
-                logger.info(f"✅ ROL PRINCIPAL SELECCIONADO: {priority_role} (encontrado en prioridades)")
-                return priority_role
-        
-        # Si no encuentra ningún rol conocido, usar el primero disponible
-        first_role = roles[0] if roles else "ROLE_USER"
-        logger.warning(f"⚠️ Usando primer rol disponible: {first_role}")
-        return first_role
-    
-    def _get_permissions_from_roles(self, roles: list) -> list:
-        """
-        Obtiene permisos basados en los roles del microservicio
-        🔥 VERSIÓN MEJORADA CON PERMISOS PARA EJECUTIVA
-        """
-        all_permissions = set()
-        
-        # Mapear roles a permisos - INCLUYENDO EJECUTIVA
-        role_permissions = {
-            "ROLE_ADMIN": [
-                "view_patients", "create_patients", "edit_patients", "delete_patients",
-                "view_appointments", "create_appointments", "edit_appointments", "delete_appointments",
-                "view_staff", "create_staff", "edit_staff", "delete_staff",
-                "view_reports", "create_reports", "system_config", "user_management"
-            ],
-            "ROLE_EJECUTIVA": [  # 🔥 NUEVOS PERMISOS PARA EJECUTIVA
-                "view_patients", "create_patients", "edit_patients",
-                "view_appointments", "create_appointments", "edit_appointments", 
-                "afiliacion", "programacion", "cupos", "citas", "hospitalizacion", "mantenimiento",
-                "view_reports", "administrative_tasks"
-            ],
-            "ROLE_MEDICO": [
-                "view_patients", "create_patients", "edit_patients",
-                "view_appointments", "create_appointments", "edit_appointments",
-                "view_medical_records", "create_medical_records", "edit_medical_records",
-                "prescribe_medication", "medical_orders", "medical_notes"
-            ],
-            "ROLE_DOCTOR": [  # Alias para ROLE_MEDICO
-                "view_patients", "create_patients", "edit_patients",
-                "view_appointments", "create_appointments", "edit_appointments",
-                "view_medical_records", "create_medical_records", "edit_medical_records",
-                "prescribe_medication"
-            ],
-            "ROLE_NURSE": [
-                "view_patients", "edit_patients",
-                "view_appointments", "create_appointments",
-                "view_medical_records", "basic_medical_records"
-            ],
-            "ROLE_USER": [
-                "view_patients", "view_appointments"
-            ]
-        }
-        
-        # Agregar permisos de todos los roles que tiene el usuario
-        for role in roles:
-            if role in role_permissions:
-                permissions = role_permissions[role]
-                all_permissions.update(permissions)
-                logger.info(f"➕ Agregando permisos de {role}: {permissions}")
-        
-        final_permissions = list(all_permissions) if all_permissions else ["view_patients"]
-        logger.info(f"🔐 PERMISOS FINALES: {final_permissions}")
-        return final_permissions
-    
     def _get_user_permissions(self, role: str) -> list:
         """
-        Obtiene permisos basados en el rol - VERSIÓN DE FALLBACK
+        Obtiene permisos basados en el rol
         """
         permissions_map = {
             "ROLE_ADMIN": [
@@ -517,11 +367,6 @@ class AuthService:
                 "view_appointments", "create_appointments", "edit_appointments", "delete_appointments",
                 "view_staff", "create_staff", "edit_staff", "delete_staff",
                 "view_reports", "create_reports", "system_config"
-            ],
-            "ROLE_EJECUTIVA": [  # 🔥 PERMISOS EJECUTIVA
-                "view_patients", "create_patients", "edit_patients",
-                "view_appointments", "create_appointments", "edit_appointments",
-                "afiliacion", "programacion", "cupos", "citas", "hospitalizacion", "mantenimiento"
             ],
             "ROLE_MEDICO": [
                 "view_patients", "create_patients", "edit_patients",
@@ -607,398 +452,6 @@ class AuthService:
         Verifica si un usuario está autenticado
         """
         return self.get_user_session(username) is not None
-    
-    def has_permission(self, username: str, permission: str) -> bool:
-        """
-        Verifica si un usuario tiene un permiso específico
-        """
-        session = self.get_user_session(username)
-        if not session:
-            return False
-        return permission in session.permissions
-    
-    async def refresh_user_token(self, username: str) -> Optional[str]:
-        """
-        Renueva el token de un usuario
-        """
-        try:
-            session = self.get_user_session(username)
-            if not session or not session.token or not session.token.refresh_token:
-                return None
-            
-            success, new_token, error = await oauth2_client.refresh_token(
-                session.token.refresh_token
-            )
-            
-            if success and new_token:
-                session.token = new_token
-                logger.info(f"🔄 Token renovado para: {username}")
-                return new_token.access_token
-            
-            return None
-            
-        except Exception as e:
-            logger.error(f"💥 Error renovando token: {str(e)}")
-            return None
-    
-    def get_active_sessions_count(self) -> int:
-        """
-        Obtiene el número de sesiones activas
-        """
-        # Limpiar sesiones inactivas
-        inactive_users = [
-            username for username, session in self._active_sessions.items()
-            if not session.is_active
-        ]
-        for username in inactive_users:
-            self._active_sessions.pop(username, None)
-        
-        return len(self._active_sessions)
-    
-    def get_system_stats(self) -> Dict[str, Any]:
-        """
-        Obtiene estadísticas del sistema de autenticación
-        """
-        return {
-            "active_sessions": self.get_active_sessions_count(),
-            "locked_accounts": len([
-                username for username in self._failed_attempts.keys()
-                if self._is_account_locked(username)
-            ]),
-            "total_failed_attempts": sum(
-                len(attempts) for attempts in self._failed_attempts.values()
-            )
-        }
-
-    def get_blacklisted_tokens(self) -> Set[str]:
-        """
-        Obtiene la lista de tokens blacklisted
-        """
-        return self._blacklisted_tokens
-
-    async def validate_token(self, token: str) -> bool:
-        """
-        Validar si un JWT token es válido
-        """
-        try:
-            if not token:
-                logger.debug("❌ Token vacío")
-                return False
-            
-            # Verificar en sesiones activas primero
-            for username, session in self._active_sessions.items():
-                if (session.token and 
-                    session.token.access_token == token and 
-                    session.is_active):
-                    
-                    # Actualizar última actividad
-                    session.update_activity()
-                    logger.debug(f"✅ Token válido para usuario: {username}")
-                    return True
-            
-            # Si no está en sesiones activas, validar con OAuth2 server
-            logger.debug("🔍 Validando token con OAuth2 server")
-            return await self._validate_with_oauth_server(token)
-            
-        except Exception as e:
-            logger.error(f"💥 Error validando token: {str(e)}")
-            return False
-    
-    async def get_user_from_token(self, token: str) -> Optional[Dict[str, Any]]:
-        """
-        Obtener datos del usuario desde un JWT token
-        """
-        try:
-            if not token:
-                return None
-            
-            # Buscar en sesiones activas
-            for username, session in self._active_sessions.items():
-                if (session.token and 
-                    session.token.access_token == token and
-                    session.is_active):
-                    
-                    # Actualizar última actividad
-                    session.update_activity()
-                    
-                    return {
-                        "username": session.username,
-                        "user_id": session.user_id,
-                        "name": session.name,
-                        "email": session.email,
-                        "role": session.role,
-                        "roles": session.roles_array,  # 🔑 INCLUIR ARRAY DE ROLES
-                        "permissions": session.permissions,
-                        "firstName": session.firstName,
-                        "lastName": session.lastName,
-                        "last_activity": session.last_activity.isoformat() if session.last_activity else None,
-                        "login_time": session.login_time.isoformat() if session.login_time else None
-                    }
-            
-            # Si no está en sesiones, intentar validar con OAuth2 server
-            logger.debug("🔍 Usuario no encontrado en sesiones activas, intentando OAuth2")
-            return await self._get_user_from_oauth_server(token)
-            
-        except Exception as e:
-            logger.error(f"💥 Error obteniendo usuario del token: {str(e)}")
-            return None
-    
-    async def _validate_with_oauth_server(self, token: str) -> bool:
-        """
-        Validar token directamente con el servidor OAuth2
-        """
-        try:
-            # Usar el oauth2_client existente para validar
-            success, user_data, error = await oauth2_client.get_user_info_by_token(token)
-            
-            if success and user_data:
-                logger.debug(f"✅ Token validado con OAuth2 server para usuario: {user_data.get('username', 'unknown')}")
-                return True
-            
-            logger.debug(f"❌ Token inválido según OAuth2 server: {error}")
-            return False
-            
-        except AttributeError:
-            # Si el método get_user_info_by_token no existe, intentar alternativa
-            logger.warning("⚠️ Método get_user_info_by_token no disponible, usando validación básica")
-            return len(token) > 20  # Validación básica como fallback
-        except Exception as e:
-            logger.error(f"💥 Error validando con OAuth server: {str(e)}")
-            return False
-    
-    async def _get_user_from_oauth_server(self, token: str) -> Optional[Dict[str, Any]]:
-        """
-        Obtener datos del usuario desde el servidor OAuth2 usando el token
-        """
-        try:
-            # Intentar obtener info del usuario del token
-            success, user_data, error = await oauth2_client.get_user_info_by_token(token)
-            
-            if success and user_data:
-                # Formatear datos para consistencia
-                firstName = user_data.get('firstName', '')
-                lastName = user_data.get('lastName', '')
-                roles_array = user_data.get('roles', ['ROLE_USER'])
-                
-                return {
-                    "username": user_data.get('username', 'unknown'),
-                    "user_id": str(user_data.get('id', 'unknown')),
-                    "name": f"{firstName} {lastName}".strip() or user_data.get('username', 'unknown'),
-                    "email": user_data.get('email', ''),
-                    "role": self._extract_role_from_roles(roles_array),
-                    "roles": roles_array,  # 🔑 INCLUIR ARRAY DE ROLES
-                    "permissions": self._get_permissions_from_roles(roles_array),
-                    "firstName": firstName,
-                    "lastName": lastName,
-                    "last_activity": datetime.now().isoformat(),
-                    "login_time": None
-                }
-            
-            return None
-            
-        except AttributeError:
-            logger.warning("⚠️ Método get_user_info_by_token no disponible en oauth2_client")
-            return None
-        except Exception as e:
-            logger.error(f"💥 Error obteniendo usuario del OAuth server: {str(e)}")
-            return None
 
 # Instancia singleton del servicio de autenticación
 auth_service = AuthService()
-
-# =====================================================
-# RESULTADO ESPERADO PARA TERESA:
-# =====================================================
-"""
-Cuando Teresa (username: teresa) haga login, debería retornar:
-
-{
-  "success": true,
-  "message": "Autenticación exitosa",
-  "token": "eyJ...",
-  "user": {
-    "user_id": "2",
-    "username": "teresa", 
-    "role": "ROLE_EJECUTIVA",                    ← ROL PRINCIPAL ✅
-    "roles": ["ROLE_EJECUTIVA"],                 ← ARRAY DE ROLES ✅
-    "firstName": "Teresa",
-    "lastName": "Carrillo Chavez",
-    "email": "teresa.carrillo@hospitaloncologico.com",
-    "area_trabajo": "Dirección Cabeza y Cuello",
-    "tipo": "ADMIN",
-    "hospital_id": 1,
-    "permissions": [
-      "view_patients", "create_patients", "edit_patients",
-      "view_appointments", "create_appointments", "edit_appointments", 
-      "afiliacion", "programacion", "cupos", "citas", 
-      "hospitalizacion", "mantenimiento", "view_reports"
-    ],
-    "datos_profesional_parsed": {
-      "tipo": "ADMIN",
-      "cargo": "Ejecutiva de Admisión",
-      "hospital_id": 1,
-      "area_trabajo": "Dirección Cabeza y Cuello",
-      "departamento": "Administración"
-    },
-    "displayName": "Dr. Teresa Carrillo Chavez",
-    "fullName": "Teresa Carrillo Chavez"
-  }
-}
-
-FLUJO CORRECTO:
-1. Backend recibe: teresa/123456
-2. OAuth2 retorna: roles: ["ROLE_EJECUTIVA"]
-3. _extract_role_from_roles detecta: "ROLE_EJECUTIVA" 
-4. Se asigna role: "ROLE_EJECUTIVA"
-5. Se envía al frontend: role + roles array
-6. Frontend JavaScript detecta: ROLE_EJECUTIVA
-7. determinarRedireccion(): /modulos_ejecutiva.html ✅
-8. Teresa ve el dashboard ejecutiva ✅
-
-LOGS ESPERADOS:
-📋 ROLES RAW del microservicio: ['ROLE_EJECUTIVA']
-🔍 Analizando roles: ['ROLE_EJECUTIVA']
-✅ ROL PRINCIPAL SELECCIONADO: ROLE_EJECUTIVA (encontrado en prioridades)
-🎯 ROL PRINCIPAL DETECTADO: ROLE_EJECUTIVA
-👤 Sesión COMPLETA creada para teresa
-🎯 ROL PRINCIPAL: ROLE_EJECUTIVA
-📋 ROLES ARRAY: ['ROLE_EJECUTIVA']
-"""
-
-# =====================================================
-# TESTING RÁPIDO - FUNCIONES DE PRUEBA
-# =====================================================
-
-def test_role_extraction():
-    """Función de prueba para verificar extracción de roles"""
-    auth = AuthService()
-    
-    # Test casos
-    test_cases = [
-        (["ROLE_EJECUTIVA"], "ROLE_EJECUTIVA"),
-        (["ROLE_MEDICO"], "ROLE_MEDICO"), 
-        (["ROLE_ADMIN"], "ROLE_ADMIN"),
-        (["ROLE_USER"], "ROLE_USER"),
-        (["ROLE_EJECUTIVA", "ROLE_USER"], "ROLE_EJECUTIVA"),  # Prioridad
-        (["ROLE_USER", "ROLE_ADMIN"], "ROLE_ADMIN"),  # Prioridad admin
-        ([], "ROLE_USER"),  # Default
-    ]
-    
-    print("🧪 TESTING EXTRACCIÓN DE ROLES:")
-    for roles_input, expected in test_cases:
-        result = auth._extract_role_from_roles(roles_input)
-        status = "✅" if result == expected else "❌"
-        print(f"{status} Input: {roles_input} → Output: {result} (Expected: {expected})")
-
-def test_permissions():
-    """Función de prueba para verificar permisos"""
-    auth = AuthService()
-    
-    roles_ejecutiva = ["ROLE_EJECUTIVA"]
-    permissions = auth._get_permissions_from_roles(roles_ejecutiva)
-    
-    print(f"\n🔐 PERMISOS PARA ROLE_EJECUTIVA:")
-    for perm in permissions:
-        print(f"  • {perm}")
-    
-    # Verificar permisos clave
-    required_perms = ["afiliacion", "programacion", "cupos", "citas", "hospitalizacion", "mantenimiento"]
-    missing = [p for p in required_perms if p not in permissions]
-    
-    if not missing:
-        print("✅ Todos los permisos ejecutiva están presentes")
-    else:
-        print(f"❌ Permisos faltantes: {missing}")
-
-# Para ejecutar tests:
-# test_role_extraction()
-# test_permissions()
-
-# =====================================================
-# CONFIGURACIÓN ADICIONAL RECOMENDADA
-# =====================================================
-
-# En tu archivo de configuración/settings, agregar:
-ROLE_PRIORITIES = [
-    "ROLE_ADMIN",
-    "ROLE_EJECUTIVA", 
-    "ROLE_MEDICO",
-    "ROLE_DOCTOR",
-    "ROLE_NURSE", 
-    "ROLE_MODERATOR",
-    "ROLE_USER"
-]
-
-ROLE_REDIRECTIONS = {
-    "ROLE_EJECUTIVA": "/modulos_ejecutiva",
-    "ROLE_MEDICO": "/dashboard",
-    "ROLE_ADMIN": "/dashboard",
-    "ROLE_USER": "/dashboard"
-}
-
-# =====================================================
-# MIDDLEWARE PARA VERIFICAR ROLES (OPCIONAL)
-# =====================================================
-
-def require_role(required_role: str):
-    """Decorador para verificar roles en endpoints"""
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # Obtener usuario de la sesión
-            user_session = kwargs.get('current_user')
-            if not user_session:
-                raise HTTPException(status_code=401, detail="No autorizado")
-            
-            # Verificar rol
-            if user_session.role != required_role and user_session.role != "ROLE_ADMIN":
-                raise HTTPException(status_code=403, detail="Permisos insuficientes")
-            
-            return await func(*args, **kwargs)
-        return wrapper
-    return decorator
-
-# Uso del decorador:
-# @require_role("ROLE_EJECUTIVA")
-# async def afiliacion_endpoint(current_user: UserSession):
-#     return {"message": "Acceso permitido a afiliación"}
-
-# =====================================================
-# INSTRUCCIONES DE IMPLEMENTACIÓN:
-# =====================================================
-"""
-PASOS PARA IMPLEMENTAR:
-
-1. REEMPLAZAR tu auth_service.py actual con este código completo
-2. ASEGURARTE que el microservicio OAuth2 retorne:
-   {
-     "username": "teresa",
-     "roles": ["ROLE_EJECUTIVA"],  ← ARRAY CON ROLES
-     "datosProfesional": "{\"tipo\": \"ADMIN\", ...}"
-   }
-
-3. VERIFICAR que el endpoint /api/usuarios/users/username/teresa retorne:
-   {
-     "id": 2,
-     "username": "teresa", 
-     "roles": ["ROLE_EJECUTIVA"],  ← CRUCIAL
-     "firstName": "Teresa",
-     "lastName": "Carrillo Chavez",
-     "datosProfesional": "..."
-   }
-
-4. REINICIAR tu servidor Python
-
-5. PROBAR login con teresa/123456
-
-6. VERIFICAR logs del backend:
-   - Debe mostrar: "ROL PRINCIPAL DETECTADO: ROLE_EJECUTIVA"
-   - Debe mostrar: "ROLES ARRAY: ['ROLE_EJECUTIVA']"
-
-7. VERIFICAR respuesta JSON en el frontend:
-   - result.user.role debe ser "ROLE_EJECUTIVA"
-   - result.user.roles debe ser ["ROLE_EJECUTIVA"]
-
-8. CONFIRMAR redirección a /modulos_ejecutiva.html
-
-¡Con estos cambios Teresa debería ir directo a su dashboard ejecutiva! 🚀
-"""
