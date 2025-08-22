@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OAuth2Config:
     """Configuración del cliente OAuth2"""
-    base_url: str = "http://localhost:8090"  # 🔒 PUERTO DEL GATEWAY DE SEGURIDAD
+    base_url: str = "https://hospital-app-backend-production.up.railway.app"  # 🔒 RAILWAY BACKEND
     client_id: str = "gateway-client"
     client_secret: str = "123456"
     token_endpoint: str = "/oauth2/password-token"

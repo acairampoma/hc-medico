@@ -8,10 +8,27 @@ from typing import Optional, Dict, Any, Tuple, Set
 from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass, asdict
-import json
-from .oauth2_client import oauth2_client, TokenResponse  
+import httpx  
 
 logger = logging.getLogger(__name__)
+
+# URL del backend Railway
+RAILWAY_BACKEND_URL = "https://hospital-app-backend-production.up.railway.app"
+
+@dataclass
+class TokenResponse:
+    """Token simple para Railway"""
+    access_token: str
+    token_type: str = "Bearer"
+    expires_in: int = 3600
+    
+    @property
+    def expires_at(self) -> datetime:
+        return datetime.now() + timedelta(seconds=self.expires_in)
+    
+    @property
+    def is_expired(self) -> bool:
+        return datetime.now() > self.expires_at
 
 @dataclass
 class UserSession:
@@ -155,8 +172,8 @@ class AuthService:
                     error_code="ACCOUNT_LOCKED"
                 )
             
-            # Autenticar con OAuth2
-            success, token_response, error_msg = await oauth2_client.authenticate(
+            # Autenticar directo con Railway
+            success, token_response, error_msg = await self._railway_login(
                 username=username,
                 password=password
             )
@@ -202,6 +219,67 @@ class AuthService:
                 error_code="INTERNAL_ERROR"
             )
     
+    async def _railway_login(self, username: str, password: str) -> tuple[bool, Optional[TokenResponse], Optional[str]]:
+        """Login directo con Railway backend"""
+        try:
+            async with httpx.AsyncClient(verify=False) as client:
+                # Login directo como funciona
+                response = await client.post(
+                    f"{RAILWAY_BACKEND_URL}/api/v1/auth/login",
+                    json={"username": username, "password": password},
+                    timeout=10.0
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("success") and data.get("data", {}).get("token", {}).get("access_token"):
+                        token = TokenResponse(
+                            access_token=data["data"]["token"]["access_token"],
+                            token_type="Bearer"
+                        )
+                        logger.info(f"✅ Login Railway exitoso para: {username}")
+                        return True, token, None
+                    else:
+                        error_msg = "Token no encontrado en respuesta OAuth2"
+                        logger.warning(f"❌ Login Railway fallido: {error_msg}")
+                        return False, None, error_msg
+                else:
+                    error_msg = f"Error HTTP {response.status_code}"
+                    logger.error(f"❌ Error Railway: {error_msg}")
+                    return False, None, error_msg
+                    
+        except Exception as e:
+            logger.error(f"💥 Error conectando Railway: {str(e)}")
+            return False, None, f"Error de conexión: {str(e)}"
+    
+    async def _get_railway_user_info(self, username: str, token: str) -> tuple[bool, Optional[dict], Optional[str]]:
+        """Obtener info del usuario desde Railway"""
+        try:
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.get(
+                    f"{RAILWAY_BACKEND_URL}/api/usuarios/me",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=10.0
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("success"):
+                        user_data = data.get("data", {})
+                        logger.info(f"✅ Info usuario Railway obtenida: {user_data.get('username', 'unknown')}")
+                        return True, user_data, None
+                    else:
+                        error_msg = data.get("message", "Error obteniendo usuario")
+                        return False, None, error_msg
+                else:
+                    error_msg = f"Error HTTP {response.status_code}"
+                    logger.warning(f"⚠️ Railway user info error: {error_msg}")
+                    return False, None, error_msg
+                    
+        except Exception as e:
+            logger.error(f"💥 Error obteniendo user info Railway: {str(e)}")
+            return False, None, f"Error de conexión: {str(e)}"
+    
     async def _create_user_session(
         self, 
         username: str, 
@@ -215,7 +293,7 @@ class AuthService:
             # Obtener datos completos del microservicio
             logger.info(f"👤 Obteniendo datos completos para: {username}")
             
-            success, user_data, error = await oauth2_client.get_user_info(
+            success, user_data, error = await self._get_railway_user_info(
                 username=username,
                 token=token_response.access_token
             )
