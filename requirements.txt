@@ -11,3 +11,8 @@ pydicom
 pillow
 numpy
 aiofiles
+asyncpg
+psycopg2-binary
+cryptography
+python-dateutil
+pydantic
