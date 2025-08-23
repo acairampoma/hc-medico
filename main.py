@@ -26,6 +26,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import io
 import asyncio
+from contextlib import asynccontextmanager
 
 # ===== CONFIGURACIÓN DE ENTORNO =====
 os.environ["DEVELOPMENT_MODE"] = "false"
@@ -53,11 +54,51 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ===== LIFESPAN HANDLER =====
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("🏥 Iniciando Hospital Management System...")
+    
+    # Inicializar base de datos PostgreSQL
+    try:
+        from services.database_config import db_manager
+        await db_manager.init_pool()
+        logger.info("🗃️ Base de datos PostgreSQL conectada")
+    except Exception as e:
+        logger.error(f"❌ Error conectando base de datos: {e}")
+    
+    logger.info("🔐 Servicio de autenticación OAuth2 configurado")
+    logger.info("🏥 Servicio de hospital configurado")
+    logger.info("💊 Servicio de recetas configurado")
+    logger.info("📊 Servicio de signos vitales configurado")
+    logger.info("🩻 Servicio DICOM configurado")
+    logger.info("📊 Sistema de monitoreo activado")
+    
+    yield
+    
+    # Shutdown
+    logger.info("🚪 Cerrando Hospital Management System...")
+    
+    # Cerrar pool de base de datos
+    try:
+        from services.database_config import db_manager
+        await db_manager.close_pool()
+        logger.info("🗃️ Pool de base de datos cerrado")
+    except Exception as e:
+        logger.error(f"❌ Error cerrando base de datos: {e}")
+    
+    # Cerrar todas las sesiones activas
+    from services.auth_service import auth_service
+    active_count = auth_service.get_active_sessions_count()
+    logger.info(f"🔐 Cerrando {active_count} sesiones activas")
+
 # ===== INICIALIZACIÓN DE FASTAPI =====
 app = FastAPI(
     title="Hospital Management System",
     description="Sistema hospitalario con autenticación OAuth2 y Rondas Médicas",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan  # Usar el nuevo lifespan handler
 )
 
 # ===== MIDDLEWARE DE SEGURIDAD =====
@@ -1897,46 +1938,8 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # ========================================
-# 🚀 EVENTOS DE INICIO Y CIERRE
+# 🚀 EVENTOS DE INICIO Y CIERRE (Ya manejados por lifespan)
 # ========================================
-
-@app.on_event("startup")
-async def startup_event():
-    """Eventos al iniciar la aplicación"""
-    logger.info("🏥 Iniciando Hospital Management System...")
-    
-    # Inicializar base de datos PostgreSQL
-    try:
-        from services.database_config import db_manager
-        await db_manager.init_pool()
-        logger.info("🗃️ Base de datos PostgreSQL conectada")
-    except Exception as e:
-        logger.error(f"❌ Error conectando base de datos: {e}")
-        # No fallar el startup, solo log del error
-    
-    logger.info("🔐 Servicio de autenticación OAuth2 configurado")
-    logger.info("🏥 Servicio de hospital configurado")
-    logger.info("💊 Servicio de recetas configurado")
-    logger.info("📊 Servicio de signos vitales configurado")
-    logger.info("🩻 Servicio DICOM configurado")
-    logger.info("📊 Sistema de monitoreo activado")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Eventos al cerrar la aplicación"""
-    logger.info("🚪 Cerrando Hospital Management System...")
-    
-    # Cerrar pool de base de datos
-    try:
-        from services.database_config import db_manager
-        await db_manager.close_pool()
-        logger.info("🗃️ Pool de base de datos cerrado")
-    except Exception as e:
-        logger.error(f"❌ Error cerrando base de datos: {e}")
-    
-    # Cerrar todas las sesiones activas
-    active_count = auth_service.get_active_sessions_count()
-    logger.info(f"🔐 Cerrando {active_count} sesiones activas")
 
 
 # ========================================
