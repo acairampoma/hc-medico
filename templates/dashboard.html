@@ -824,9 +824,25 @@
         // Obtener datos del usuario del localStorage
         document.addEventListener('DOMContentLoaded', function() {
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
-            if (userData.first_name && userData.last_name) {
-                document.getElementById('doctorName').textContent = `Dr. ${userData.first_name} ${userData.last_name}`;
+            
+            // Intentar obtener el nombre desde varios campos disponibles
+            let displayName = '';
+            
+            if (userData.displayName) {
+                displayName = userData.displayName;
+            } else if (userData.firstName && userData.lastName) {
+                displayName = `Dr. ${userData.firstName} ${userData.lastName}`;
+            } else if (userData.fullName) {
+                displayName = `Dr. ${userData.fullName}`;
+            } else if (userData.name) {
+                displayName = `Dr. ${userData.name}`;
+            } else {
+                displayName = 'Dr. Usuario';
             }
+            
+            document.getElementById('doctorName').textContent = displayName;
+            console.log('Dashboard - Usuario cargado:', userData);
+            console.log('Dashboard - Nombre mostrado:', displayName);
         });
 
         // Switch entre tabs
