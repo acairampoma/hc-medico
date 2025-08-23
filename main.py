@@ -1949,26 +1949,35 @@ async def general_exception_handler(request: Request, exc: Exception):
 if __name__ == "__main__":
     import uvicorn
     
+    # Detectar si estamos en Railway
+    is_railway = os.getenv("RAILWAY_ENVIRONMENT") is not None
+    port = int(os.getenv("PORT", 8000))
+    
     print("🏥 ===== HOSPITAL MANAGEMENT SYSTEM =====")
-    print("🔐 OAuth2 Service: http://localhost:8090")
-    print("📱 Web App: http://localhost:8000")
-    print("🏥 Rondas Médicas: http://localhost:8000/medical/rounds")
-    print("💊 Recetas Médicas: http://localhost:8000/medical/prescriptions")
-    print("📊 Signos Vitales: http://localhost:8000/medical/vital-signs")
-    print("🩻 Visualizador DICOM: http://localhost:8000/medical/dicom")
-    print("📋 API Docs: http://localhost:8000/docs")
-    print("🔍 Health Check: http://localhost:8000/api/health")
-    print("📊 Stats: http://localhost:8000/api/stats")
+    
+    if is_railway:
+        print("🚂 Running on Railway Cloud")
+        print("🔐 Backend Service: https://hospital-app-backend-production.up.railway.app")
+        print("📱 Frontend: https://hc-medico-production.up.railway.app")
+    else:
+        print("💻 Running locally")
+        print("🔐 OAuth2 Service: http://localhost:8090")
+        print("📱 Web App: http://localhost:8000")
+    
+    print("📋 API Docs: /docs")
+    print("🔍 Health Check: /api/health")
+    print("📊 Stats: /api/stats")
 
     # Mostrar configuración actual
     dev_mode = os.getenv("DEVELOPMENT_MODE", "false").lower() == "true"
     print(f"🔧 Modo: {'DESARROLLO' if dev_mode else 'PRODUCCIÓN'}")
     print(f"🛡️ Seguridad: {'DESHABILITADA' if dev_mode else 'ACTIVA'}")
     
+    # IMPORTANTE: NO usar reload en producción (Railway)
     uvicorn.run(
-        app, 
+        "main:app",  # Usar import string para evitar el warning
         host="0.0.0.0", 
-        port=8000, 
-        reload=True,
+        port=port, 
+        reload=False if is_railway else True,  # NO reload en Railway
         log_level="info"
     )
