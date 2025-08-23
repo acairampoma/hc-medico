@@ -499,10 +499,14 @@
                 font-size: 12px;
             }
 
-            .indicators-grid,
+            .indicators-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
             .actions-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 15px;
+                gap: 12px;
             }
 
             .indicator-card,
@@ -544,10 +548,31 @@
         }
 
         @media (max-width: 480px) {
-            .indicators-grid,
+            .indicators-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
             .actions-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .indicator-card,
+            .action-card {
+                padding: 12px;
+            }
+
+            .indicator-value {
+                font-size: 20px;
+            }
+
+            .indicator-label {
+                font-size: 11px;
+            }
+
+            .action-title {
+                font-size: 14px;
             }
 
             .tab-btn {

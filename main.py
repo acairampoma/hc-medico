@@ -26,6 +26,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import io
 import asyncio
+import httpx
 from contextlib import asynccontextmanager
 
 # ===== CONFIGURACIÓN DE ENTORNO =====
@@ -35,6 +36,9 @@ print("🔧 FORZADO: Modo producción activado")
 
 from dotenv import load_dotenv
 load_dotenv()
+
+# URL del backend Railway
+RAILWAY_BACKEND_URL = "https://hospital-app-backend-production.up.railway.app"
 
 # ===== IMPORTS DE SERVICIOS =====
 from middleware import AuthMiddleware
@@ -575,9 +579,9 @@ async def login_api(login_data: LoginRequest, response: Response):
 
 @app.post("/api/logout")
 async def logout_endpoint(request: Request):
-    """Logout completo con invalidación de token"""
+    """Logout completo con invalidación de token y limpieza total"""
     try:
-        print(f"\n🔴 LOGOUT REQUEST RECIBIDO")
+        logger.info(f"🔴 LOGOUT REQUEST RECIBIDO")
         
         # Extraer token de la request
         token = None
@@ -591,10 +595,27 @@ async def logout_endpoint(request: Request):
         if not token:
             token = request.cookies.get("access_token")
         
-        print(f"   🔑 Token para logout: {token[:20] if token else 'None'}...")
+        logger.info(f"🔑 Token para logout: {token[:20] if token else 'None'}...")
         
-        # Invalidar token
-        success = await auth_service.logout(token)
+        # Invalidar token en el servicio de autenticación
+        if token:
+            success = await auth_service.logout(token)
+            
+            # También intentar revocar el token en el backend de Railway si es posible
+            try:
+                # Llamar al backend para invalidar el token allá también
+                async with httpx.AsyncClient(verify=False) as client:
+                    backend_response = await client.post(
+                        f"{RAILWAY_BACKEND_URL}/api/v1/auth/logout",
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=5.0
+                    )
+                    if backend_response.status_code == 200:
+                        logger.info("✅ Token revocado en backend Railway")
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo revocar en backend: {e}")
+        else:
+            success = True  # Si no hay token, consideramos logout exitoso
         
         if success:
             # Crear respuesta exitosa
@@ -602,29 +623,33 @@ async def logout_endpoint(request: Request):
                 status_code=200,
                 content={
                     "success": True,
-                    "message": "Sesión cerrada correctamente"
+                    "message": "Sesión cerrada correctamente",
+                    "timestamp": datetime.now().isoformat()
                 }
             )
             
-            # 🍪 LIMPIAR TODAS LAS COOKIES
+            # 🍪 LIMPIAR TODAS LAS COOKIES POSIBLES
             cookies_to_clear = [
                 "access_token", "auth_token", "session_token", 
-                "user_info", "authToken", "token"
+                "user_info", "authToken", "token", "refresh_token",
+                "session_id", "user_id", "JSESSIONID"
             ]
             
             for cookie_name in cookies_to_clear:
                 response.delete_cookie(
                     key=cookie_name,
                     path="/",
-                    domain=None
+                    domain=None,
+                    secure=False,
+                    httponly=True
                 )
-                print(f"   🧹 Cookie '{cookie_name}' eliminada")
+                logger.info(f"🧹 Cookie '{cookie_name}' eliminada")
             
-            print(f"   ✅ LOGOUT EXITOSO")
+            logger.info(f"✅ LOGOUT EXITOSO - Sesión completamente cerrada")
             return response
         
         else:
-            print(f"   ❌ LOGOUT FALLÓ")
+            logger.error(f"❌ LOGOUT FALLÓ")
             return JSONResponse(
                 status_code=400,
                 content={

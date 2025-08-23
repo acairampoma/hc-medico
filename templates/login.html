@@ -3,62 +3,652 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital System - Login</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- ENLACE CRÍTICO: Asegúrate de que la ruta sea correcta -->
-    <link rel="stylesheet" href="/static/css/login.css">
+    <title>IA Medical Solutions - Login</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #2980b9 0%, #3498db 25%, #16a085 50%, #1abc9c 75%, #27ae60 100%);
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --medical-green: #27ae60;
+            --medical-teal: #1abc9c;
+            --text-dark: #2c3e50;
+            --white: #ffffff;
+            --light-bg: #f8f9fa;
+            --input-border: #e0e6ed;
+            --shadow: 0 20px 40px rgba(41, 128, 185, 0.2);
+            --shadow-hover: 0 8px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 1200px;
+            background: var(--white);
+            border-radius: 25px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 600px;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== LADO IZQUIERDO - INFO ===== */
+        .info-section {
+            background: var(--primary-gradient);
+            color: var(--white);
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.1; }
+        }
+
+        .hospital-header {
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo-main {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-main i {
+            font-size: 48px;
+            color: var(--white);
+            animation: heartbeat 2s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.1); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.05); }
+        }
+
+        .hospital-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .hospital-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .features {
+            display: grid;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .feature i {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .feature span {
+            font-weight: 500;
+        }
+
+        /* ===== LADO DERECHO - LOGIN ===== */
+        .login-section {
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .login-header h2 {
+            font-size: 1.8rem;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border: 2px solid var(--input-border);
+            border-radius: 12px;
+            font-size: 16px;
+            background: var(--light-bg);
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .input-group i.input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        .input-group .toggle-password {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            cursor: pointer;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+
+        .input-group .toggle-password:hover {
+            color: var(--primary);
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .remember input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        .forgot-password {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: var(--primary-dark);
+        }
+
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .loading-spinner i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .register-btn {
+            width: 100%;
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .register-btn:hover {
+            background: var(--primary);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .demo-info {
+            text-align: center;
+            padding: 15px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 10px;
+            color: var(--primary-dark);
+            font-size: 0.9rem;
+        }
+
+        /* ===== MODAL REGISTRO ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalSlideIn 0.4s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            background: var(--primary-gradient);
+            color: var(--white);
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--light-bg);
+            margin: 0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 20px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            background: var(--white);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--input-border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--light-bg);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--input-border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--light-bg);
+            cursor: pointer;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--input-border);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background: var(--light-bg);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .upload-area p {
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .upload-area small {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        .modal-buttons {
+            padding: 20px 30px;
+            background: var(--light-bg);
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #6c757d;
+            border: 2px solid #6c757d;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #6c757d;
+            color: var(--white);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .login-container {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+
+            .info-section {
+                padding: 40px 30px 20px;
+                order: 2;
+            }
+
+            .login-section {
+                padding: 40px 30px;
+                order: 1;
+            }
+
+            .hospital-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .logo-main {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 20px;
+            }
+
+            .logo-main i {
+                font-size: 32px;
+            }
+
+            .features {
+                display: none;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: 10px;
+                max-height: 85vh;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="login-container">
         <!-- Lado izquierdo - Información médica -->
         <div class="info-section">
-            <!-- Header normal para desktop -->
             <div class="hospital-header">
-                <div class="heart-icon">
-                    <i class="fas fa-heartbeat pulse-icon"></i>
+                <div class="logo-main">
+                    <i class="fas fa-brain"></i>
                 </div>
-                <h1>Sistema Hospitalario</h1>
-                <p>Gestión integral para profesionales de la salud</p>
-                <div class="pulse-line"></div>
+                <h1>IA MEDICAL SOLUTIONS</h1>
+                <p>Inteligencia Artificial aplicada a la gestión hospitalaria moderna</p>
             </div>
             
-            <!-- Header compacto para móvil -->
-            <div class="hospital-header-compact" style="display: none;">
-                <div class="heart-icon">
-                    <i class="fas fa-heartbeat pulse-icon"></i>
-                </div>
-                
-                <div class="title-info">
-                    <h1>Sistema Hospitalario</h1>
-                    <p>Gestión integral para profesionales de la salud</p>
-                </div>
-                
-                <div class="mini-features">
-                    <div class="mini-feature">
-                        <i class="fas fa-user-md"></i>
-                    </div>
-                    <div class="mini-feature">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
-                    <div class="mini-feature">
-                        <i class="fas fa-notes-medical"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Features normales para desktop -->
             <div class="features">
                 <div class="feature">
-                    <i class="fas fa-user-md"></i>
-                    <span>Gestión de Pacientes</span>
+                    <i class="fas fa-robot"></i>
+                    <span>Diagnóstico Asistido por IA</span>
                 </div>
                 <div class="feature">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Control de Citas</span>
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics Predictivos</span>
                 </div>
                 <div class="feature">
-                    <i class="fas fa-notes-medical"></i>
-                    <span>Historiales Médicos</span>
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Seguridad de Datos Médicos</span>
                 </div>
             </div>
         </div>
@@ -66,20 +656,21 @@
         <!-- Lado derecho - Formulario de login -->
         <div class="login-section">
             <div class="login-form">
-                <div class="logo">
-                    <i class="fas fa-hospital"></i>
-                    <h2>Iniciar Sesión</h2>
+                <div class="login-header">
+                    <i class="fas fa-stethoscope"></i>
+                    <h2>Acceso Médico</h2>
+                    <p>Ingrese sus credenciales profesionales</p>
                 </div>
                 
                 <form id="loginForm">
                     <div class="input-group">
-                        <input type="text" id="username" placeholder="Usuario" required>
-                        <i class="fas fa-user"></i>
+                        <i class="fas fa-user-md input-icon"></i>
+                        <input type="text" id="username" placeholder="Usuario médico" required>
                     </div>
                     
                     <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
                         <input type="password" id="password" placeholder="Contraseña" required>
-                        <i class="fas fa-lock"></i>
                         <i class="fas fa-eye toggle-password" onclick="togglePassword()"></i>
                     </div>
                     
@@ -92,46 +683,350 @@
                     </div>
                     
                     <button type="submit" class="login-btn">
-                        <span class="btn-text">Ingresar</span>
+                        <span class="btn-text">Acceder al Sistema</span>
                         <div class="loading-spinner" id="loadingSpinner">
                             <i class="fas fa-spinner"></i>
                         </div>
                     </button>
                 </form>
+
+                <button type="button" class="register-btn" onclick="showRegisterModal()">
+                    <i class="fas fa-user-plus"></i>
+                    Registrar Nuevo Médico
+                </button>
                 
                 <div class="demo-info">
-                    <small>🧪 Modo Demo: admin / 123</small>
+                    <i class="fas fa-flask"></i>
+                    <strong>Demo:</strong> admin / 123456
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SweetAlert2 JS -->
+    <!-- Modal de Registro -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> Registro Médico Profesional</h2>
+                <button class="close-btn" onclick="closeRegisterModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('basic')">
+                    <i class="fas fa-user"></i> Datos Básicos
+                </button>
+                <button class="tab-btn" onclick="switchTab('professional')">
+                    <i class="fas fa-stethoscope"></i> Datos Profesionales
+                </button>
+            </div>
+
+            <form id="registerForm">
+                <!-- Tab 1: Datos Básicos -->
+                <div class="tab-content active" id="basic">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" class="form-input" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Apellido *</label>
+                            <input type="text" class="form-input" id="lastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-input" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" class="form-input" id="phone">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Usuario *</label>
+                            <input type="text" class="form-input" id="registerUsername" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contraseña *</label>
+                            <input type="password" class="form-input" id="registerPassword" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Datos Profesionales -->
+                <div class="tab-content" id="professional">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Especialidad Médica *</label>
+                            <select class="form-select" id="specialty" required>
+                                <option value="">Seleccionar especialidad</option>
+                                <option value="medicina_general">Medicina General</option>
+                                <option value="cardiologia">Cardiología</option>
+                                <option value="neurologia">Neurología</option>
+                                <option value="pediatria">Pediatría</option>
+                                <option value="traumatologia">Traumatología</option>
+                                <option value="ginecologia">Ginecología</option>
+                                <option value="urologia">Urología</option>
+                                <option value="dermatologia">Dermatología</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Número de Colegiatura *</label>
+                            <input type="text" class="form-input" id="medicalLicense" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Años de Experiencia</label>
+                            <input type="number" class="form-input" id="experience" min="0" max="50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hospital/Institución</label>
+                            <input type="text" class="form-input" id="hospital">
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label">Teléfono de Emergencia</label>
+                            <input type="tel" class="form-input" id="emergencyPhone">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Foto de Perfil</label>
+                        <div class="upload-area" onclick="document.getElementById('photoUpload').click()">
+                            <i class="fas fa-camera"></i>
+                            <p>Haz clic para subir tu foto profesional</p>
+                            <small>JPG, PNG máximo 5MB</small>
+                        </div>
+                        <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                    </div>
+                </div>
+            </form>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" onclick="closeRegisterModal()">
+                    Cancelar
+                </button>
+                <button type="button" class="btn-primary" onclick="submitRegistration()">
+                    <i class="fas fa-save"></i> Registrar Médico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
-    <script src="/static/js/login.js"></script>
-    
-    <!-- Script para alternar header según el tamaño de pantalla -->
     <script>
-        function toggleHeaderDisplay() {
-            const normalHeader = document.querySelector('.hospital-header');
-            const compactHeader = document.querySelector('.hospital-header-compact');
+        // Alternar visibilidad de contraseña
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.toggle-password');
             
-            if (window.innerWidth <= 768) {
-                // Móvil: mostrar header compacto
-                normalHeader.style.display = 'none';
-                compactHeader.style.display = 'flex';
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
             } else {
-                // Desktop: mostrar header normal
-                normalHeader.style.display = 'block';
-                compactHeader.style.display = 'none';
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
             }
         }
-        
-        // Ejecutar al cargar la página
-        toggleHeaderDisplay();
-        
-        // Ejecutar al cambiar el tamaño de ventana
-        window.addEventListener('resize', toggleHeaderDisplay);
+
+        // Manejar subida de foto
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const uploadArea = document.querySelector('.upload-area');
+                    uploadArea.innerHTML = `
+                        <img src="${e.target.result}" style="max-width: 100px; border-radius: 50%; margin-bottom: 10px;">
+                        <p>Foto cargada: ${file.name}</p>
+                        <small>Haz clic para cambiar</small>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Mostrar modal de registro
+        function showRegisterModal() {
+            document.getElementById('registerModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Cerrar modal de registro
+        function closeRegisterModal() {
+            document.getElementById('registerModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('registerForm').reset();
+        }
+
+        // Alternar tabs del modal
+        function switchTab(tabName) {
+            // Remover active de todos los tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Activar tab seleccionado
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Olvidé mi contraseña
+        function forgotPassword() {
+            Swal.fire({
+                title: 'Recuperar Contraseña',
+                text: 'Contacte al administrador del sistema para restablecer su contraseña',
+                icon: 'info',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#3498db'
+            });
+        }
+
+        // Submit registro
+        async function submitRegistration() {
+            const formData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                username: document.getElementById('registerUsername').value,
+                password: document.getElementById('registerPassword').value,
+                specialty: document.getElementById('specialty').value,
+                medicalLicense: document.getElementById('medicalLicense').value,
+                experience: document.getElementById('experience').value,
+                hospital: document.getElementById('hospital').value,
+                emergencyPhone: document.getElementById('emergencyPhone').value
+            };
+
+            // Validación básica
+            if (!formData.firstName || !formData.lastName || !formData.email || !formData.username || !formData.password || !formData.specialty || !formData.medicalLicense) {
+                Swal.fire({
+                    title: 'Campos Requeridos',
+                    text: 'Por favor complete todos los campos marcados con *',
+                    icon: 'warning',
+                    confirmButtonColor: '#3498db'
+                });
+                return;
+            }
+
+            // Mostrar loading
+            Swal.fire({
+                title: 'Registrando Médico...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Simular registro (aquí iría la llamada al API)
+            setTimeout(() => {
+                Swal.fire({
+                    title: '¡Registro Exitoso!',
+                    html: `
+                        <p><strong>Dr. ${formData.firstName} ${formData.lastName}</strong></p>
+                        <p>Especialidad: ${formData.specialty}</p>
+                        <p>Usuario: ${formData.username}</p>
+                        <p>El registro ha sido creado exitosamente.</p>
+                    `,
+                    icon: 'success',
+                    confirmButtonColor: '#27ae60'
+                }).then(() => {
+                    closeRegisterModal();
+                });
+            }, 2000);
+        }
+
+        // Login form submit
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Mostrar loading
+            const btnText = document.querySelector('.btn-text');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            btnText.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Obtener datos del usuario para personalizar el saludo
+                    const userData = result.user || {};
+                    const firstName = userData.first_name || '';
+                    const lastName = userData.last_name || '';
+                    const specialty = userData.datos_profesional?.especialidad || '';
+                    
+                    let greeting = '¡Bienvenido!';
+                    if (firstName && lastName) {
+                        greeting = `¡Bienvenido Dr. ${firstName} ${lastName}!`;
+                        if (specialty) {
+                            greeting += `\nEspecialista en ${specialty}`;
+                        }
+                    }
+                    
+                    // Guardar datos
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    
+                    // SweetAlert personalizado
+                    await Swal.fire({
+                        title: 'Acceso Autorizado',
+                        html: `
+                            <div style="text-align: center;">
+                                <i class="fas fa-user-md" style="font-size: 3rem; color: #27ae60; margin-bottom: 15px;"></i>
+                                <h3 style="color: #2c3e50; margin-bottom: 10px;">${greeting}</h3>
+                                <p style="color: #6c757d;">Accediendo al sistema médico...</p>
+                            </div>
+                        `,
+                        icon: 'success',
+                        timer: 2500,
+                        showConfirmButton: false,
+                        background: '#ffffff',
+                        customClass: {
+                            popup: 'medical-popup'
+                        }
+                    });
+                    
+                    window.location.href = '/dashboard';
+                } else {
+                    throw new Error(result.message || 'Error de autenticación');
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: 'Error de Acceso',
+                    text: error.message || 'Credenciales incorrectas',
+                    icon: 'error',
+                    confirmButtonColor: '#e74c3c'
+                });
+            } finally {
+                btnText.style.display = 'block';
+                loadingSpinner.style.display = 'none';
+            }
+        });
     </script>
+
+    <style>
+        .medical-popup {
+            border-radius: 15px !important;
+            border: 3px solid #27ae60 !important;
+        }
+    </style>
 </body>
 </html>
