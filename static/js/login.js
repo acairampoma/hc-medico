@@ -83,28 +83,35 @@ function switchTab(tabName) {
 // API FUNCTIONS - REAL BACKEND CALLS
 // =====================================================
 
-// API Base URL
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// API Base URL y Endpoints disponibles
+const API_BASE_URL = 'https://hospital-app-backend-production.up.railway.app/api/v1';
 
-// Enviar código de recuperación por email (usa la nueva función apiEnviarCorreo)
+/* 
+🔗 ENDPOINTS CONFIRMADOS DEL BACKEND:
+✅ POST /api/v1/upload/send-recovery-code - Enviar código (FormData: email)
+✅ POST /api/v1/auth/register - Registro de usuarios (JSON)
+✅ POST /api/v1/upload/register-with-photo - Registro con foto (FormData)
+*/
+
+// Enviar código de recuperación por email (usando FormData como espera el backend)
 async function apiSendRecoveryCode(email) {
     try {
-        // Preparar datos del correo para recuperación de contraseña
-        const emailData = {
-            to: email,
-            subject: 'Código de Recuperación - IA Medical Solutions',
-            template: 'password_recovery', // Plantilla específica
-            data: {
-                email: email,
-                timestamp: new Date().toISOString()
-            }
-        };
+        console.log('🔐 Enviando código de recuperación para:', email);
         
-        // Usar la nueva función genérica de envío de correo
-        const result = await apiEnviarCorreo(emailData);
+        // El backend espera FormData, no JSON
+        const formData = new FormData();
+        formData.append('email', email);
+        
+        const response = await fetch(`${API_BASE_URL}/upload/send-recovery-code`, {
+            method: 'POST',
+            body: formData // Sin Content-Type header para FormData
+        });
+        
+        const result = await response.json();
+        console.log('✅ Código de recuperación enviado:', result);
         return result;
     } catch (error) {
-        console.error('Error enviando código:', error);
+        console.error('❌ Error enviando código:', error);
         throw error;
     }
 }
@@ -149,27 +156,8 @@ async function apiGrabarRegistro(userData) {
     }
 }
 
-// Enviar correo (método genérico para cualquier tipo de correo)
-async function apiEnviarCorreo(emailData) {
-    try {
-        console.log('📧 Enviando correo:', emailData);
-        
-        const response = await fetch(`${API_BASE_URL}/email/send`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(emailData)
-        });
-        
-        const result = await response.json();
-        console.log('✅ Correo enviado:', result);
-        return result;
-    } catch (error) {
-        console.error('❌ Error enviando correo:', error);
-        throw error;
-    }
-}
+// NOTA: La función apiEnviarCorreo fue eliminada porque el backend
+// ya maneja el envío de correos directamente en sus endpoints específicos
 
 // =====================================================
 // FUNCIÓN DE PRUEBA DE INTEGRACIÓN
@@ -187,11 +175,11 @@ async function testApiIntegration() {
         return;
     }
     
-    // Test 2: Verificar que la función apiEnviarCorreo existe
-    if (typeof apiEnviarCorreo === 'function') {
-        console.log('✅ Función apiEnviarCorreo está disponible');
+    // Test 2: Verificar que la función apiSendRecoveryCode existe
+    if (typeof apiSendRecoveryCode === 'function') {
+        console.log('✅ Función apiSendRecoveryCode está disponible');
     } else {
-        console.error('❌ Función apiEnviarCorreo NO encontrada');
+        console.error('❌ Función apiSendRecoveryCode NO encontrada');
         return;
     }
     
@@ -216,22 +204,18 @@ async function testPasswordRecoveryIntegration() {
     console.log('🔐 Iniciando test de recuperación de contraseña...');
     
     try {
-        // Simular datos de correo para recuperación
-        const testEmailData = {
-            to: 'test@hospital.com',
-            subject: 'Código de Recuperación - IA Medical Solutions',
-            template: 'password_recovery',
-            data: {
-                email: 'test@hospital.com',
-                timestamp: new Date().toISOString()
-            }
-        };
-        
-        console.log('📧 Datos de correo preparados:', testEmailData);
+        // Verificar endpoint correcto para password recovery
+        console.log('🎯 Endpoint configurado: /api/v1/upload/send-recovery-code');
+        console.log('📧 Formato de datos: FormData con email');
         console.log('✅ Integración de password recovery configurada correctamente');
         
-        // Verificar que apiSendRecoveryCode usa apiEnviarCorreo
-        console.log('🔗 apiSendRecoveryCode está configurado para usar apiEnviarCorreo');
+        // Verificar funciones disponibles
+        if (typeof apiSendRecoveryCode === 'function') {
+            console.log('✅ apiSendRecoveryCode disponible (usa FormData)');
+        } else {
+            console.error('❌ apiSendRecoveryCode NO encontrada');
+            return false;
+        }
         
         return true;
     } catch (error) {
@@ -259,7 +243,7 @@ async function testCompleteSeparation() {
     // Verificar funciones críticas
     const criticalFunctions = [
         'apiGrabarRegistro',
-        'apiEnviarCorreo', 
+        'apiSendRecoveryCode', 
         'submitRegistration',
         'forgotPassword',
         'togglePassword'
@@ -299,10 +283,10 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     });
 }
 
-// 📚 EJEMPLOS DE USO DE LAS NUEVAS FUNCIONES:
+// 📚 EJEMPLOS DE USO DE LAS FUNCIONES CORREGIDAS:
 
 /*
-// EJEMPLO 1: Grabar registro simple
+// EJEMPLO 1: Grabar registro simple (JSON)
 async function ejemploGrabarRegistro() {
     const datosUsuario = {
         username: 'doctor_juan',
@@ -326,23 +310,18 @@ async function ejemploGrabarRegistro() {
     }
 }
 
-// EJEMPLO 2: Enviar correo de bienvenida
-async function ejemploEnviarCorreo() {
-    const datosCorreo = {
-        to: 'usuario@ejemplo.com',
-        name: 'Dr. Juan Pérez',
-        type: 'welcome', // o 'recovery', 'notification', etc.
-        subject: 'Bienvenido al Sistema Hospitalario',
-        template: 'welcome_template'
-    };
+// EJEMPLO 2: Enviar código de recuperación (FormData)
+async function ejemploRecuperarPassword() {
+    const email = 'doctor@hospital.com';
     
     try {
-        const resultado = await apiEnviarCorreo(datosCorreo);
+        const resultado = await apiSendRecoveryCode(email);
         if (resultado.success) {
-            console.log('Correo enviado exitosamente');
+            console.log('Código de recuperación enviado exitosamente');
+            console.log('Mensaje:', resultado.message);
         }
     } catch (error) {
-        console.error('Error enviando correo');
+        console.error('Error enviando código de recuperación:', error);
     }
 }
 */
