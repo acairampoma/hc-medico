@@ -301,8 +301,8 @@ class AuthService:
                 logger.info(f"✅ Datos obtenidos del Railway backend: {user_data}")
                 
                 # Crear sesión con datos del backend
-                firstName = user_data.get('firstName', user_data.get('nombre_completo', '').split()[0] if user_data.get('nombre_completo') else '')
-                lastName = user_data.get('lastName', ' '.join(user_data.get('nombre_completo', '').split()[1:]) if user_data.get('nombre_completo') else '')
+                firstName = user_data.get('first_name', user_data.get('nombre_completo', '').split()[0] if user_data.get('nombre_completo') else '')
+                lastName = user_data.get('last_name', ' '.join(user_data.get('nombre_completo', '').split()[1:]) if user_data.get('nombre_completo') else '')
                 
                 user_session = UserSession(
                     user_id=str(user_data.get('id', f"user_{hash(username) % 10000}")),

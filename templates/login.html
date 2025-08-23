@@ -511,7 +511,9 @@
         .upload-area {
             border: 2px dashed var(--input-border);
             border-radius: 10px;
-            padding: 40px 20px;
+            padding: 20px 15px;
+            max-width: 200px;
+            margin: 0 auto;
             text-align: center;
             background: var(--light-bg);
             transition: all 0.3s ease;
@@ -524,19 +526,20 @@
         }
 
         .upload-area i {
-            font-size: 3rem;
+            font-size: 1.8rem;
             color: var(--primary);
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
 
         .upload-area p {
             color: #6c757d;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
         }
 
         .upload-area small {
             color: #6c757d;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         .modal-buttons {
@@ -707,7 +710,7 @@
     <div class="modal-overlay" id="registerModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-user-plus"></i> Registro Médico Profesional</h2>
+                <h2><i class="fas fa-user-plus"></i> Registro Usuario</h2>
                 <button class="close-btn" onclick="closeRegisterModal()">
                     <i class="fas fa-times"></i>
                 </button>
@@ -733,6 +736,15 @@
                         <div class="form-group">
                             <label class="form-label">Apellido *</label>
                             <input type="text" class="form-input" id="lastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Foto de Perfil</label>
+                            <div class="upload-area" onclick="document.getElementById('photoUpload').click()">
+                                <i class="fas fa-camera"></i>
+                                <p>Haz clic para subir tu foto profesional</p>
+                                <small>JPG, PNG máximo 5MB</small>
+                            </div>
+                            <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Email *</label>
@@ -788,15 +800,6 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Foto de Perfil</label>
-                        <div class="upload-area" onclick="document.getElementById('photoUpload').click()">
-                            <i class="fas fa-camera"></i>
-                            <p>Haz clic para subir tu foto profesional</p>
-                            <small>JPG, PNG máximo 5MB</small>
-                        </div>
-                        <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
-                    </div>
                 </div>
             </form>
 
@@ -805,7 +808,7 @@
                     Cancelar
                 </button>
                 <button type="button" class="btn-primary" onclick="submitRegistration()">
-                    <i class="fas fa-save"></i> Registrar Médico
+                    <i class="fas fa-save"></i> Registrar Usuario
                 </button>
             </div>
         </div>
@@ -876,14 +879,162 @@
         }
 
         // Olvidé mi contraseña
-        function forgotPassword() {
-            Swal.fire({
+        async function forgotPassword() {
+            const { value: email } = await Swal.fire({
                 title: 'Recuperar Contraseña',
-                text: 'Contacte al administrador del sistema para restablecer su contraseña',
-                icon: 'info',
-                confirmButtonText: 'Entendido',
-                confirmButtonColor: '#3498db'
+                html: `
+                    <div style="text-align: left;">
+                        <p style="color: #6c757d; margin-bottom: 15px;">
+                            Ingresa tu email registrado y recibirás un código de recuperación
+                        </p>
+                        <input type="email" id="resetEmail" class="swal2-input" 
+                               placeholder="correo@ejemplo.com" 
+                               style="margin: 0; width: 100%; padding: 12px; border: 2px solid #e0e6ed; border-radius: 8px;">
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-paper-plane"></i> Enviar Código',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#3498db',
+                cancelButtonColor: '#6c757d',
+                preConfirm: () => {
+                    const email = document.getElementById('resetEmail').value;
+                    if (!email) {
+                        Swal.showValidationMessage('Por favor ingresa tu email');
+                        return false;
+                    }
+                    if (!email.includes('@')) {
+                        Swal.showValidationMessage('Email inválido');
+                        return false;
+                    }
+                    return email;
+                }
             });
+
+            if (email) {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Enviando código...',
+                    text: 'Por favor espera',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    // Simular envío (aquí iría la llamada real al backend)
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Mostrar código de recuperación
+                    await showResetCodeModal(email);
+                } catch (error) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'No se pudo enviar el código. Intenta nuevamente.',
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            }
+        }
+
+        async function showResetCodeModal(email) {
+            const { value: formValues } = await Swal.fire({
+                title: 'Código de Recuperación',
+                html: `
+                    <div style="text-align: left;">
+                        <p style="color: #6c757d; margin-bottom: 15px;">
+                            Se ha enviado un código a <strong>${email}</strong>
+                        </p>
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">
+                            Código de recuperación:
+                        </label>
+                        <input type="text" id="resetCode" class="swal2-input" 
+                               placeholder="Ejemplo: 123456" 
+                               style="margin: 0 0 15px 0; width: 100%; padding: 12px; border: 2px solid #e0e6ed; border-radius: 8px;">
+                        
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">
+                            Nueva contraseña:
+                        </label>
+                        <input type="password" id="newPassword" class="swal2-input" 
+                               placeholder="Mínimo 6 caracteres" 
+                               style="margin: 0 0 15px 0; width: 100%; padding: 12px; border: 2px solid #e0e6ed; border-radius: 8px;">
+                        
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">
+                            Confirmar contraseña:
+                        </label>
+                        <input type="password" id="confirmPassword" class="swal2-input" 
+                               placeholder="Repetir contraseña" 
+                               style="margin: 0; width: 100%; padding: 12px; border: 2px solid #e0e6ed; border-radius: 8px;">
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check"></i> Cambiar Contraseña',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#27ae60',
+                cancelButtonColor: '#6c757d',
+                preConfirm: () => {
+                    const code = document.getElementById('resetCode').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    if (!code) {
+                        Swal.showValidationMessage('Ingresa el código de recuperación');
+                        return false;
+                    }
+                    if (!newPassword || newPassword.length < 6) {
+                        Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
+                        return false;
+                    }
+                    if (newPassword !== confirmPassword) {
+                        Swal.showValidationMessage('Las contraseñas no coinciden');
+                        return false;
+                    }
+                    
+                    return { code, newPassword };
+                }
+            });
+
+            if (formValues) {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Cambiando contraseña...',
+                    text: 'Por favor espera',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    // Simular cambio de contraseña (aquí iría la llamada real al backend)
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Éxito
+                    await Swal.fire({
+                        title: '¡Contraseña Cambiada!',
+                        text: 'Tu contraseña ha sido actualizada correctamente. Ahora puedes iniciar sesión.',
+                        icon: 'success',
+                        confirmButtonText: 'Iniciar Sesión',
+                        confirmButtonColor: '#27ae60'
+                    });
+                    
+                } catch (error) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'No se pudo cambiar la contraseña. Verifica el código e intenta nuevamente.',
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            }
         }
 
         // Submit registro
