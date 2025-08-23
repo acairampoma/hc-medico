@@ -542,6 +542,58 @@
             font-size: 0.75rem;
         }
 
+        /* Avatar compacto */
+        .avatar-upload {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--light-bg);
+            border: 2px solid var(--input-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .avatar-overlay {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 28px;
+            height: 28px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            border: 3px solid white;
+        }
+
+        .avatar-upload:hover .avatar-preview {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
         .modal-buttons {
             padding: 20px 30px;
             background: var(--light-bg);
@@ -728,6 +780,20 @@
             <form id="registerForm">
                 <!-- Tab 1: Datos Básicos -->
                 <div class="tab-content active" id="basic">
+                    <!-- Avatar de perfil -->
+                    <div class="avatar-section" style="text-align: center; margin-bottom: 20px;">
+                        <div class="avatar-upload" onclick="document.getElementById('photoUpload').click()">
+                            <div class="avatar-preview" id="avatarPreview">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="avatar-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                        <small style="color: #666;">Foto profesional</small>
+                    </div>
+                    
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Nombre *</label>
@@ -736,15 +802,6 @@
                         <div class="form-group">
                             <label class="form-label">Apellido *</label>
                             <input type="text" class="form-input" id="lastName" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Foto de Perfil</label>
-                            <div class="upload-area" onclick="document.getElementById('photoUpload').click()">
-                                <i class="fas fa-camera"></i>
-                                <p>Haz clic para subir tu foto profesional</p>
-                                <small>JPG, PNG máximo 5MB</small>
-                            </div>
-                            <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Email *</label>
@@ -839,12 +896,9 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const uploadArea = document.querySelector('.upload-area');
-                    uploadArea.innerHTML = `
-                        <img src="${e.target.result}" style="max-width: 100px; border-radius: 50%; margin-bottom: 10px;">
-                        <p>Foto cargada: ${file.name}</p>
-                        <small>Haz clic para cambiar</small>
-                    `;
+                    const avatarPreview = document.getElementById('avatarPreview');
+                    avatarPreview.innerHTML = `<img src="${e.target.result}" alt="Avatar">`;
+                    console.log('Foto cargada:', file.name);
                 };
                 reader.readAsDataURL(file);
             }
