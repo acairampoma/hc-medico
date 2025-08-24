@@ -899,6 +899,174 @@ async def logout_endpoint(request: Request):
             }
         )
 
+# ========================================
+# 🔐 ENDPOINTS DE RESET PASSWORD - RAILWAY BACKEND
+# ========================================
+
+@app.post("/upload/send-recovery-code")
+async def send_recovery_code(request: Request):
+    """📧 Enviar código de recuperación a email"""
+    try:
+        # Obtener datos del FormData
+        form_data = await request.form()
+        email = str(form_data.get('email', '')).strip()
+        
+        if not email:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Email requerido"}
+            )
+        
+        # Llamar al backend Railway
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.post(
+                f"{RAILWAY_BACKEND_URL}/api/v1/auth/forgot-password",
+                json={"email": email},
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"✅ Código enviado a: {email}")
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "success": True,
+                        "message": "Código enviado a tu correo",
+                        "data": data.get("data", {})
+                    }
+                )
+            else:
+                error_data = response.json()
+                error_msg = error_data.get("detail", f"Error HTTP {response.status_code}")
+                logger.error(f"❌ Error enviando código: {error_msg}")
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"success": False, "message": error_msg}
+                )
+                
+    except Exception as e:
+        logger.error(f"💥 Error en send_recovery_code: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Error interno del servidor"}
+        )
+
+@app.post("/upload/verify-recovery-code")
+async def verify_recovery_code(request: Request):
+    """🔍 Verificar código de recuperación"""
+    try:
+        # Obtener datos del FormData
+        form_data = await request.form()
+        email = str(form_data.get('email', '')).strip()
+        code = str(form_data.get('code', '')).strip()
+        
+        if not email or not code:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Email y código requeridos"}
+            )
+        
+        # Llamar al backend Railway
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.post(
+                f"{RAILWAY_BACKEND_URL}/api/v1/auth/verify-reset-code",
+                json={"email": email, "code": code},
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"✅ Código verificado para: {email}")
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "success": True,
+                        "message": "Código válido",
+                        "data": {
+                            "code_valid": True,
+                            "message": "Código correcto"
+                        }
+                    }
+                )
+            else:
+                error_data = response.json()
+                error_msg = error_data.get("detail", f"Error HTTP {response.status_code}")
+                logger.error(f"❌ Error verificando código: {error_msg}")
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"success": False, "message": error_msg}
+                )
+                
+    except Exception as e:
+        logger.error(f"💥 Error en verify_recovery_code: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Error interno del servidor"}
+        )
+
+@app.post("/upload/reset-password")
+async def reset_password(request: Request):
+    """🔑 Resetear contraseña con código verificado - 🔥 CON ACTUALIZACIÓN CAMPO USED"""
+    try:
+        # Obtener datos del FormData
+        form_data = await request.form()
+        email = str(form_data.get('email', '')).strip()
+        code = str(form_data.get('code', '')).strip()
+        new_password = str(form_data.get('new_password', '')).strip()
+        
+        if not email or not code or not new_password:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Email, código y nueva contraseña requeridos"}
+            )
+        
+        # Validar longitud mínima de contraseña
+        if len(new_password) < 6:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "La contraseña debe tener al menos 6 caracteres"}
+            )
+        
+        # Llamar al backend Railway
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.post(
+                f"{RAILWAY_BACKEND_URL}/api/v1/auth/reset-password",
+                json={
+                    "email": email,
+                    "reset_code": code,
+                    "new_password": new_password
+                },
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"✅ Contraseña actualizada para: {email}")
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "success": True,
+                        "message": "Contraseña actualizada exitosamente",
+                        "data": data.get("data", {})
+                    }
+                )
+            else:
+                error_data = response.json()
+                error_msg = error_data.get("detail", f"Error HTTP {response.status_code}")
+                logger.error(f"❌ Error reseteando contraseña: {error_msg}")
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"success": False, "message": error_msg}
+                )
+                
+    except Exception as e:
+        logger.error(f"💥 Error en reset_password: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Error interno del servidor"}
+        )
+
 @app.get("/api/user/{username}")
 async def get_user_info(username: str):
     """Obtiene información del usuario autenticado"""

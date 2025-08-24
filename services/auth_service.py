@@ -223,10 +223,13 @@ class AuthService:
         """Login directo con Railway backend"""
         try:
             async with httpx.AsyncClient(verify=False) as client:
-                # Login directo como funciona
+                # 🔥 ARREGLO CRÍTICO: Railway espera EMAIL, no username
+                # Si el username es "admin", convertir a email
+                email = username if "@" in username else f"{username}@hospital.com"
+                
                 response = await client.post(
                     f"{RAILWAY_BACKEND_URL}/api/v1/auth/login",
-                    json={"username": username, "password": password},
+                    json={"email": email, "password": password},  # 🔑 CAMBIO: email en lugar de username
                     timeout=10.0
                 )
                 

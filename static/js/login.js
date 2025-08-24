@@ -283,52 +283,7 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     });
 }
 
-// 📚 EJEMPLOS DE USO DE LAS FUNCIONES CORREGIDAS:
 
-/*
-// EJEMPLO 1: Grabar registro simple (JSON)
-async function ejemploGrabarRegistro() {
-    const datosUsuario = {
-        username: 'doctor_juan',
-        email: 'juan.perez@hospital.com',
-        firstName: 'Juan',
-        lastName: 'Pérez',
-        password: 'mi_password_seguro',
-        specialty: 'Cardiología',
-        medicalLicense: 'CMP-12345'
-    };
-    
-    try {
-        const resultado = await apiGrabarRegistro(datosUsuario);
-        if (resultado.success) {
-            Swal.fire('¡Éxito!', 'Usuario registrado correctamente', 'success');
-        } else {
-            Swal.fire('Error', resultado.message, 'error');
-        }
-    } catch (error) {
-        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
-    }
-}
-
-// EJEMPLO 2: Enviar código de recuperación (FormData)
-async function ejemploRecuperarPassword() {
-    const email = 'doctor@hospital.com';
-    
-    try {
-        const resultado = await apiSendRecoveryCode(email);
-        if (resultado.success) {
-            console.log('Código de recuperación enviado exitosamente');
-            console.log('Mensaje:', resultado.message);
-        }
-    } catch (error) {
-        console.error('Error enviando código de recuperación:', error);
-    }
-}
-*/
-
-// =====================================================
-// FORGOT PASSWORD WITH REAL API
-// =====================================================
 
 // Olvidé mi contraseña
 async function forgotPassword() {
