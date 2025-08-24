@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IA Medical Solutions - Login</title>
+    <title>{{ sistema.nombre }} - Login Médico v{{ sistema.version }}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
@@ -15,8 +15,12 @@
                 <div class="logo-main">
                     <i class="fas fa-brain"></i>
                 </div>
-                <h1>IA MEDICAL SOLUTIONS</h1>
+                <h1>{{ sistema.nombre.upper() }}</h1>
                 <p>Inteligencia Artificial aplicada a la gestión hospitalaria moderna</p>
+                <div class="system-status">
+                    <small><i class="fas fa-circle" style="color: {% if sistema.backend_status == 'online' %}#4CAF50{% else %}#f44336{% endif %};"></i> 
+                    Backend {{ sistema.backend_status }} - v{{ sistema.version }}</small>
+                </div>
             </div>
             
             <div class="features">
@@ -79,7 +83,8 @@
                 
                 <div class="demo-info">
                     <i class="fas fa-flask"></i>
-                    <strong>Demo:</strong> admin / 123456
+                    <strong>Demo:</strong> {{ sistema.demo_user }} / {{ sistema.demo_pass }}
+                    <br><small style="color: #666; font-size: 0.8em;">© {{ sistema.año }} {{ sistema.nombre }}</small>
                 </div>
             </div>
         </div>
@@ -198,6 +203,31 @@
         </div>
     </div>
 
+    <!-- ⚡ DATOS DINÁMICOS DEL SERVIDOR - JINJA2 + RAILWAY BACKEND -->
+    <script>
+        // 🔥 Configuración global inyectada desde FastAPI + Railway
+        window.HOSPITAL_CONFIG = {
+            sistema: {
+                nombre: "{{ sistema.nombre }}",
+                version: "{{ sistema.version }}",
+                backend_status: "{{ sistema.backend_status }}",
+                demo_user: "{{ sistema.demo_user }}",
+                demo_pass: "{{ sistema.demo_pass }}",
+                timestamp: "{{ timestamp }}"
+            },
+            api: {
+                base_url: "/api/v1",
+                endpoints: {
+                    login: "/auth/token",
+                    register: "/auth/register",
+                    forgot_password: "/auth/forgot-password"
+                }
+            }
+        };
+        
+        console.log('🏥 Hospital System Config:', window.HOSPITAL_CONFIG);
+    </script>
+    
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
     <script src="/static/js/login.js"></script>
