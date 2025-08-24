@@ -285,72 +285,10 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
 
 
 
-// Olvidé mi contraseña
-async function forgotPassword() {
-    const { value: email } = await Swal.fire({
-        title: 'Recuperar Contraseña',
-        html: `
-            <div style="text-align: left;">
-                <p style="color: #6c757d; margin-bottom: 15px;">
-                    Ingresa tu email registrado y recibirás un código de recuperación
-                </p>
-                <input type="email" id="resetEmail" class="swal2-input" 
-                       placeholder="correo@ejemplo.com" 
-                       style="margin: 0; width: 100%; padding: 12px; border: 2px solid #e0e6ed; border-radius: 8px;">
-            </div>
-        `,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: '<i class="fas fa-paper-plane"></i> Enviar Código',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#3498db',
-        cancelButtonColor: '#6c757d',
-        preConfirm: () => {
-            const email = document.getElementById('resetEmail').value;
-            if (!email) {
-                Swal.showValidationMessage('Por favor ingresa tu email');
-                return false;
-            }
-            if (!email.includes('@')) {
-                Swal.showValidationMessage('Email inválido');
-                return false;
-            }
-            return email;
-        }
-    });
-
-    if (email) {
-        // Mostrar loading
-        Swal.fire({
-            title: 'Enviando código...',
-            text: 'Por favor espera',
-            icon: 'info',
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            willOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        try {
-            // Llamar API real
-            const result = await apiSendRecoveryCode(email);
-            
-            if (result.success) {
-                // Mostrar código de recuperación
-                await showResetCodeModal(email);
-            } else {
-                throw new Error(result.message || 'Error enviando código');
-            }
-        } catch (error) {
-            Swal.fire({
-                title: 'Error',
-                text: error.message || 'No se pudo enviar el código. Intenta nuevamente.',
-                icon: 'error',
-                confirmButtonColor: '#ef4444'
-            });
-        }
-    }
+// Olvidé mi contraseña - REDIRIGIR A RECOVER-PASSWORD.HTML
+function forgotPassword() {
+    console.log('🔐 Redirigiendo a página de recuperación de contraseña');
+    window.location.href = '/recover-password';
 }
 
 async function showResetCodeModal(email) {
@@ -398,8 +336,27 @@ async function showResetCodeModal(email) {
                 Swal.showValidationMessage('Ingresa el código de recuperación');
                 return false;
             }
-            if (!newPassword || newPassword.length < 8) {
-                Swal.showValidationMessage('La contraseña debe tener al menos 8 caracteres');
+            // Validaciones detalladas de contraseña
+            const passwordErrors = [];
+            
+            if (newPassword.length < 8) {
+                passwordErrors.push('Al menos 8 caracteres');
+            }
+            if (!/[A-Z]/.test(newPassword)) {
+                passwordErrors.push('Al menos una mayúscula (A-Z)');
+            }
+            if (!/[a-z]/.test(newPassword)) {
+                passwordErrors.push('Al menos una minúscula (a-z)');
+            }
+            if (!/[0-9]/.test(newPassword)) {
+                passwordErrors.push('Al menos un número (0-9)');
+            }
+            if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(newPassword)) {
+                passwordErrors.push('Al menos un símbolo especial (!@#$%^&*)');
+            }
+            
+            if (passwordErrors.length > 0) {
+                Swal.showValidationMessage(`Requisitos faltantes: ${passwordErrors.join(', ')}`);
                 return false;
             }
             if (newPassword !== confirmPassword) {
@@ -425,22 +382,36 @@ async function showResetCodeModal(email) {
         });
 
         try {
-            // Aquí iría la llamada API para verificar código y cambiar contraseña
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // 🔥 LLAMADA REAL AL ENDPOINT DE RAILWAY
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('code', formValues.code);
+            formData.append('new_password', formValues.newPassword);
             
-            // Éxito
-            await Swal.fire({
-                title: '¡Contraseña Cambiada!',
-                text: 'Tu contraseña ha sido actualizada correctamente. Ahora puedes iniciar sesión.',
-                icon: 'success',
-                confirmButtonText: 'Iniciar Sesión',
-                confirmButtonColor: '#27ae60'
+            const response = await fetch(`${API_BASE_URL}/upload/reset-password`, {
+                method: 'POST',
+                body: formData
             });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Éxito
+                await Swal.fire({
+                    title: '¡Contraseña Cambiada!',
+                    text: 'Tu contraseña ha sido actualizada correctamente. Ahora puedes iniciar sesión.',
+                    icon: 'success',
+                    confirmButtonText: 'Iniciar Sesión',
+                    confirmButtonColor: '#27ae60'
+                });
+            } else {
+                throw new Error(result.message || 'Error cambiando contraseña');
+            }
             
         } catch (error) {
             Swal.fire({
                 title: 'Error',
-                text: 'No se pudo cambiar la contraseña. Verifica el código e intenta nuevamente.',
+                text: error.message || 'No se pudo cambiar la contraseña. Verifica el código e intenta nuevamente.',
                 icon: 'error',
                 confirmButtonColor: '#ef4444'
             });

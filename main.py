@@ -456,15 +456,13 @@ async def login_page(request: Request):
 async def dashboard_page(request: Request):
     """🏥 Dashboard ÉPICO con datos dinámicos de Railway"""
     try:
-        # 🔥 INTEGRACIÓN: Obtener datos reales del usuario desde Railway
-        # TODO: Obtener user_id del token/sesión actual
-        user_id = 1  # Temporal para desarrollo
+        # 🔥 OBTENER USUARIO REAL DEL TOKEN
+        token = request.cookies.get("access_token")
+        if not token:
+            return RedirectResponse(url="/", status_code=302)
         
-        # Usar tu servicio OAuth2 existente para obtener datos
-        success, user_data, error = await oauth2_client.get_user_info(
-            username="admin",  # TODO: Obtener del token actual
-            token="dummy_token"  # TODO: Obtener token real
-        )
+        # Obtener datos del usuario autenticado desde Railway
+        success, user_data, error = await oauth2_client.get_user_info_by_token(token)
         
         # Datos por defecto si no hay conexión con Railway
         doctor_data = {
@@ -917,33 +915,18 @@ async def send_recovery_code(request: Request):
                 content={"success": False, "message": "Email requerido"}
             )
         
-        # Llamar al backend Railway
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.post(
-                f"{RAILWAY_BACKEND_URL}/api/v1/auth/forgot-password",
-                json={"email": email},
-                timeout=10.0
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                logger.info(f"✅ Código enviado a: {email}")
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "success": True,
-                        "message": "Código enviado a tu correo",
-                        "data": data.get("data", {})
-                    }
-                )
-            else:
-                error_data = response.json()
-                error_msg = error_data.get("detail", f"Error HTTP {response.status_code}")
-                logger.error(f"❌ Error enviando código: {error_msg}")
-                return JSONResponse(
-                    status_code=response.status_code,
-                    content={"success": False, "message": error_msg}
-                )
+        # 🚨 RAILWAY NO TIENE FORGOT PASSWORD - SIMULAMOS ÉXITO PARA PRESENTACIÓN
+        logger.info(f"⚡ SIMULANDO envío de código para presentación: {email}")
+        
+        # Simulamos éxito para la presentación
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": "Código enviado a tu correo (DEMO MODE)",
+                "data": {"demo_code": "123456"}
+            }
+        )
                 
     except Exception as e:
         logger.error(f"💥 Error en send_recovery_code: {str(e)}")
@@ -967,36 +950,27 @@ async def verify_recovery_code(request: Request):
                 content={"success": False, "message": "Email y código requeridos"}
             )
         
-        # Llamar al backend Railway
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.post(
-                f"{RAILWAY_BACKEND_URL}/api/v1/auth/verify-reset-code",
-                json={"email": email, "code": code},
-                timeout=10.0
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                logger.info(f"✅ Código verificado para: {email}")
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "success": True,
-                        "message": "Código válido",
-                        "data": {
-                            "code_valid": True,
-                            "message": "Código correcto"
-                        }
+        # 🚨 DEMO MODE - CUALQUIER CÓDIGO ES VÁLIDO PARA PRESENTACIÓN
+        logger.info(f"⚡ VERIFICANDO código DEMO para presentación: {email} - Código: {code}")
+        
+        # Para la presentación, aceptamos cualquier código
+        if code.strip():
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": "Código válido (DEMO MODE)",
+                    "data": {
+                        "code_valid": True,
+                        "message": "Código correcto"
                     }
-                )
-            else:
-                error_data = response.json()
-                error_msg = error_data.get("detail", f"Error HTTP {response.status_code}")
-                logger.error(f"❌ Error verificando código: {error_msg}")
-                return JSONResponse(
-                    status_code=response.status_code,
-                    content={"success": False, "message": error_msg}
-                )
+                }
+            )
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Código requerido"}
+            )
                 
     except Exception as e:
         logger.error(f"💥 Error en verify_recovery_code: {str(e)}")
@@ -1028,37 +1002,20 @@ async def reset_password(request: Request):
                 content={"success": False, "message": "La contraseña debe tener al menos 6 caracteres"}
             )
         
-        # Llamar al backend Railway
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.post(
-                f"{RAILWAY_BACKEND_URL}/api/v1/auth/reset-password",
-                json={
-                    "email": email,
-                    "reset_code": code,
-                    "new_password": new_password
-                },
-                timeout=10.0
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                logger.info(f"✅ Contraseña actualizada para: {email}")
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "success": True,
-                        "message": "Contraseña actualizada exitosamente",
-                        "data": data.get("data", {})
-                    }
-                )
-            else:
-                error_data = response.json()
-                error_msg = error_data.get("detail", f"Error HTTP {response.status_code}")
-                logger.error(f"❌ Error reseteando contraseña: {error_msg}")
-                return JSONResponse(
-                    status_code=response.status_code,
-                    content={"success": False, "message": error_msg}
-                )
+        # 🚨 DEMO MODE PARA PRESENTACIÓN - SIMULA ACTUALIZACIÓN EXITOSA
+        logger.info(f"⚡ SIMULANDO cambio de contraseña para presentación: {email}")
+        
+        # En una implementación real, aquí actualizarías la BD directamente
+        # o usarías el endpoint /api/v1/auth/change-password (requiere autenticación)
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": "Contraseña actualizada exitosamente (DEMO MODE)",
+                "data": {"password_changed": True}
+            }
+        )
                 
     except Exception as e:
         logger.error(f"💥 Error en reset_password: {str(e)}")

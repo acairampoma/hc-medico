@@ -59,6 +59,9 @@ class UserSession:
     # 🔥 NUEVO: Array completo de roles
     roles_array: Optional[list] = None
     
+    # 🔥 AVATAR/FOTO DEL USUARIO
+    foto_url: Optional[str] = None
+    
     def __post_init__(self):
         if self.login_time is None:
             self.login_time = datetime.now()
@@ -100,6 +103,9 @@ class UserSession:
             'area_trabajo': self.area_trabajo,
             'especialidad_principal': self.especialidad_principal,
             'datos_profesional_parsed': self.datos_profesional_parsed,
+            
+            # 🔥 AVATAR/FOTO DEL USUARIO
+            'foto_url': self.foto_url,
             
             # Datos calculados
             'displayName': f"Dr. {self.firstName} {self.lastName}".strip() if self.firstName and self.lastName else self.name,
@@ -173,16 +179,17 @@ class AuthService:
                 )
             
             # Autenticar directo con Railway
-            success, token_response, error_msg = await self._railway_login(
+            success, token_response, user_data_from_login = await self._railway_login(
                 username=username,
                 password=password
             )
             
             if success and token_response:
-                # Crear sesión de usuario CON ROLES CORREGIDOS
-                user_session = await self._create_user_session(
+                # Crear sesión de usuario CON DATOS REALES DE RAILWAY
+                user_session = await self._create_user_session_with_data(
                     username=username,
-                    token_response=token_response
+                    token_response=token_response,
+                    user_data=user_data_from_login
                 )
                 
                 # Limpiar intentos fallidos
@@ -240,8 +247,11 @@ class AuthService:
                             access_token=data["data"]["token"]["access_token"],
                             token_type="Bearer"
                         )
+                        # 🔥 OBTENER DATOS DEL USUARIO DESDE EL LOGIN RESPONSE
+                        user_data = data["data"]["user"]
                         logger.info(f"✅ Login Railway exitoso para: {username}")
-                        return True, token, None
+                        logger.info(f"👤 Datos usuario: {user_data}")
+                        return True, token, user_data  # 🔑 DEVOLVER DATOS DEL USUARIO
                     else:
                         error_msg = "Token no encontrado en respuesta"
                         logger.warning(f"❌ Login Railway fallido: {error_msg}")
@@ -283,6 +293,31 @@ class AuthService:
             logger.error(f"💥 Error obteniendo user info Railway: {str(e)}")
             return False, None, f"Error de conexión: {str(e)}"
     
+    async def _create_user_session_with_data(self, username: str, token_response: TokenResponse, user_data: dict) -> UserSession:
+        """Crear sesión de usuario usando datos directos del login de Railway"""
+        logger.info(f"👤 Creando sesión con datos de Railway: {user_data}")
+        
+        firstName = user_data.get('first_name', '')
+        lastName = user_data.get('last_name', '')
+        
+        user_session = UserSession(
+            user_id=str(user_data.get('id')),
+            username=user_data.get('username', username),
+            name=user_data.get('nombre_completo', f"{firstName} {lastName}".strip()),
+            email=user_data.get('email'),
+            role="ROLE_ADMIN" if username.lower() == "admin" else "ROLE_USER",
+            permissions=self._get_user_permissions("ROLE_ADMIN" if username.lower() == "admin" else "ROLE_USER"),
+            token=token_response,
+            firstName=firstName,
+            lastName=lastName,
+            foto_url=user_data.get('foto_url'),  # 🔥 FOTO DESDE RAILWAY
+            especialidad_principal=user_data.get('especialidad'),
+            cmp=user_data.get('colegiatura')
+        )
+        
+        logger.info(f"✅ Sesión creada con foto_url: {user_session.foto_url}")
+        return user_session
+
     async def _create_user_session(
         self, 
         username: str, 
@@ -322,7 +357,8 @@ class AuthService:
                     permissions=self._get_user_permissions("ROLE_ADMIN" if username.lower() == "admin" else "ROLE_USER"),
                     token=token_response,
                     firstName=firstName,
-                    lastName=lastName
+                    lastName=lastName,
+                    foto_url=user_data.get('foto_url')  # 🔥 INCLUIR AVATAR DESDE RAILWAY
                 )
                 
                 logger.info(f"👤 Sesión COMPLETA creada para {username}")
