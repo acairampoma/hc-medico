@@ -469,6 +469,57 @@ async function showResetCodeModal(email) {
 // REGISTER WITH REAL API
 // =====================================================
 
+// ✅ FUNCIÓN DE TEST TEMPORAL PARA DEBUG
+async function testRegistrationDebug() {
+    console.log('🧪 Iniciando test de registro debug...');
+    
+    try {
+        // Crear FormData exacto como el curl que funciona
+        const testFormData = new FormData();
+        testFormData.append('firstName', 'Alan');
+        testFormData.append('lastName', 'Test');
+        testFormData.append('email', 'alan.test@gmail.com');
+        testFormData.append('username', 'alantest');
+        testFormData.append('password', 'Admin123!');
+        testFormData.append('especialidad', 'Neurología');
+        testFormData.append('colegiatura', '54321');
+        testFormData.append('telefono', '123456789');
+        testFormData.append('cargo', 'Doctor Test');
+        
+        console.log('🔍 Enviando datos de test...');
+        
+        const response = await fetch(`${API_BASE_URL}/upload/register-with-photo`, {
+            method: 'POST',
+            body: testFormData
+        });
+        
+        const result = await response.json();
+        
+        console.log('📡 Respuesta test:', response.status, result);
+        
+        if (response.ok && result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Test Exitoso!',
+                text: `Usuario ${result.data.nombre_completo} creado con ID ${result.data.id}`
+            });
+        } else {
+            throw new Error(result.message || 'Error en test');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en test:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error en Test',
+            text: error.message
+        });
+    }
+}
+
+// Exponer función de test globalmente
+window.testRegistrationDebug = testRegistrationDebug;
+
 // Submit registro
 async function submitRegistration() {
     console.log('🔥 Iniciando proceso de registro con mejores prácticas...');
@@ -531,8 +582,22 @@ async function submitRegistration() {
     });
 
     try {
+        // ✅ DEBUG: Log FormData contents
+        console.log('🔍 FormData contents:');
+        for (let [key, value] of formData.entries()) {
+            if (key === 'password') {
+                console.log(`${key}: [HIDDEN]`);
+            } else if (key === 'photo') {
+                console.log(`${key}: ${value.name} (${value.size} bytes)`);
+            } else {
+                console.log(`${key}: ${value}`);
+            }
+        }
+        
         // ✅ LLAMAR API CORRECTA con FormData (como recover-password.js)
         const result = await apiGrabarRegistroConFormData(formData);
+        
+        console.log('🔍 API Response:', result);
         
         if (result.success) {
             Swal.fire({
