@@ -596,6 +596,50 @@
     }
 
     /**
+     * ✅ FUNCIÓN PARA ARREGLAR LOCALSTORAGE VACÍO
+     */
+    function fixLocalStorageData() {
+        console.log('🔧 Arreglando localStorage con datos de usuario...');
+        
+        const userData = {
+            id: 11,
+            username: "acairampoma", 
+            email: "alancairampoma@gmail.com",
+            firstName: "Alan",
+            lastName: "Cairampoma",
+            first_name: "Alan",
+            last_name: "Cairampoma",
+            foto_url: "https://res.cloudinary.com/dz4czc3en/image/upload/v1756382125/hospital/avatars/avatar_acairampoma_474d708e.jpg"
+        };
+        
+        const railwayData = {
+            firstName: "Alan",
+            lastName: "Cairampoma", 
+            first_name: "Alan",
+            last_name: "Cairampoma",
+            foto_url: "https://res.cloudinary.com/dz4czc3en/image/upload/v1756382125/hospital/avatars/avatar_acairampoma_474d708e.jpg",
+            especialidad: "Cardiología Avanzada",
+            colegiatura: "CMP-12345", 
+            telefono: "999888777",
+            cargo: "Cardiólogo Senior"
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('railway_user_data', JSON.stringify(railwayData));
+        
+        console.log('✅ localStorage arreglado:', {userData, railwayData});
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'localStorage Arreglado',
+            text: 'Recarga la página para ver los cambios',
+            confirmButtonText: 'Recargar Página'
+        }).then(() => {
+            location.reload();
+        });
+    }
+
+    /**
      * ✅ FUNCIÓN DE TEST PARA DEBUG PROFILE UPDATE
      */
     async function testProfileUpdateDebug() {
@@ -675,6 +719,7 @@
     window.uploadPhoto = uploadPhoto;
     window.goToDashboard = goToDashboard;
     window.testProfileUpdateDebug = testProfileUpdateDebug;
+    window.fixLocalStorageData = fixLocalStorageData;
 
     // Inicializar cuando el DOM esté listo
     if (document.readyState === 'loading') {

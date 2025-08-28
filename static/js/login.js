@@ -738,7 +738,7 @@ function generateDisplayName(userData, fallbackUsername) {
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const username = document.getElementById('username').value;
+    const usernameOrEmail = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
     // Mostrar loading
@@ -748,22 +748,32 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     loadingSpinner.style.display = 'block';
     
     try {
-        const response = await fetch('/api/login', {
+        console.log('🔥 Intentando login con:', usernameOrEmail);
+        
+        // ✅ USAR BACKEND RAILWAY EN LUGAR DE LOCAL
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ 
+                email: usernameOrEmail, // Railway usa email
+                password: password 
+            })
         });
         
         const result = await response.json();
+        console.log('📡 Login response:', result);
         
-        if (result.success) {
-            // Obtener datos del usuario para personalizar el saludo
-            const userData = result.user || {};
-            const firstName = userData.first_name || '';
-            const lastName = userData.last_name || '';
-            const specialty = userData.datos_profesional?.especialidad || '';
+        if (result.success && result.data) {
+            // ✅ OBTENER DATOS CORRECTAMENTE DEL RAILWAY RESPONSE
+            const loginData = result.data;
+            const userData = loginData.user || {};
+            const tokenData = loginData.token || {};
+            
+            const firstName = userData.first_name || userData.firstName || '';
+            const lastName = userData.last_name || userData.lastName || '';
+            const specialty = userData.especialidad || '';
             
             let greeting = '¡Bienvenido!';
             if (firstName && lastName) {
@@ -773,9 +783,23 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
                 }
             }
             
-            // Guardar datos
-            localStorage.setItem('token', result.token);
+            // ✅ GUARDAR TODOS LOS DATOS CORRECTAMENTE
+            localStorage.setItem('token', tokenData.access_token || '');
+            localStorage.setItem('access_token', tokenData.access_token || '');
+            localStorage.setItem('refresh_token', tokenData.refresh_token || '');
             localStorage.setItem('user', JSON.stringify(userData));
+            
+            // ✅ GUARDAR RAILWAY DATA PARA PROFILE Y DASHBOARD
+            const railwayData = {
+                foto_url: userData.foto_url,
+                especialidad: userData.especialidad,
+                colegiatura: userData.colegiatura,
+                telefono: userData.telefono,
+                cargo: userData.cargo,
+                firstName: userData.first_name,
+                lastName: userData.last_name
+            };
+            localStorage.setItem('railway_user_data', JSON.stringify(railwayData));
             
             // SweetAlert personalizado
             await Swal.fire({
