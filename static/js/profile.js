@@ -230,6 +230,18 @@
                 formData.append('photo', ProfileState.uploadedPhoto);
             }
             
+            // ✅ DEBUG: Log FormData contents antes de enviar
+            console.log('🔍 PROFILE UPDATE - FormData contents:');
+            for (let [key, value] of formData.entries()) {
+                if (key === 'photo') {
+                    console.log(`${key}: ${value.name} (${value.size} bytes)`);
+                } else {
+                    console.log(`${key}: ${value}`);
+                }
+            }
+            console.log('🔍 ProfileState.currentUser:', ProfileState.currentUser);
+            console.log('🔍 Backend URL:', ProfileState.backendUrl);
+            
             // Mostrar loading
             Swal.fire({
                 title: 'Guardando cambios...',
@@ -248,7 +260,9 @@
             });
             
             const result = await response.json();
-            console.log('📡 Respuesta del servidor:', result);
+            console.log('📡 PROFILE UPDATE - Response status:', response.status);
+            console.log('📡 PROFILE UPDATE - Response headers:', response.headers);
+            console.log('📡 PROFILE UPDATE - Response body:', result);
             
             if (response.ok && result.success) {
                 console.log('✅ Perfil actualizado exitosamente:', result.data);
@@ -582,6 +596,57 @@
     }
 
     /**
+     * ✅ FUNCIÓN DE TEST PARA DEBUG PROFILE UPDATE
+     */
+    async function testProfileUpdateDebug() {
+        console.log('🧪 Iniciando test de update profile debug...');
+        
+        try {
+            // Crear FormData exacto como el curl que funciona
+            const testFormData = new FormData();
+            testFormData.append('user_id', '11'); // Usar ID conocido
+            testFormData.append('firstName', 'Test Update');
+            testFormData.append('lastName', 'Frontend');
+            testFormData.append('telefono', '111222333');
+            testFormData.append('especialidad', 'Neurología Frontend');
+            testFormData.append('colegiatura', 'TEST-123');
+            testFormData.append('cargo', 'Doctor Test Frontend');
+            
+            console.log('🔍 Enviando datos de test profile...');
+            for (let [key, value] of testFormData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            
+            const response = await fetch(`${ProfileState.backendUrl}/api/v1/upload/update-profile`, {
+                method: 'PUT',
+                body: testFormData
+            });
+            
+            const result = await response.json();
+            
+            console.log('📡 Respuesta test profile:', response.status, result);
+            
+            if (response.ok && result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Test Profile Exitoso!',
+                    text: `Usuario ${result.data.nombre_completo} actualizado`
+                });
+            } else {
+                throw new Error(result.message || 'Error en test profile');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error en test profile:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error en Test Profile',
+                text: error.message
+            });
+        }
+    }
+
+    /**
      * ✅ FUNCIÓN PARA IR AL DASHBOARD CON ANIMACIÓN
      */
     function goToDashboard() {
@@ -609,6 +674,7 @@
     window.clearPasswordFields = clearPasswordFields;
     window.uploadPhoto = uploadPhoto;
     window.goToDashboard = goToDashboard;
+    window.testProfileUpdateDebug = testProfileUpdateDebug;
 
     // Inicializar cuando el DOM esté listo
     if (document.readyState === 'loading') {
