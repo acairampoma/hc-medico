@@ -295,27 +295,8 @@
         }
 
         // FUNCIONES DE GUARDADO
-        function saveProfile() {
-            Swal.fire({
-                title: 'Guardar Cambios',
-                text: '¿Estás seguro de guardar los cambios en tu perfil?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3498db',
-                cancelButtonColor: '#95a5a6',
-                confirmButtonText: '<i class="fas fa-save"></i> Sí, guardar',
-                cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: '¡Éxito!',
-                        text: 'Perfil actualizado correctamente',
-                        icon: 'success',
-                        confirmButtonColor: '#27ae60'
-                    });
-                }
-            });
-        }
+        // FUNCIÓN ELIMINADA - saveProfile() ahora está en /static/js/profile.js
+        // NO DEFINIR AQUÍ PARA QUE USE LA DEL ARCHIVO JS
 
         function changePassword() {
             const currentPassword = document.getElementById('current-password').value;

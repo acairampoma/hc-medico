@@ -183,7 +183,8 @@
      * Guardar perfil - Función global llamada desde HTML (técnica como recover-password.js)
      */
     async function saveProfile() {
-        console.log('🔥 Iniciando guardado de perfil...');
+        console.log('🔥🔥🔥 INICIANDO GUARDADO DE PERFIL 🔥🔥🔥');
+        console.log('================================');
         
         try {
             // Crear FormData como recover-password.js
@@ -199,6 +200,14 @@
             const institution = document.getElementById('institution').value;
             const emergencyPhone = document.getElementById('emergencyPhone').value;
             
+            console.log('📝 DATOS DEL FORMULARIO:');
+            console.log('   firstName:', firstName);
+            console.log('   lastName:', lastName);
+            console.log('   phone:', phone);
+            console.log('   specialty:', specialty);
+            console.log('   license:', license);
+            console.log('   institution:', institution);
+            
             // Validaciones básicas
             if (!firstName || !lastName || !license || !specialty) {
                 Swal.fire({
@@ -210,19 +219,42 @@
             }
             
             // Agregar datos al FormData (según el backend real)
+            console.log('📦 AGREGANDO DATOS AL FORMDATA:');
             formData.append('firstName', firstName);
+            console.log('   ✅ firstName agregado:', firstName);
+            
             formData.append('lastName', lastName);
+            console.log('   ✅ lastName agregado:', lastName);
+            
             formData.append('telefono', phone);
+            console.log('   ✅ telefono agregado:', phone);
+            
             formData.append('especialidad', specialty);
+            console.log('   ✅ especialidad agregado:', specialty);
+            
             formData.append('colegiatura', license);
+            console.log('   ✅ colegiatura agregado:', license);
+            
             formData.append('cargo', institution); // En backend se llama 'cargo'
+            console.log('   ✅ cargo agregado:', institution);
             
             // IMPORTANTE: El backend requiere user_id
+            console.log('🆔 USER ID CHECK:');
+            console.log('   ProfileState.currentUser:', ProfileState.currentUser);
+            console.log('   user.id:', ProfileState.currentUser.id);
+            
             if (ProfileState.currentUser.id) {
                 formData.append('user_id', ProfileState.currentUser.id);
+                console.log('   ✅ user_id agregado:', ProfileState.currentUser.id);
             } else {
-                // Si no tenemos ID, usar email para buscar usuario
+                console.log('   ❌ ERROR: NO HAY USER_ID!');
                 throw new Error('No se pudo identificar al usuario. Inicia sesión nuevamente.');
+            }
+            
+            // MANTENER LA FOTO EXISTENTE SI NO HAY FOTO NUEVA
+            if (!ProfileState.uploadedPhoto && ProfileState.currentUser.foto_url) {
+                formData.append('foto_url', ProfileState.currentUser.foto_url);
+                console.log('📸 Manteniendo foto existente:', ProfileState.currentUser.foto_url);
             }
             
             // Agregar foto si se subió una nueva
@@ -253,32 +285,64 @@
                 }
             });
             
-            // Llamada a API usando Railway URL (como recover-password.js)
-            const response = await fetch(`${ProfileState.backendUrl}/api/v1/upload/update-profile`, {
+            // Obtener token del localStorage
+            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+            console.log('🔑 TOKEN CHECK:');
+            console.log('   Token encontrado:', token ? `${token.substring(0, 30)}...` : 'NO HAY TOKEN');
+            
+            if (!token) {
+                console.log('   ❌ ERROR: NO HAY TOKEN!');
+                throw new Error('No hay token de autenticación. Por favor inicia sesión nuevamente.');
+            }
+            
+            // Mostrar todos los datos del FormData antes de enviar
+            console.log('📤 FORMDATA FINAL A ENVIAR:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`   ${key}: ${value}`);
+            }
+            
+            // Llamada a API con Authorization header
+            const url = `${ProfileState.backendUrl}/api/v1/upload/update-profile`;
+            console.log('🌐 URL DE DESTINO:', url);
+            
+            console.log('🚀 ENVIANDO REQUEST...');
+            const response = await fetch(url, {
                 method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: formData
             });
             
+            console.log('📡 RESPUESTA RECIBIDA:');
+            console.log('   Status:', response.status);
+            console.log('   StatusText:', response.statusText);
+            
             const result = await response.json();
-            console.log('📡 PROFILE UPDATE - Response status:', response.status);
-            console.log('📡 PROFILE UPDATE - Response headers:', response.headers);
-            console.log('📡 PROFILE UPDATE - Response body:', result);
+            console.log('📦 RESPONSE BODY:', result);
             
             if (response.ok && result.success) {
-                console.log('✅ Perfil actualizado exitosamente:', result.data);
+                console.log('✅✅✅ ÉXITO! Perfil actualizado ✅✅✅');
+                console.log('📥 DATOS RECIBIDOS DEL BACKEND:', result.data);
+                console.log('🔍 COMPARACIÓN:');
+                console.log('   Enviado firstName:', firstName);
+                console.log('   Recibido first_name:', result.data.first_name);
+                console.log('   Enviado lastName:', lastName); 
+                console.log('   Recibido last_name:', result.data.last_name);
                 
-                // ✅ PASO 1: Actualizar localStorage INMEDIATAMENTE con datos nuevos
+                // ✅ IMPORTANTE: Usar datos del FORMULARIO porque el backend responde con datos viejos
                 const updatedUserData = {
                     ...ProfileState.currentUser,
-                    firstName: result.data.firstName || result.data.first_name || document.getElementById('firstName').value,
-                    lastName: result.data.lastName || result.data.last_name || document.getElementById('lastName').value,
-                    first_name: result.data.first_name || result.data.firstName || document.getElementById('firstName').value,
-                    last_name: result.data.last_name || result.data.lastName || document.getElementById('lastName').value,
-                    telefono: result.data.telefono || document.getElementById('phone').value,
-                    especialidad: result.data.especialidad || document.getElementById('specialty').value,
-                    colegiatura: result.data.colegiatura || document.getElementById('license').value,
-                    cargo: result.data.cargo || document.getElementById('institution').value,
-                    ...result.data
+                    firstName: firstName,
+                    lastName: lastName,
+                    first_name: firstName,
+                    last_name: lastName,
+                    telefono: phone,
+                    especialidad: specialty,
+                    colegiatura: license,
+                    cargo: institution,
+                    // Mantener foto existente si no se subió nueva
+                    foto_url: ProfileState.uploadedPhoto ? result.data.foto_url : ProfileState.currentUser.foto_url
                 };
                 
                 // ✅ PASO 2: Actualizar railway_user_data con foto nueva
@@ -661,8 +725,12 @@
                 console.log(`${key}: ${value}`);
             }
             
+            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
             const response = await fetch(`${ProfileState.backendUrl}/api/v1/upload/update-profile`, {
                 method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: testFormData
             });
             

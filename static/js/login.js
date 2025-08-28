@@ -83,8 +83,14 @@ function switchTab(tabName) {
 // API FUNCTIONS - REAL BACKEND CALLS
 // =====================================================
 
-// API Base URL y Endpoints disponibles
-const API_BASE_URL = 'https://hospital-app-backend-production.up.railway.app/api/v1';
+// ✅ CONFIGURACIÓN: Frontend local -> Backend Railway
+const CONFIG = {
+    API_URL: 'https://hospital-app-backend-production.up.railway.app/api/v1',
+    COOKIE_SECURE: false, // localhost frontend
+    COOKIE_SAMESITE: 'lax'
+};
+
+const API_BASE_URL = CONFIG.API_URL;
 
 /* 
 🔗 ENDPOINTS CONFIRMADOS DEL BACKEND:
@@ -791,15 +797,31 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             
             // ✅ GUARDAR RAILWAY DATA PARA PROFILE Y DASHBOARD
             const railwayData = {
-                foto_url: userData.foto_url,
-                especialidad: userData.especialidad,
-                colegiatura: userData.colegiatura,
-                telefono: userData.telefono,
-                cargo: userData.cargo,
-                firstName: userData.first_name,
-                lastName: userData.last_name
+                foto_url: userData.foto_url || '',
+                especialidad: userData.especialidad || '',
+                colegiatura: userData.colegiatura || '',
+                telefono: userData.telefono || '',
+                cargo: userData.cargo || '',
+                firstName: userData.first_name || '',
+                lastName: userData.last_name || ''
             };
             localStorage.setItem('railway_user_data', JSON.stringify(railwayData));
+            
+            // ✅ FORZAR SINCRONIZACIÓN DE LOCALSTORAGE
+            // Verificar que se guardó correctamente
+            const savedData = localStorage.getItem('railway_user_data');
+            console.log('✅ Datos guardados en localStorage:', savedData);
+            
+            // ✅ IMPORTANTE: TAMBIÉN GUARDAR TOKEN EN COOKIE PARA MIDDLEWARE FASTAPI
+            if (tokenData.access_token) {
+                // Crear cookie que el middleware FastAPI pueda leer
+                const expirationDate = new Date();
+                expirationDate.setHours(expirationDate.getHours() + 1); // 1 hora
+                
+                const secureFlag = CONFIG.COOKIE_SECURE ? '; secure' : '';
+                document.cookie = `access_token=${tokenData.access_token}; path=/; expires=${expirationDate.toUTCString()}${secureFlag}; samesite=${CONFIG.COOKIE_SAMESITE}`;
+                console.log('🍪 Token guardado: Frontend local -> Backend Railway');
+            }
             
             // SweetAlert personalizado
             await Swal.fire({

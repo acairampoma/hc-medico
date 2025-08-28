@@ -38,13 +38,13 @@ function loadUserData() {
     }
     
     // Cargar avatar
-    loadUserAvatar(userData, railwayData);
+    loadUserAvatar(userData, railwayData, displayName);
     
     return { userData, railwayData, displayName };
 }
 
 // ✅ FUNCIÓN PARA CARGAR AVATAR (reutilizable)
-function loadUserAvatar(userData, railwayData) {
+function loadUserAvatar(userData, railwayData, displayName = 'Usuario') {
     
     // 🔥 CARGAR AVATAR DESDE RAILWAY/CLOUDINARY - MEJORADO
     let avatarUrl = null;
@@ -111,8 +111,11 @@ function loadUserAvatar(userData, railwayData) {
 
 // ✅ INICIALIZACIÓN PRINCIPAL DEL DASHBOARD
 document.addEventListener('DOMContentLoaded', function() {
-    // Cargar datos iniciales
-    loadUserData();
+    // Pequeño delay para asegurar que localStorage esté sincronizado
+    setTimeout(() => {
+        // Cargar datos iniciales
+        loadUserData();
+    }, 100);
     
     // ✅ LISTENER PARA ACTUALIZACIONES EN TIEMPO REAL DESDE PROFILE
     document.addEventListener('userDataUpdated', function(event) {
@@ -144,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Actualizar avatar inmediatamente
-        loadUserAvatar(userData, railwayData);
+        loadUserAvatar(userData, railwayData, displayName);
         
         console.log('🔥 Dashboard actualizado en tiempo real exitosamente!');
     });
