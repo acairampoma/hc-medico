@@ -3,9 +3,9 @@
  * Sistema Hospitalario con Inteligencia Artificial
  */
 
-// 🔥 OBTENER DATOS DEL USUARIO DEL LOCALSTORAGE Y CARGAR AVATAR
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔥 Iniciando carga de datos desde localStorage...');
+// ✅ FUNCIÓN PARA CARGAR DATOS DEL USUARIO (reutilizable)
+function loadUserData() {
+    console.log('🔥 Cargando datos del usuario desde localStorage...');
     
     // Obtener todos los datos del localStorage
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', function() {
         displayName = userData.displayName;
     } else if (userData.firstName && userData.lastName) {
         displayName = `Dr. ${userData.firstName} ${userData.lastName}`;
+    } else if (userData.first_name && userData.last_name) {
+        displayName = `Dr. ${userData.first_name} ${userData.last_name}`;
     } else if (userData.fullName) {
         displayName = `Dr. ${userData.fullName}`;
     } else if (userData.name) {
@@ -29,7 +31,20 @@ document.addEventListener('DOMContentLoaded', function() {
         displayName = 'Dr. Usuario';
     }
     
-    document.getElementById('doctorName').textContent = displayName;
+    const doctorNameElement = document.getElementById('doctorName');
+    if (doctorNameElement) {
+        doctorNameElement.textContent = displayName;
+        console.log('✅ Nombre actualizado:', displayName);
+    }
+    
+    // Cargar avatar
+    loadUserAvatar(userData, railwayData);
+    
+    return { userData, railwayData, displayName };
+}
+
+// ✅ FUNCIÓN PARA CARGAR AVATAR (reutilizable)
+function loadUserAvatar(userData, railwayData) {
     
     // 🔥 CARGAR AVATAR DESDE RAILWAY/CLOUDINARY - MEJORADO
     let avatarUrl = null;
@@ -92,133 +107,59 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔍 Datos disponibles en userData:', Object.keys(userData));
         console.log('🔍 Datos disponibles en railwayData:', Object.keys(railwayData));
     }
+}
+
+// ✅ INICIALIZACIÓN PRINCIPAL DEL DASHBOARD
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar datos iniciales
+    loadUserData();
+    
+    // ✅ LISTENER PARA ACTUALIZACIONES EN TIEMPO REAL DESDE PROFILE
+    document.addEventListener('userDataUpdated', function(event) {
+        console.log('🔄 Recibida actualización de datos desde profile:', event.detail);
+        
+        const { userData, railwayData } = event.detail;
+        
+        // Actualizar nombre de bienvenida inmediatamente
+        let displayName = '';
+        
+        if (userData.displayName) {
+            displayName = userData.displayName;
+        } else if (userData.firstName && userData.lastName) {
+            displayName = `Dr. ${userData.firstName} ${userData.lastName}`;
+        } else if (userData.first_name && userData.last_name) {
+            displayName = `Dr. ${userData.first_name} ${userData.last_name}`;
+        } else if (userData.fullName) {
+            displayName = `Dr. ${userData.fullName}`;
+        } else if (userData.name) {
+            displayName = `Dr. ${userData.name}`;
+        } else {
+            displayName = 'Dr. Usuario';
+        }
+        
+        const doctorNameElement = document.getElementById('doctorName');
+        if (doctorNameElement) {
+            doctorNameElement.textContent = displayName;
+            console.log('✅ Nombre actualizado dinámicamente:', displayName);
+        }
+        
+        // Actualizar avatar inmediatamente
+        loadUserAvatar(userData, railwayData);
+        
+        console.log('🔥 Dashboard actualizado en tiempo real exitosamente!');
+    });
+    
+    // ✅ LISTENER PARA DETECTAR CAMBIOS EN localStorage (fallback)
+    window.addEventListener('storage', function(event) {
+        if (event.key === 'user' || event.key === 'railway_user_data') {
+            console.log('🔄 Detectado cambio en localStorage, recargando datos...');
+            setTimeout(() => {
+                loadUserData();
+            }, 100);
+        }
+    });
 });
 
-// 👤 FUNCIONES MODAL PERFIL - CONECTADO CON SERVICIOS RAILWAY
-async function openEditProfileModal() {
-    console.log('🔥 ABRIENDO MODAL PERFIL CON SERVICIOS');
-    
-    // Mostrar modal inmediatamente
-    const modal = document.getElementById('editProfileModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-    
-    // Cargar datos del usuario desde Railway
-    await loadUserDataInModal();
-}
-
-// 🚂 CARGAR DATOS DEL USUARIO DESDE RAILWAY EN EL MODAL
-async function loadUserDataInModal() {
-    try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        const userData = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        console.log('🔍 Cargando datos del perfil desde Railway...');
-        
-        if (!token) {
-            console.error('❌ No hay token disponible');
-            return;
-        }
-        
-        // Llamar al servicio Railway para obtener datos completos del usuario
-        const response = await fetch('/api/user-profile', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            const profileData = await response.json();
-            console.log('✅ Datos del perfil obtenidos:', profileData);
-            
-            // Llenar el modal con los datos del servicio
-            fillModalWithUserData(profileData.data || profileData);
-        } else {
-            console.log('⚠️ Error al obtener perfil, usando datos de localStorage');
-            // Usar datos del localStorage como fallback
-            fillModalWithUserData(userData);
-        }
-        
-    } catch (error) {
-        console.error('💥 Error cargando datos del perfil:', error);
-        
-        // Fallback con datos del localStorage
-        const userData = JSON.parse(localStorage.getItem('user') || '{}');
-        fillModalWithUserData(userData);
-    }
-}
-
-// 📝 LLENAR EL MODAL CON DATOS DEL USUARIO
-function fillModalWithUserData(userData) {
-    console.log('📝 Llenando modal con datos:', userData);
-    
-    // Llenar campos básicos
-    const firstNameInput = document.getElementById('editFirstName');
-    const lastNameInput = document.getElementById('editLastName');
-    const emailInput = document.getElementById('editEmail');
-    const phoneInput = document.getElementById('editPhone');
-    const especialidadInput = document.getElementById('editEspecialidad');
-    const colegiaturaInput = document.getElementById('editColegiatura');
-    
-    if (firstNameInput) firstNameInput.value = userData.firstName || userData.first_name || '';
-    if (lastNameInput) lastNameInput.value = userData.lastName || userData.last_name || '';
-    if (emailInput) emailInput.value = userData.email || '';
-    if (phoneInput && userData.datos_profesional) {
-        phoneInput.value = userData.datos_profesional.telefono || '';
-    }
-    if (especialidadInput && userData.datos_profesional) {
-        especialidadInput.value = userData.datos_profesional.especialidad || '';
-    }
-    if (colegiaturaInput && userData.datos_profesional) {
-        colegiaturaInput.value = userData.datos_profesional.colegiatura || '';
-    }
-    
-    // Actualizar preview de foto actual si existe
-    const currentPhotoPreview = document.getElementById('currentPhotoPreview');
-    if (currentPhotoPreview && userData.foto_url) {
-        currentPhotoPreview.innerHTML = `
-            <img src="${userData.foto_url}" 
-                 alt="Foto actual" 
-                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
-                 onerror="this.style.display='none';">
-        `;
-    }
-    
-    console.log('✅ Modal llenado con datos del usuario');
-}
-
-function closeEditProfileModal() {
-    const modal = document.getElementById('editProfileModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function previewNewPhoto(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById('currentPhotoPreview');
-            preview.innerHTML = `<img src="${e.target.result}" alt="Vista previa" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function saveProfileChanges() {
-    Swal.fire({
-        icon: 'success',
-        title: '¡Perfil Actualizado!',
-        text: 'Los cambios se han guardado correctamente',
-        timer: 2000,
-        showConfirmButton: false
-    });
-    closeEditProfileModal();
-}
 
 // Switch entre tabs
 function switchTab(tabName) {
@@ -332,4 +273,29 @@ window.addEventListener('load', () => {
             animateValue(element, 0, value, 1000);
         }
     });
+});
+
+// ===== PROFILE DROPDOWN FUNCTIONALITY =====
+document.addEventListener('DOMContentLoaded', function() {
+    const profileMenuBtn = document.getElementById('profileMenuBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+    
+    if (profileMenuBtn && profileDropdown) {
+        // Toggle dropdown
+        profileMenuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isVisible = profileDropdown.style.display === 'block';
+            profileDropdown.style.display = isVisible ? 'none' : 'block';
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!profileMenuBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.style.display = 'none';
+            }
+        });
+        
+        // NO interferir con enlaces - dejar que naveguen naturalmente
+        // Los enlaces <a href="/profile"> deben funcionar sin interferencia
+    }
 });

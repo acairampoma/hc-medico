@@ -554,6 +554,28 @@ async def dashboard_page(request: Request):
             "error": "Error cargando datos del servidor"
         })
 
+@app.get("/profile", response_class=HTMLResponse)
+async def profile_page(request: Request):
+    """👤 Página de perfil de usuario"""
+    return templates.TemplateResponse("profile.html", {
+        "request": request,
+        "doctor": {
+            "nombre_completo": "Dr. Usuario",
+            "first_name": "Usuario",
+            "last_name": "",
+            "email": "usuario@hospital.com",
+            "especialidad": "Medicina General",
+            "colegiatura": "12345",
+            "telefono": "",
+            "foto_url": "/static/images/default-avatar.jpg"
+        },
+        "sistema": {
+            "nombre": "IA Medical Solutions",
+            "backend_status": "online",
+            "version": "2.0.0"
+        }
+    })
+
 @app.get("/modulos_ejecutiva", response_class=HTMLResponse)
 async def modulos_ejecutiva_page(request: Request):
     """Página de modulos ejecutiva"""

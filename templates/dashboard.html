@@ -13,7 +13,7 @@
         <!-- Header Compacto -->
         <div class="header">
             <div class="header-left">
-                <div class="user-avatar" onclick="openEditProfileModal()">
+                <div class="user-avatar" onclick="window.location.href='/profile'">
                     {% if doctor.foto_url %}
                         <img src="{{ doctor.foto_url }}" alt="Foto {{ doctor.nombre_completo }}" 
                              style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
@@ -35,9 +35,22 @@
                 <button class="header-btn">
                     <i class="fas fa-search"></i>
                 </button>
-                <button class="header-btn">
-                    <i class="fas fa-cog"></i>
-                </button>
+                <div class="profile-menu-container">
+                    <button class="header-btn" id="profileMenuBtn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown" style="display: none;">
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fas fa-user-edit"></i>
+                            <span>Mi Perfil</span>
+                        </a>
+                        <div class="dropdown-separator"></div>
+                        <button class="dropdown-item" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Cerrar Sesión</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -243,89 +256,6 @@
         <span>Cerrar Sesión</span>
     </button>
 
-    <!-- 👤 MODAL DE EDITAR PERFIL - INTEGRADO CON RAILWAY BACKEND -->
-    <div class="modal-overlay" id="editProfileModal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-user-edit"></i> Editar Perfil Médico</h2>
-                <button class="close-btn" onclick="closeEditProfileModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <form id="editProfileForm" enctype="multipart/form-data">
-                <div class="profile-photo-section">
-                    <div class="current-photo">
-                        <div class="photo-preview" id="currentPhotoPreview">
-                            {% if doctor.foto_url %}
-                                <img src="{{ doctor.foto_url }}" alt="Foto actual">
-                            {% else %}
-                                <i class="fas fa-user-md"></i>
-                            {% endif %}
-                        </div>
-                        <button type="button" class="change-photo-btn" onclick="document.getElementById('newPhotoUpload').click()">
-                            <i class="fas fa-camera"></i> Cambiar Foto
-                        </button>
-                        <input type="file" id="newPhotoUpload" accept="image/*" style="display: none;" onchange="previewNewPhoto(event)">
-                    </div>
-                </div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Nombre *</label>
-                        <input type="text" class="form-input" id="editFirstName" value="{{ doctor.first_name or '' }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Apellido *</label>
-                        <input type="text" class="form-input" id="editLastName" value="{{ doctor.last_name or '' }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email *</label>
-                        <input type="email" class="form-input" id="editEmail" value="{{ doctor.email or '' }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Teléfono</label>
-                        <input type="tel" class="form-input" id="editPhone" value="{{ doctor.telefono or '' }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Especialidad *</label>
-                        <select class="form-select" id="editSpecialty" required>
-                            <option value="">Seleccionar especialidad</option>
-                            <option value="medicina_general" {% if doctor.especialidad == 'medicina_general' %}selected{% endif %}>Medicina General</option>
-                            <option value="cardiologia" {% if doctor.especialidad == 'cardiologia' %}selected{% endif %}>Cardiología</option>
-                            <option value="neurologia" {% if doctor.especialidad == 'neurologia' %}selected{% endif %}>Neurología</option>
-                            <option value="pediatria" {% if doctor.especialidad == 'pediatria' %}selected{% endif %}>Pediatría</option>
-                            <option value="traumatologia" {% if doctor.especialidad == 'traumatologia' %}selected{% endif %}>Traumatología</option>
-                            <option value="ginecologia" {% if doctor.especialidad == 'ginecologia' %}selected{% endif %}>Ginecología</option>
-                            <option value="urologia" {% if doctor.especialidad == 'urologia' %}selected{% endif %}>Urología</option>
-                            <option value="dermatologia" {% if doctor.especialidad == 'dermatologia' %}selected{% endif %}>Dermatología</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Número de Colegiatura *</label>
-                        <input type="text" class="form-input" id="editMedicalLicense" value="{{ doctor.colegiatura or '' }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Cargo</label>
-                        <input type="text" class="form-input" id="editPosition" value="{{ doctor.cargo or '' }}">
-                    </div>
-                    <div class="form-group full-width">
-                        <label class="form-label">Información Adicional</label>
-                        <textarea class="form-input" id="editAdditionalInfo" rows="3" placeholder="Información profesional adicional..."></textarea>
-                    </div>
-                </div>
-            </form>
-
-            <div class="modal-buttons">
-                <button type="button" class="btn-secondary" onclick="closeEditProfileModal()">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" class="btn-primary" onclick="saveProfileChanges()">
-                    <i class="fas fa-save"></i> Guardar Cambios
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>

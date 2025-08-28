@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><i class="fas fa-user-circle"></i> Editar Perfil - {{ sistema.nombre }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/profile.css">
+</head>
+<body>
+    <div class="form-container">
+        <!-- HEADER -->
+        <div class="form-header">
+            <h1><i class="fas fa-user-edit"></i> Editar Perfil</h1>
+            <p>{{ sistema.nombre or "IA Medical Solutions" }}</p>
+            <a href="/dashboard" class="btn-back">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+        </div>
+
+        <!-- CONTENIDO -->
+        <div class="form-content">
+            <!-- TABS -->
+            <div class="tabs">
+                <button class="tab-button active" onclick="switchTab('profile')">
+                    <i class="fas fa-user"></i> Datos del Perfil
+                </button>
+                <button class="tab-button" onclick="switchTab('password')">
+                    <i class="fas fa-shield-alt"></i> Cambiar Contraseña
+                </button>
+            </div>
+
+            <!-- TAB 1: PERFIL -->
+            <div id="profile-tab" class="tab-content active">
+                <!-- FOTO DE PERFIL -->
+                <div class="profile-photo">
+                    <div class="photo-circle" id="photoCircle">
+                        <i class="fas fa-user-md"></i>
+                        <button class="photo-upload" onclick="uploadPhoto()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <p style="color: #7f8c8d; font-size: 0.9rem;">Haz clic en la cámara para cambiar foto</p>
+                    <input type="file" id="photoInput" accept="image/*" style="display: none;">
+                </div>
+
+                <div class="form-grid">
+                    <!-- FILA 1: Nombre + Apellidos -->
+                    <div class="row-1">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i> Nombre <span class="required">*</span>
+                            </label>
+                            <input type="text" class="form-input" id="firstName" placeholder="Ingresa tu nombre" value="" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i> Apellidos <span class="required">*</span>
+                            </label>
+                            <input type="text" class="form-input" id="lastName" placeholder="Ingresa tus apellidos" value="" required>
+                        </div>
+                    </div>
+
+                    <!-- FILA 2: Email + Teléfono -->
+                    <div class="row-2">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-envelope"></i> Email <span class="required">*</span>
+                            </label>
+                            <input type="email" class="form-input" id="email" placeholder="correo@hospital.com" value="" disabled>
+                            <small style="color: #7f8c8d; font-size: 0.8rem; margin-top: 5px;">
+                                <i class="fas fa-info-circle"></i> El email no puede ser modificado
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-phone"></i> Teléfono
+                            </label>
+                            <input type="tel" class="form-input" id="phone" placeholder="+51 999 123 456" value="">
+                        </div>
+                    </div>
+
+                    <!-- FILA 3: Especialidad + Años Experiencia + Colegiatura -->
+                    <div class="row-3">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-stethoscope"></i> Especialidad <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="specialty">
+                                <option value="">Seleccionar...</option>
+                                <option value="Medicina General">Medicina General</option>
+                                <option value="Cardiología">Cardiología</option>
+                                <option value="Neurología">Neurología</option>
+                                <option value="Pediatría">Pediatría</option>
+                                <option value="Traumatología">Traumatología</option>
+                                <option value="Ginecología">Ginecología</option>
+                                <option value="Psiquiatría">Psiquiatría</option>
+                                <option value="Urología">Urología</option>
+                                <option value="Oftalmología">Oftalmología</option>
+                                <option value="Dermatología">Dermatología</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-alt"></i> Años de Experiencia
+                            </label>
+                            <input type="number" class="form-input" id="experience" placeholder="5" value="" min="0" max="50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-id-card"></i> N° Colegiatura <span class="required">*</span>
+                            </label>
+                            <input type="text" class="form-input" id="license" placeholder="CMP 12345" value="" required>
+                        </div>
+                    </div>
+
+                    <!-- FILA 4: Hospital/Institución -->
+                    <div class="row-4">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-hospital"></i> Hospital/Institución
+                            </label>
+                            <input type="text" class="form-input" id="institution" placeholder="Hospital Nacional" value="">
+                        </div>
+                    </div>
+
+                    <!-- FILA 5: Teléfono Emergencia -->
+                    <div class="row-5">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-phone-alt"></i> Teléfono de Emergencia
+                            </label>
+                            <input type="tel" class="form-input" id="emergencyPhone" placeholder="+51 999 000 000" value="">
+                        </div>
+                    </div>
+
+                    <!-- BOTONES -->
+                    <div class="btn-group">
+                        <button class="btn-primary" onclick="saveProfile()">
+                            <i class="fas fa-save"></i> Guardar Cambios
+                        </button>
+                        <button class="btn-secondary" onclick="cancelChanges()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CONTRASEÑA -->
+            <div id="password-tab" class="tab-content">
+                <div class="alert alert-info">
+                    <i class="fas fa-shield-alt"></i> Por seguridad, ingresa tu contraseña actual para realizar cambios
+                </div>
+
+                <div class="password-grid">
+                    <!-- Contraseña Actual -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-key"></i> Contraseña Actual <span class="required">*</span>
+                        </label>
+                        <div class="password-input-group">
+                            <input type="password" class="form-input" id="current-password" placeholder="••••••••">
+                            <button type="button" class="password-toggle" onclick="togglePassword('current-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Nueva Contraseña -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-lock"></i> Nueva Contraseña <span class="required">*</span>
+                        </label>
+                        <div class="password-input-group">
+                            <input type="password" class="form-input" id="new-password" placeholder="••••••••" oninput="checkPasswordStrength()">
+                            <button type="button" class="password-toggle" onclick="togglePassword('new-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-strength">
+                            <div class="password-strength-fill" id="strength-fill"></div>
+                        </div>
+                        <small style="color: #7f8c8d; margin-top: 5px;">
+                            <i class="fas fa-info-circle"></i> Mínimo 8 caracteres, incluye mayúsculas, minúsculas y números
+                        </small>
+                    </div>
+
+                    <!-- Confirmar Contraseña -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-lock"></i> Confirmar Nueva Contraseña <span class="required">*</span>
+                        </label>
+                        <div class="password-input-group">
+                            <input type="password" class="form-input" id="confirm-password" placeholder="••••••••" oninput="checkPasswordMatch()">
+                            <button type="button" class="password-toggle" onclick="togglePassword('confirm-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small id="password-match" style="margin-top: 5px; font-size: 0.8rem;"></small>
+                    </div>
+
+                    <!-- BOTONES -->
+                    <div class="btn-group">
+                        <button class="btn-primary" onclick="changePassword()">
+                            <i class="fas fa-shield-alt"></i> Cambiar Contraseña
+                        </button>
+                        <button class="btn-secondary" onclick="clearPasswordFields()">
+                            <i class="fas fa-trash"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <script src="/static/js/profile.js"></script>
+
+    <script>
+        // SWITCH TABS
+        function switchTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Desactivar todos los botones
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Activar el tab seleccionado
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // TOGGLE PASSWORD VISIBILITY
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.classList.remove('fa-eye');
+                button.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                button.classList.remove('fa-eye-slash');
+                button.classList.add('fa-eye');
+            }
+        }
+
+        // CHECK PASSWORD STRENGTH
+        function checkPasswordStrength() {
+            const password = document.getElementById('new-password').value;
+            const strengthFill = document.getElementById('strength-fill');
+            
+            let strength = 0;
+            if (password.length >= 8) strength += 1;
+            if (/[a-z]/.test(password)) strength += 1;
+            if (/[A-Z]/.test(password)) strength += 1;
+            if (/[0-9]/.test(password)) strength += 1;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+            
+            strengthFill.className = 'password-strength-fill';
+            
+            if (strength <= 2) {
+                strengthFill.classList.add('strength-weak');
+            } else if (strength <= 3) {
+                strengthFill.classList.add('strength-medium');
+            } else {
+                strengthFill.classList.add('strength-strong');
+            }
+        }
+
+        // CHECK PASSWORD MATCH
+        function checkPasswordMatch() {
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const matchIndicator = document.getElementById('password-match');
+            
+            if (confirmPassword === '') {
+                matchIndicator.textContent = '';
+                return;
+            }
+            
+            if (newPassword === confirmPassword) {
+                matchIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Las contraseñas coinciden';
+                matchIndicator.style.color = '#27ae60';
+            } else {
+                matchIndicator.innerHTML = '<i class="fas fa-times-circle"></i> Las contraseñas no coinciden';
+                matchIndicator.style.color = '#e74c3c';
+            }
+        }
+
+        // FUNCIONES DE GUARDADO
+        function saveProfile() {
+            Swal.fire({
+                title: 'Guardar Cambios',
+                text: '¿Estás seguro de guardar los cambios en tu perfil?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3498db',
+                cancelButtonColor: '#95a5a6',
+                confirmButtonText: '<i class="fas fa-save"></i> Sí, guardar',
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Perfil actualizado correctamente',
+                        icon: 'success',
+                        confirmButtonColor: '#27ae60'
+                    });
+                }
+            });
+        }
+
+        function changePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Por favor completa todos los campos',
+                    icon: 'error',
+                    confirmButtonColor: '#e74c3c'
+                });
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Las contraseñas no coinciden',
+                    icon: 'error',
+                    confirmButtonColor: '#e74c3c'
+                });
+                return;
+            }
+            
+            Swal.fire({
+                title: '¡Éxito!',
+                text: 'Contraseña cambiada exitosamente',
+                icon: 'success',
+                confirmButtonColor: '#27ae60'
+            });
+            clearPasswordFields();
+        }
+
+        function cancelChanges() {
+            Swal.fire({
+                title: '¿Cancelar cambios?',
+                text: 'Se perderán todos los cambios no guardados',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#95a5a6',
+                confirmButtonText: '<i class="fas fa-check"></i> Sí, cancelar',
+                cancelButtonText: '<i class="fas fa-times"></i> No'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    location.reload();
+                }
+            });
+        }
+
+        function clearPasswordFields() {
+            document.getElementById('current-password').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+            document.getElementById('password-match').textContent = '';
+            document.getElementById('strength-fill').className = 'password-strength-fill';
+        }
+
+        function uploadPhoto() {
+            document.getElementById('photoInput').click();
+        }
+
+        // CARGAR FOTO
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const photoCircle = document.getElementById('photoCircle');
+                    photoCircle.innerHTML = `
+                        <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        <button class="photo-upload" onclick="uploadPhoto()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ANIMACIONES DE INPUTS
+        document.querySelectorAll('.form-input, .form-select, .form-textarea').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.transform = 'scale(1.02)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

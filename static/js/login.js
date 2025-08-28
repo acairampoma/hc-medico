@@ -135,9 +135,55 @@ async function apiRegisterUser(formData) {
 // 🆕 NUEVAS FUNCIONES API SOLICITADAS:
 
 // Grabar registro de usuario (método alternativo sin foto)
-async function apiGrabarRegistro(userData) {
+/**
+ * ✅ NUEVA FUNCIÓN: Registro con FormData usando endpoint correcto
+ * Técnica igual que recover-password.js
+ */
+async function apiGrabarRegistroConFormData(formData) {
     try {
-        console.log('📝 Enviando registro al backend:', userData);
+        console.log('🔥 Enviando registro con FormData al endpoint correcto...');
+        
+        // Log de datos que se envían (sin mostrar contraseña)
+        for (let [key, value] of formData.entries()) {
+            if (key === 'password') {
+                console.log(`📝 ${key}: [HIDDEN]`);
+            } else if (key === 'photo') {
+                console.log(`📷 ${key}: ${value.name} (${value.size} bytes)`);
+            } else {
+                console.log(`📝 ${key}: ${value}`);
+            }
+        }
+        
+        // ✅ USAR ENDPOINT CORRECTO: /upload/register-with-photo (como en backend)
+        const response = await fetch(`${API_BASE_URL}/upload/register-with-photo`, {
+            method: 'POST',
+            body: formData  // ✅ FormData directo, sin headers Content-Type
+        });
+        
+        const result = await response.json();
+        console.log('📡 Respuesta del backend:', result);
+        
+        // ✅ Manejar respuesta como recover-password.js
+        if (response.ok && result.success) {
+            return { success: true, data: result.data, message: result.message };
+        } else {
+            throw new Error(result.message || 'Error en registro');
+        }
+    } catch (error) {
+        console.error('❌ Error en registro:', error);
+        throw error;
+    }
+}
+
+/**
+ * 🗑️ FUNCIÓN OBSOLETA: Mantenida para compatibilidad 
+ * (Ya no se usa, nueva función es apiGrabarRegistroConFormData)
+ */
+async function apiGrabarRegistro(userData) {
+    console.warn('⚠️ Función obsoleta apiGrabarRegistro llamada. Usar apiGrabarRegistroConFormData');
+    
+    try {
+        console.log('📝 Enviando registro al backend (modo obsoleto):', userData);
         
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
@@ -425,32 +471,43 @@ async function showResetCodeModal(email) {
 
 // Submit registro
 async function submitRegistration() {
+    console.log('🔥 Iniciando proceso de registro con mejores prácticas...');
+    
+    // Crear FormData con nombres que coinciden exactamente con el backend
     const formData = new FormData();
     
-    // Datos básicos
+    // ✅ DATOS BÁSICOS (van a campos directos de la tabla users)
     formData.append('firstName', document.getElementById('firstName').value);
     formData.append('lastName', document.getElementById('lastName').value);
     formData.append('email', document.getElementById('email').value);
-    formData.append('phone', document.getElementById('phone').value);
     formData.append('username', document.getElementById('registerUsername').value);
     formData.append('password', document.getElementById('registerPassword').value);
     
-    // Datos profesionales
-    formData.append('specialty', document.getElementById('specialty').value);
-    formData.append('medicalLicense', document.getElementById('medicalLicense').value);
-    formData.append('experience', document.getElementById('experience').value);
-    formData.append('hospital', document.getElementById('hospital').value);
-    formData.append('emergencyPhone', document.getElementById('emergencyPhone').value);
+    // ✅ DATOS PROFESIONALES (van al JSONB datos_profesional) - NOMBRES CORREGIDOS
+    formData.append('especialidad', document.getElementById('specialty').value);        // specialty → especialidad
+    formData.append('colegiatura', document.getElementById('medicalLicense').value);   // medicalLicense → colegiatura
+    formData.append('telefono', document.getElementById('phone').value);              // phone → telefono
+    formData.append('cargo', document.getElementById('hospital').value);              // hospital → cargo
     
-    // Foto si existe
+    // ✅ FOTO (va a Cloudinary y URL se guarda en datos_profesional.foto_url)
     const photoFile = document.getElementById('photoUpload').files[0];
     if (photoFile) {
         formData.append('photo', photoFile);
+        console.log('📷 Foto incluida en el registro:', photoFile.name);
     }
 
-    // Validación básica
-    const requiredFields = ['firstName', 'lastName', 'email', 'username', 'password', 'specialty', 'medicalLicense'];
-    const missingFields = requiredFields.filter(field => !formData.get(field));
+    // ✅ VALIDACIÓN de campos requeridos (nombres actualizados)
+    const requiredData = {
+        'firstName': formData.get('firstName'),
+        'lastName': formData.get('lastName'), 
+        'email': formData.get('email'),
+        'username': formData.get('username'),
+        'password': formData.get('password'),
+        'especialidad': formData.get('especialidad'),
+        'colegiatura': formData.get('colegiatura')
+    };
+    
+    const missingFields = Object.keys(requiredData).filter(field => !requiredData[field]);
     
     if (missingFields.length > 0) {
         Swal.fire({
@@ -462,10 +519,10 @@ async function submitRegistration() {
         return;
     }
 
-    // Mostrar loading
+    // ✅ MOSTRAR loading con SweetAlert
     Swal.fire({
         title: 'Registrando Médico...',
-        text: 'Por favor espere',
+        text: 'Subiendo foto y enviando email de bienvenida',
         allowOutsideClick: false,
         showConfirmButton: false,
         willOpen: () => {
@@ -474,30 +531,31 @@ async function submitRegistration() {
     });
 
     try {
-        // Convertir FormData a objeto JSON para la nueva API
-        const userData = {};
-        for (let [key, value] of formData.entries()) {
-            if (key !== 'photo') { // Excluir foto por ahora
-                userData[key] = value;
-            }
-        }
-        
-        // Llamar nueva API
-        const result = await apiGrabarRegistro(userData);
+        // ✅ LLAMAR API CORRECTA con FormData (como recover-password.js)
+        const result = await apiGrabarRegistroConFormData(formData);
         
         if (result.success) {
             Swal.fire({
                 title: '¡Registro Exitoso!',
                 html: `
-                    <p><strong>Dr. ${formData.get('firstName')} ${formData.get('lastName')}</strong></p>
-                    <p>Especialidad: ${formData.get('specialty')}</p>
-                    <p>Usuario: ${formData.get('username')}</p>
-                    <p>El registro ha sido creado exitosamente.</p>
+                    <div style="text-align: center;">
+                        <h3><i class="fas fa-user-md"></i> Dr. ${formData.get('firstName')} ${formData.get('lastName')}</h3>
+                        <p><strong>Especialidad:</strong> ${formData.get('especialidad')}</p>
+                        <p><strong>Colegiatura:</strong> ${formData.get('colegiatura')}</p>
+                        <p><strong>Usuario:</strong> ${formData.get('username')}</p>
+                        <hr style="margin: 15px 0;">
+                        <p style="color: #27ae60;"><i class="fas fa-envelope"></i> Email de bienvenida enviado</p>
+                        <p style="color: #3498db;"><i class="fas fa-cloud-upload-alt"></i> Foto subida a Cloudinary</p>
+                    </div>
                 `,
                 icon: 'success',
-                confirmButtonColor: '#27ae60'
+                confirmButtonColor: '#27ae60',
+                confirmButtonText: '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión'
             }).then(() => {
                 closeRegisterModal();
+                // Limpiar formulario
+                document.getElementById('registerForm').reset();
+                document.getElementById('avatarPreview').innerHTML = '<i class="fas fa-user"></i>';
             });
         } else {
             throw new Error(result.message || 'Error en el registro');
