@@ -259,7 +259,11 @@
             
             // Agregar foto si se subió una nueva
             if (ProfileState.uploadedPhoto) {
-                formData.append('photo', ProfileState.uploadedPhoto);
+                console.log('📸 SUBIENDO FOTO NUEVA:');
+                console.log('   Nombre:', ProfileState.uploadedPhoto.name);
+                console.log('   Tamaño:', ProfileState.uploadedPhoto.size, 'bytes');
+                console.log('   Tipo:', ProfileState.uploadedPhoto.type);
+                formData.append('photo', ProfileState.uploadedPhoto, ProfileState.uploadedPhoto.name);
             }
             
             // ✅ DEBUG: Log FormData contents antes de enviar
@@ -330,7 +334,97 @@
                 console.log('   Enviado lastName:', lastName); 
                 console.log('   Recibido last_name:', result.data.last_name);
                 
-                // ✅ IMPORTANTE: Usar datos del FORMULARIO porque el backend responde con datos viejos
+                // ✅ ANÁLISIS DE RESPUESTA PARA FOTO
+                let finalPhotoUrl = ProfileState.currentUser.foto_url;
+
+                if (ProfileState.uploadedPhoto) {
+                    console.log('📸 FOTO NUEVA SUBIDA - FORZANDO OBTENCIÓN DE NUEVA URL...');
+                    console.log('⚠️ Backend no devuelve foto_url, haciendo re-login para obtenerla...');
+
+                    // ESTRATEGIA AGRESIVA: Hacer un re-login para obtener TODOS los datos frescos
+                    // Esperar un poco más para asegurar que Cloudinary procesó todo
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    try {
+                        console.log('🔐 Haciendo re-login para obtener datos frescos con foto nueva...');
+                        
+                        // Re-login con las credenciales almacenadas
+                        const email = ProfileState.currentUser.email;
+                        const loginResponse = await fetch(`${ProfileState.backendUrl}/api/v1/auth/login`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                email: email,
+                                password: 'dummy' // Este login fallará pero obtendremos el usuario por otro medio
+                            })
+                        });
+
+                        // Si el login falla, intentar obtener datos por otro endpoint
+                        console.log('🔍 Intentando obtener datos por /api/v1/medicos...');
+                        
+                        // Hacer GET a medicos para obtener la lista y buscar nuestro usuario
+                        const medicosResponse = await fetch(`${ProfileState.backendUrl}/api/v1/medicos`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (medicosResponse.ok) {
+                            const medicosData = await medicosResponse.json();
+                            console.log('📋 Lista de médicos obtenida:', medicosData);
+                            
+                            // Buscar nuestro usuario en la lista
+                            const currentMedico = medicosData.data?.find(m => m.id === ProfileState.currentUser.id);
+                            if (currentMedico?.datos_profesional?.foto_url) {
+                                finalPhotoUrl = currentMedico.datos_profesional.foto_url;
+                                console.log('🎯 NUEVA FOTO ENCONTRADA EN MÉDICOS:', finalPhotoUrl);
+                            }
+                        }
+
+                        // Si aún no tenemos la foto, último intento directo a la BD
+                        if (!finalPhotoUrl || finalPhotoUrl === ProfileState.currentUser.foto_url) {
+                            console.log('🔧 Último intento: GET directo al usuario...');
+                            
+                            // Intentar con endpoint de médico específico
+                            const medicoResponse = await fetch(`${ProfileState.backendUrl}/api/v1/medicos/${ProfileState.currentUser.id}`, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (medicoResponse.ok) {
+                                const medicoData = await medicoResponse.json();
+                                console.log('✅ Datos del médico obtenidos:', medicoData);
+                                
+                                if (medicoData.data?.datos_profesional?.foto_url) {
+                                    finalPhotoUrl = medicoData.data.datos_profesional.foto_url;
+                                    console.log('🎯 NUEVA FOTO DEFINITIVA:', finalPhotoUrl);
+                                }
+                            }
+                        }
+
+                    } catch (err) {
+                        console.log('⚠️ Error obteniendo datos frescos:', err);
+                    }
+
+                    // FORZAR GUARDADO EN VARIABLE TEMPORAL Y FLAG
+                    if (finalPhotoUrl && finalPhotoUrl !== ProfileState.currentUser.foto_url) {
+                        console.log('💾 GUARDANDO NUEVA FOTO EN LOCALSTORAGE TEMPORAL...');
+                        localStorage.setItem('temp_new_photo_url', finalPhotoUrl);
+                        localStorage.setItem('photo_updated_at', new Date().toISOString());
+                        localStorage.setItem('photo_just_updated', 'true'); // FLAG PARA DASHBOARD
+                        console.log('✅ Nueva foto guardada temporalmente:', finalPhotoUrl);
+                        console.log('🚩 Flag photo_just_updated establecido para dashboard');
+                    } else if (!finalPhotoUrl || finalPhotoUrl === ProfileState.currentUser.foto_url) {
+                        // Si no pudimos obtener la nueva foto, igual establecer el flag
+                        console.log('⚠️ No se pudo obtener nueva foto URL, pero estableciendo flag para dashboard');
+                        localStorage.setItem('photo_just_updated', 'true');
+                    }
+                }
+                
+                // Actualizar datos del usuario con la nueva foto si existe
                 const updatedUserData = {
                     ...ProfileState.currentUser,
                     firstName: firstName,
@@ -341,11 +435,10 @@
                     especialidad: specialty,
                     colegiatura: license,
                     cargo: institution,
-                    // Mantener foto existente si no se subió nueva
-                    foto_url: ProfileState.uploadedPhoto ? result.data.foto_url : ProfileState.currentUser.foto_url
+                    foto_url: finalPhotoUrl // Usar la foto obtenida (nueva o existente)
                 };
                 
-                // ✅ PASO 2: Actualizar railway_user_data con foto nueva
+                // ✅ PASO 2: Actualizar railway_user_data con los mismos datos
                 const updatedRailwayData = {
                     ...ProfileState.railwayData,
                     firstName: updatedUserData.firstName,
@@ -355,13 +448,9 @@
                     telefono: updatedUserData.telefono,
                     especialidad: updatedUserData.especialidad,
                     colegiatura: updatedUserData.colegiatura,
-                    cargo: updatedUserData.cargo
+                    cargo: updatedUserData.cargo,
+                    foto_url: finalPhotoUrl // Usar la misma foto
                 };
-                
-                if (result.data.foto_url) {
-                    updatedRailwayData.foto_url = result.data.foto_url;
-                    updatedUserData.foto_url = result.data.foto_url;
-                }
                 
                 // ✅ PASO 3: Guardar EN localStorage INMEDIATAMENTE
                 localStorage.setItem('user', JSON.stringify(updatedUserData));
@@ -376,8 +465,31 @@
                 ProfileState.currentUser = updatedUserData;
                 ProfileState.railwayData = updatedRailwayData;
                 
+                // ✅ PASO 4.5: Actualizar foto en la página actual si se subió una nueva (con cache-buster para UI)
+                if (ProfileState.uploadedPhoto && finalPhotoUrl && finalPhotoUrl !== ProfileState.currentUser.foto_url) {
+                    const bustedUrl = `${finalPhotoUrl}${finalPhotoUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                    const photoCircle = document.getElementById('photoCircle');
+                    if (photoCircle) {
+                        photoCircle.innerHTML = `
+                            <img src="${bustedUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            <button class="photo-upload" onclick="uploadPhoto()">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        `;
+                        console.log('✅ Foto actualizada en el perfil actual');
+                    }
+                }
+                
                 // ✅ PASO 5: Notificar cambios al dashboard (si está abierto)
-                updateDashboardData(updatedUserData, updatedRailwayData);
+                // Para la UI inmediata usamos cache-buster, pero en localStorage queda la URL "limpia"
+                if (ProfileState.uploadedPhoto && finalPhotoUrl) {
+                    const bustedUrl = `${finalPhotoUrl}${finalPhotoUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                    const uiUserData = { ...updatedUserData, foto_url: bustedUrl };
+                    const uiRailwayData = { ...updatedRailwayData, foto_url: bustedUrl };
+                    updateDashboardData(uiUserData, uiRailwayData);
+                } else {
+                    updateDashboardData(updatedUserData, updatedRailwayData);
+                }
                 
                 Swal.fire({
                     icon: 'success',
@@ -389,7 +501,7 @@
                             <p><strong>Colegiatura:</strong> ${updatedUserData.colegiatura}</p>
                             <hr style="margin: 15px 0;">
                             <p style="color: #27ae60;"><i class="fas fa-check-circle"></i> Datos actualizados en tiempo real</p>
-                            ${result.data.foto_url ? '<p style="color: #3498db;"><i class="fas fa-camera"></i> Foto actualizada</p>' : ''}
+                            ${ProfileState.uploadedPhoto ? '<p style="color: #3498db;"><i class="fas fa-camera"></i> Foto actualizada exitosamente</p>' : ''}
                         </div>
                     `,
                     showCancelButton: true,

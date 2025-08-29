@@ -45,23 +45,49 @@ function loadUserData() {
 
 // ✅ FUNCIÓN PARA CARGAR AVATAR (reutilizable)
 function loadUserAvatar(userData, railwayData, displayName = 'Usuario') {
+    console.log('🔍 BUSCANDO FOTO DE USUARIO...');
+    console.log('   userData.foto_url:', userData?.foto_url);
+    console.log('   railwayData.foto_url:', railwayData?.foto_url);
     
     // 🔥 CARGAR AVATAR DESDE RAILWAY/CLOUDINARY - MEJORADO
     let avatarUrl = null;
     
-    // Buscar la URL del avatar en diferentes ubicaciones
-    if (userData.foto_url) {
-        avatarUrl = userData.foto_url;
-        console.log('🖼️ Avatar encontrado en userData.foto_url:', avatarUrl);
-    } else if (railwayData.foto_url) {
-        avatarUrl = railwayData.foto_url;
-        console.log('🖼️ Avatar encontrado en railwayData.foto_url:', avatarUrl);
-    } else if (userData.avatar_url) {
-        avatarUrl = userData.avatar_url;
-        console.log('🖼️ Avatar encontrado en userData.avatar_url:', avatarUrl);
-    } else if (userData.photoUrl) {
-        avatarUrl = userData.photoUrl;
-        console.log('🖼️ Avatar encontrado en userData.photoUrl:', avatarUrl);
+    // 🆕 PRIORIDAD 1: Buscar foto temporal actualizada desde el profile
+    const tempPhotoUrl = localStorage.getItem('temp_new_photo_url');
+    const photoUpdatedAt = localStorage.getItem('photo_updated_at');
+    
+    if (tempPhotoUrl) {
+        console.log('🔥 FOTO TEMPORAL ENCONTRADA:', tempPhotoUrl);
+        avatarUrl = tempPhotoUrl;
+        
+        // Actualizar los datos en memoria y localStorage
+        userData.foto_url = tempPhotoUrl;
+        railwayData.foto_url = tempPhotoUrl;
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('railway_user_data', JSON.stringify(railwayData));
+        
+        // Limpiar temporales
+        localStorage.removeItem('temp_new_photo_url');
+        localStorage.removeItem('photo_updated_at');
+        
+        console.log('✅ Foto temporal aplicada y localStorage actualizado');
+    }
+    
+    // PRIORIDAD 2: Usar la foto de userData o railwayData
+    if (!avatarUrl) {
+        // Revisar todas las posibles ubicaciones
+        avatarUrl = userData?.foto_url || 
+                   railwayData?.foto_url || 
+                   userData?.avatar_url || 
+                   userData?.photoUrl || 
+                   userData?.photo_url ||
+                   railwayData?.photo_url;
+                   
+        if (avatarUrl) {
+            console.log('🖼️ Avatar encontrado:', avatarUrl);
+        } else {
+            console.log('⚠️ No se encontró avatar URL en ninguna ubicación');
+        }
     }
     
     // Si encontramos una URL de avatar, mostrarla
@@ -83,8 +109,9 @@ function loadUserAvatar(userData, railwayData, displayName = 'Usuario') {
                 userAvatarDiv.insertBefore(avatarImg, userAvatarDiv.firstChild);
             }
             
-            // Configurar la imagen
-            avatarImg.src = avatarUrl;
+            // Configurar la imagen (con cache-buster para forzar refresco visual)
+            const uiAvatarUrl = `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+            avatarImg.src = uiAvatarUrl;
             avatarImg.alt = `Foto ${displayName}`;
             avatarImg.style.display = 'block';
             
@@ -100,7 +127,7 @@ function loadUserAvatar(userData, railwayData, displayName = 'Usuario') {
                 if (avatarIcon) avatarIcon.style.display = 'block';
             };
             
-            console.log('✅ Avatar configurado exitosamente:', avatarUrl);
+            console.log('✅ Avatar configurado exitosamente:', { persisted: avatarUrl, ui: uiAvatarUrl });
         }
     } else {
         console.log('⚠️ No se encontró URL de avatar en ninguna ubicación del localStorage');
@@ -110,7 +137,63 @@ function loadUserAvatar(userData, railwayData, displayName = 'Usuario') {
 }
 
 // ✅ INICIALIZACIÓN PRINCIPAL DEL DASHBOARD
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Dashboard iniciando...');
+    
+    // 🔥 VERIFICAR SI VENIMOS DE UNA ACTUALIZACIÓN DE PERFIL CON FOTO NUEVA
+    const photoJustUpdated = localStorage.getItem('photo_just_updated');
+    
+    if (photoJustUpdated === 'true') {
+        console.log('🔥🔥🔥 FOTO ACTUALIZADA DETECTADA - OBTENIENDO DATOS FRESCOS 🔥🔥🔥');
+        
+        // Limpiar flag inmediatamente
+        localStorage.removeItem('photo_just_updated');
+        
+        const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (token && userData.id) {
+            try {
+                console.log('📡 Consultando backend para obtener foto nueva...');
+                
+                // Obtener datos frescos del médico
+                const medicoResponse = await fetch(`https://hospital-app-backend-production.up.railway.app/api/v1/medicos/${userData.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (medicoResponse.ok) {
+                    const medicoData = await medicoResponse.json();
+                    console.log('✅ DATOS FRESCOS DEL BACKEND:', medicoData);
+                    
+                    // Extraer la nueva foto URL
+                    if (medicoData.data?.datos_profesional?.foto_url) {
+                        const nuevaFotoUrl = medicoData.data.datos_profesional.foto_url;
+                        console.log('🖼️ NUEVA FOTO URL OBTENIDA:', nuevaFotoUrl);
+                        
+                        // FORZAR ACTUALIZACIÓN EN LOCALSTORAGE
+                        userData.foto_url = nuevaFotoUrl;
+                        
+                        // Actualizar railway_user_data también
+                        let railwayData = JSON.parse(localStorage.getItem('railway_user_data') || '{}');
+                        railwayData.foto_url = nuevaFotoUrl;
+                        
+                        // Guardar en localStorage
+                        localStorage.setItem('user', JSON.stringify(userData));
+                        localStorage.setItem('railway_user_data', JSON.stringify(railwayData));
+                        
+                        console.log('💾 LOCALSTORAGE ACTUALIZADO CON NUEVA FOTO');
+                        console.log('   user.foto_url:', userData.foto_url);
+                        console.log('   railway.foto_url:', railwayData.foto_url);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error obteniendo datos frescos:', error);
+            }
+        }
+    }
+    
     // Pequeño delay para asegurar que localStorage esté sincronizado
     setTimeout(() => {
         // Cargar datos iniciales
