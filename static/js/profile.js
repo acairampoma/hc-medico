@@ -410,6 +410,7 @@
                     } else {
                         console.log('⚠️ No se pudieron obtener datos frescos');
                     }
+                }
                 
                 // Actualizar datos del usuario con la nueva foto si existe
                 const updatedUserData = {
