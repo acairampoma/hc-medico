@@ -17,7 +17,13 @@ class DicomService:
     """
     
     def __init__(self):
-        self.DICOM_FOLDER = r"C:\Users\acairamp\Documents\proyecto\Curso\pythonn\front\hospital-app\data\dicom"
+        # Ruta que funciona en Windows y Linux (Railway)
+        import pathlib
+        base_dir = pathlib.Path(__file__).parent.parent.absolute()
+        self.DICOM_FOLDER = os.path.join(str(base_dir), "data", "dicom")
+        
+        # Crear directorio si no existe (para Railway)
+        os.makedirs(self.DICOM_FOLDER, exist_ok=True)
         
         logger.info(f"🩻 DicomService inicializado con carpeta: {self.DICOM_FOLDER}")
         
