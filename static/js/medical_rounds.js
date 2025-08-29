@@ -16,7 +16,7 @@
 // ===============================================================================
 
 const MicroservicesConfig = {
-    GATEWAY_BASE: 'http://localhost:8090/api',
+    GATEWAY_BASE: 'https://hospital-app-backend-production.up.railway.app/api/v1',
     
     getAuthToken() {
         return localStorage.getItem('access_token') || 
@@ -36,20 +36,20 @@ const MicroservicesConfig = {
     HOSPITAL: {
         BASE: '/listas',
         ENDPOINTS: {
-            ESTRUCTURAS: '/listas/listas/estructura',
-            ESTRUCTURA_BASICA: '/listas/estructura/basica',
-            ESTADISTICAS: '/listas/estadisticas/disponibilidad'
+            ESTRUCTURAS: '/listas/estructura',
+            ESTRUCTURA_BASICA: '/listas/estructura/servicios',
+            ESTADISTICAS: '/listas/camas/disponibilidad'
         }
     },
     
     PATIENTS: {
-        BASE: '/pacientes',
+        BASE: '/listas',
         ENDPOINTS: {
-            TODAS_CAMAS: '/pacientes/camas',
-            CAMAS_OCUPADAS: '/pacientes/camas/ocupadas',
-            CAMA_ESPECIFICA: '/pacientes/cama',
-            BUSCAR_DNI: '/pacientes/buscar/dni',
-            ESTADISTICAS: '/pacientes/estadisticas/ocupacion'
+            TODAS_CAMAS: '/listas/camas',
+            CAMAS_OCUPADAS: '/listas/camas?disponible=false',
+            CAMA_ESPECIFICA: '/listas/camas',
+            BUSCAR_DNI: '/listas/search/pacientes',
+            ESTADISTICAS: '/listas/reportes/ocupacion'
         }
     }
 };
@@ -235,14 +235,19 @@ const PatientsDataService = {
     transformBedData(microserviceData) {
         const transformed = {};
         
-        if (Array.isArray(microserviceData)) {
-            microserviceData.forEach(bed => {
-                transformed[bed.bed_number] = {
-                    bed_number: bed.bed_number,
-                    status: bed.occupied ? 'occupied' : 'available',
-                    patient_id: bed.patient_data?.personal_info?.dni || null,
-                    gender: bed.patient_data?.personal_info?.gender || null,
-                    patient: bed.patient_data || null
+        // La API ahora devuelve {success: true, data: {camas: [...]}}
+        const camas = microserviceData?.data?.camas || microserviceData?.camas || [];
+        
+        if (Array.isArray(camas)) {
+            camas.forEach(bed => {
+                transformed[bed.numero_cama] = {
+                    bed_number: bed.numero_cama,
+                    status: bed.ocupada ? 'occupied' : 'available',
+                    patient_id: bed.paciente?.documento || null,
+                    gender: bed.genero_preferido || null,
+                    patient: bed.paciente || null,
+                    // Datos completos para el modal
+                    bedData: bed
                 };
             });
         }
@@ -909,20 +914,13 @@ function medicalRounds() {
                 return;
             }
 
-            UIHelpers.showLoading('Cargando datos del paciente...');
+            // Los datos ya están en la cama desde /api/v1/listas/camas
+            const patientData = this.patientsByBed[bed.bed_number] || bed.paciente;
             
-            try {
-                const patientData = await PatientsDataService.getBedData(bed.bed_number);
-                UIHelpers.closeLoading();
-                
-                if (patientData) {
-                    this.showPatientInfo(bed, patientData);
-                } else {
-                    UIHelpers.showError('❌ Error', 'No se pudieron cargar los datos del paciente');
-                }
-            } catch (error) {
-                UIHelpers.closeLoading();
-                UIHelpers.showError('❌ Error', 'Error cargando datos del paciente', error.message);
+            if (patientData) {
+                this.showPatientInfo(bed, patientData);
+            } else {
+                UIHelpers.showError('❌ Error', 'No se encontraron datos del paciente en esta cama');
             }
         },
         
@@ -1035,63 +1033,63 @@ function medicalRounds() {
         
         // Modal de información del paciente
         showPatientInfo(bed, patientData) {
-            let safePatientId = patientData?.patient_data?.personal_info?.dni || 
-            patientData?.personal_info?.dni || 
-            `SAFE_${bed.bed_number}_${Date.now()}`;
-    if (!safePatientId || safePatientId === 'undefined' || safePatientId === 'null') {
-        safePatientId = `SAFE_${bed.bed_number}_${Date.now()}`;
-        console.log('⚠️ patient_id inválido, usando:', safePatientId);
-    }
-
-    // *** DATOS GLOBALES CORREGIDOS PARA OTROS MÓDULOS ***
-    window.currentPatientData = {
-        // Mantener estructura original para compatibilidad
-        bed: bed,
-        patient: patientData,
-        bedNumber: bed.bed_number,
-        patientId: safePatientId,
-        patientName: patientData?.patient_data?.personal_info ? 
-        `${patientData.patient_data.personal_info.first_name} ${patientData.patient_data.personal_info.last_name}` : 
-        'Paciente Desconocido',
-        patientAge: patientData?.patient_data?.personal_info?.age || 'N/A',
-        gender: patientData?.patient_data?.personal_info?.gender === 'M' ? 'Masculino' : 'Femenino',
-
-        // Información médica
-        diagnosis: patientData?.patient_data?.medical_info?.primary_diagnosis || 'Diagnóstico pendiente',
-        diagnosisCode: patientData?.patient_data?.medical_info?.primary_diagnosis_code || '',
-        doctor: patientData?.patient_data?.medical_info?.attending_physician || 'Dr. Sistema',
-        medicalRecord: patientData?.patient_data?.medical_info?.medical_record || 'No disponible',
-        admissionDate: patientData?.patient_data?.medical_info?.admission_date || new Date().toISOString().split('T')[0],
-        allergies: patientData?.patient_data?.medical_info?.allergies || 'Ninguna conocida',
-
-        // *** NUEVOS CAMPOS AGREGADOS PARA PREPAREPATIENTDATAFORMODULE() ***
-        // Campos directos que busca la función
-        hospitalizacion_id: patientData?.hospitalizacionId || patientData?.hospitalizacion_id || null,
-        numero_cuenta: patientData?.numeroCuenta || patientData?.numero_cuenta || null,
-        paciente_id: patientData?.pacienteId || patientData?.paciente_id || null,
-        medico_tratante_id: null, // No viene en tu API response
-        especialidad_id: null,    // No viene en tu API response
-        
-        // *** ESTRUCTURA PATIENT_DATA COMPLETA ***
-        // Esto permite que preparePatientDataForModule() acceda a patient_data.hospitalizacion_id
-        patient_data: {
-            hospitalizacion_id: patientData?.hospitalizacionId || patientData?.patient_data?.hospitalizacion_id || null,
-            numero_cuenta: patientData?.numeroCuenta || patientData?.patient_data?.numero_cuenta || null,
-            paciente_id: patientData?.pacienteId || patientData?.patient_data?.paciente_id || null,
-            especialidad_id: patientData?.patient_data?.especialidad_id || null,
-            medico_tratante_id: patientData?.patient_data?.medico_tratante_id || null,
+            // patientData ahora viene de FastAPI con estructura: {numero_cama, estado, paciente: {...}}
+            const patient = patientData?.paciente || patientData?.patient || patientData;
             
-            personal_info: patientData?.patient_data?.personal_info || {},
-            medical_info: patientData?.patient_data?.medical_info || {}
-        }
-    };
+            let safePatientId = patient?.documento || patient?.patient_id || `SAFE_${bed.bed_number}_${Date.now()}`;
+            
+            if (!safePatientId || safePatientId === 'undefined' || safePatientId === 'null') {
+                safePatientId = `SAFE_${bed.bed_number}_${Date.now()}`;
+                console.log('⚠️ patient_id inválido, usando:', safePatientId);
+            }
 
-    // *** LOG PARA VERIFICAR QUE ESTÁ BIEN ***
-    console.log('🔍 window.currentPatientData asignado:', window.currentPatientData);
-    console.log('🔍 hospitalizacion_id disponible en:', {
-        directo: window.currentPatientData.hospitalizacion_id,
-        anidado: window.currentPatientData.patient_data?.hospitalizacion_id
-    });
+            // *** DATOS GLOBALES PARA OTROS MÓDULOS - ESTRUCTURA FASTAPI ***
+            window.currentPatientData = {
+                // Mantener estructura original para compatibilidad
+                bed: bed,
+                patient: patient,
+                bedNumber: bed.bed_number,
+                patientId: safePatientId,
+                patientName: patient?.nombre || 'Paciente Desconocido',
+                patientAge: patient?.edad || 'N/A',
+                gender: bed.gender === 'M' ? 'Masculino' : 'Femenino',
+
+                // Información médica de FastAPI
+                diagnosis: patient?.diagnostico || 'Diagnóstico pendiente',
+                diagnosisCode: patient?.codigo_diagnostico || '',
+                doctor: patient?.medico || 'Dr. Sistema',
+                medicalRecord: patient?.historia_clinica || 'No disponible',
+                admissionDate: patient?.fecha_ingreso || new Date().toISOString().split('T')[0],
+                allergies: patient?.alergias || 'Ninguna conocida',
+
+                // Campos para módulos médicos
+                hospitalizacion_id: patient?.hospitalizacion_id || null,
+                numero_cuenta: patient?.numero_cuenta || null,
+                paciente_id: patient?.paciente_id || null,
+                medico_tratante_id: patient?.medico_tratante_id || null,
+                especialidad_id: patient?.especialidad_id || null,
+                
+                // Estructura completa
+                patient_data: {
+                    hospitalizacion_id: patient?.hospitalizacion_id || null,
+                    numero_cuenta: patient?.numero_cuenta || null,
+                    paciente_id: patient?.paciente_id || null,
+                    personal_info: {
+                        dni: patient?.documento,
+                        first_name: patient?.nombre?.split(' ')[0],
+                        last_name: patient?.nombre?.split(' ').slice(1).join(' '),
+                        age: patient?.edad,
+                        gender: bed.gender
+                    },
+                    medical_info: {
+                        primary_diagnosis: patient?.diagnostico,
+                        attending_physician: patient?.medico,
+                        admission_date: patient?.fecha_ingreso
+                    }
+                }
+            };
+
+            console.log('🔍 window.currentPatientData asignado:', window.currentPatientData);
         
             // Modal completo
             Swal.fire({
@@ -1100,31 +1098,29 @@ function medicalRounds() {
                     <div style="text-align: left; padding: 1rem;">
                         <!-- INFORMACIÓN DEL PACIENTE -->
                         <h3 style="color: #2c5aa0; margin-bottom: 1rem; text-align: center;">
-                            <i class="fas fa-user"></i> ${window.currentPatientData.patientName}
+                            <i class="fas fa-user"></i> ${patient?.nombre || 'Paciente Desconocido'}
                         </h3>
                         
                         <!-- INFORMACIÓN PERSONAL -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                             <div>
-                                <p><strong>👤 Edad:</strong> ${window.currentPatientData.patientAge} años</p>
-                                <p><strong>🚻 Género:</strong> ${window.currentPatientData.gender}</p>
-                                <p><strong>🆔 DNI:</strong> ${patientData?.patient_data?.personal_info?.dni || 'No registrado'}</p>
+                                <p><strong>👤 Edad:</strong> ${patient?.edad || 'N/A'} años</p>
+                                <p><strong>🚻 Género:</strong> ${bed.gender === 'M' ? 'Masculino' : 'Femenino'}</p>
+                                <p><strong>🆔 DNI:</strong> ${patient?.documento || 'No registrado'}</p>
                             </div>
                             <div>
-                                <p><strong>📋 Historia Clínica:</strong> ${window.currentPatientData.medicalRecord}</p>
+                                <p><strong>📋 ID Paciente:</strong> ${patient?.paciente_id || 'N/A'}</p>
                                 <p><strong>🛏️ Cama:</strong> ${bed.bed_number}</p>
-                                <p><strong>📅 Ingreso:</strong> ${new Date(window.currentPatientData.admissionDate).toLocaleDateString('es-ES')}</p>
+                                <p><strong>📅 Ingreso:</strong> ${patient?.fecha_ingreso ? new Date(patient.fecha_ingreso).toLocaleDateString('es-ES') : 'N/A'}</p>
                             </div>
                         </div>
                         
                         <!-- INFORMACIÓN MÉDICA -->
                         <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                             <p><strong>📋 Diagnóstico Principal:</strong><br>
-                               <span style="color: #2c5aa0;">${window.currentPatientData.diagnosisCode}</span> - ${window.currentPatientData.diagnosis}</p>
-                            <p><strong>👨‍⚕️ Médico Tratante:</strong> ${window.currentPatientData.doctor}</p>
-                            ${window.currentPatientData.allergies !== 'Ninguna conocida' ? `
-                                <p><strong>⚠️ Alergias:</strong> <span style="color: #e74c3c;">${window.currentPatientData.allergies}</span></p>
-                            ` : ''}
+                               <span style="color: #2c5aa0;">${patient?.diagnostico || 'Sin diagnóstico'}</span></p>
+                            <p><strong>👨‍⚕️ Médico Tratante:</strong> ${patient?.medico || 'Dr. Sistema'}</p>
+                            <p><strong>🏥 Servicio:</strong> ${bed.servicio || 'N/A'}</p>
                         </div>
                         
                         <!-- BOTONES DE ACCIONES MÉDICAS -->
