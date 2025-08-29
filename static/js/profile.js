@@ -32,6 +32,62 @@
     }
 
     /**
+     * 🔥 OBTENER DATOS FRESCOS DEL BACKEND CON ENDPOINT PROTEGIDO
+     */
+    async function fetchFreshUserData() {
+        try {
+            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+            if (!token) {
+                console.error('❌ No hay token disponible');
+                return false;
+            }
+
+            console.log('📡 Consultando endpoint /upload/me para datos frescos...');
+            
+            const response = await fetch(`${ProfileState.backendUrl}/api/v1/upload/me`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const apiResponse = await response.json();
+                console.log('✅ Datos frescos obtenidos:', apiResponse);
+                
+                if (apiResponse.success && apiResponse.data) {
+                    const freshUser = apiResponse.data;
+                    
+                    // Actualizar localStorage con datos frescos incluyendo foto_url
+                    ProfileState.currentUser = freshUser;
+                    ProfileState.railwayData = freshUser;
+                    
+                    localStorage.setItem('user', JSON.stringify(freshUser));
+                    localStorage.setItem('railway_user_data', JSON.stringify(freshUser));
+                    
+                    console.log('💾 localStorage actualizado con datos frescos');
+                    console.log('🖼️ Nueva foto_url:', freshUser.foto_url);
+                    
+                    // Disparar evento para que dashboard se actualice
+                    const updateEvent = new CustomEvent('userDataUpdated', {
+                        detail: { userData: freshUser, railwayData: freshUser }
+                    });
+                    document.dispatchEvent(updateEvent);
+                    
+                    return true;
+                }
+            } else {
+                console.error('❌ Error en respuesta del servidor:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Error obteniendo datos frescos:', error);
+            return false;
+        }
+    }
+
+    /**
      * Cargar datos del usuario desde localStorage (como dashboard.js)
      */
     function loadUserDataFromStorage() {
@@ -337,92 +393,23 @@
                 // ✅ ANÁLISIS DE RESPUESTA PARA FOTO
                 let finalPhotoUrl = ProfileState.currentUser.foto_url;
 
-                if (ProfileState.uploadedPhoto) {
-                    console.log('📸 FOTO NUEVA SUBIDA - FORZANDO OBTENCIÓN DE NUEVA URL...');
-                    console.log('⚠️ Backend no devuelve foto_url, haciendo re-login para obtenerla...');
-
-                    // ESTRATEGIA AGRESIVA: Hacer un re-login para obtener TODOS los datos frescos
-                    // Esperar un poco más para asegurar que Cloudinary procesó todo
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-
-                    try {
-                        console.log('🔐 Haciendo re-login para obtener datos frescos con foto nueva...');
-                        
-                        // Re-login con las credenciales almacenadas
-                        const email = ProfileState.currentUser.email;
-                        const loginResponse = await fetch(`${ProfileState.backendUrl}/api/v1/auth/login`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                email: email,
-                                password: 'dummy' // Este login fallará pero obtendremos el usuario por otro medio
-                            })
-                        });
-
-                        // Si el login falla, intentar obtener datos por otro endpoint
-                        console.log('🔍 Intentando obtener datos por /api/v1/medicos...');
-                        
-                        // Hacer GET a medicos para obtener la lista y buscar nuestro usuario
-                        const medicosResponse = await fetch(`${ProfileState.backendUrl}/api/v1/medicos`, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-
-                        if (medicosResponse.ok) {
-                            const medicosData = await medicosResponse.json();
-                            console.log('📋 Lista de médicos obtenida:', medicosData);
-                            
-                            // Buscar nuestro usuario en la lista
-                            const currentMedico = medicosData.data?.find(m => m.id === ProfileState.currentUser.id);
-                            if (currentMedico?.datos_profesional?.foto_url) {
-                                finalPhotoUrl = currentMedico.datos_profesional.foto_url;
-                                console.log('🎯 NUEVA FOTO ENCONTRADA EN MÉDICOS:', finalPhotoUrl);
-                            }
-                        }
-
-                        // Si aún no tenemos la foto, último intento directo a la BD
-                        if (!finalPhotoUrl || finalPhotoUrl === ProfileState.currentUser.foto_url) {
-                            console.log('🔧 Último intento: GET directo al usuario...');
-                            
-                            // Intentar con endpoint de médico específico
-                            const medicoResponse = await fetch(`${ProfileState.backendUrl}/api/v1/medicos/${ProfileState.currentUser.id}`, {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`
-                                }
-                            });
-
-                            if (medicoResponse.ok) {
-                                const medicoData = await medicoResponse.json();
-                                console.log('✅ Datos del médico obtenidos:', medicoData);
-                                
-                                if (medicoData.data?.datos_profesional?.foto_url) {
-                                    finalPhotoUrl = medicoData.data.datos_profesional.foto_url;
-                                    console.log('🎯 NUEVA FOTO DEFINITIVA:', finalPhotoUrl);
-                                }
-                            }
-                        }
-
-                    } catch (err) {
-                        console.log('⚠️ Error obteniendo datos frescos:', err);
+                // 🔥 OBTENER DATOS FRESCOS CON ENDPOINT PROTEGIDO
+                if (ProfileState.uploadedPhoto || ProfileState.hasChanges) {
+                    console.log('📸 CAMBIOS DETECTADOS - OBTENIENDO DATOS FRESCOS...');
+                    
+                    // Esperar que Cloudinary procese si hay foto
+                    if (ProfileState.uploadedPhoto) {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                     }
-
-                    // FORZAR GUARDADO EN VARIABLE TEMPORAL Y FLAG
-                    if (finalPhotoUrl && finalPhotoUrl !== ProfileState.currentUser.foto_url) {
-                        console.log('💾 GUARDANDO NUEVA FOTO EN LOCALSTORAGE TEMPORAL...');
-                        localStorage.setItem('temp_new_photo_url', finalPhotoUrl);
-                        localStorage.setItem('photo_updated_at', new Date().toISOString());
-                        localStorage.setItem('photo_just_updated', 'true'); // FLAG PARA DASHBOARD
-                        console.log('✅ Nueva foto guardada temporalmente:', finalPhotoUrl);
-                        console.log('🚩 Flag photo_just_updated establecido para dashboard');
-                    } else if (!finalPhotoUrl || finalPhotoUrl === ProfileState.currentUser.foto_url) {
-                        // Si no pudimos obtener la nueva foto, igual establecer el flag
-                        console.log('⚠️ No se pudo obtener nueva foto URL, pero estableciendo flag para dashboard');
-                        localStorage.setItem('photo_just_updated', 'true');
+                    
+                    const freshDataObtained = await fetchFreshUserData();
+                    
+                    if (freshDataObtained) {
+                        console.log('✅ Datos frescos obtenidos exitosamente');
+                        finalPhotoUrl = ProfileState.currentUser.foto_url;
+                    } else {
+                        console.log('⚠️ No se pudieron obtener datos frescos');
                     }
-                }
                 
                 // Actualizar datos del usuario con la nueva foto si existe
                 const updatedUserData = {

@@ -473,58 +473,8 @@ async function showResetCodeModal(email) {
 
 // =====================================================
 // REGISTER WITH REAL API
+// (Se eliminó testRegistrationDebug por ser código muerto)
 // =====================================================
-
-// ✅ FUNCIÓN DE TEST TEMPORAL PARA DEBUG
-async function testRegistrationDebug() {
-    console.log('🧪 Iniciando test de registro debug...');
-    
-    try {
-        // Crear FormData exacto como el curl que funciona
-        const testFormData = new FormData();
-        testFormData.append('firstName', 'Alan');
-        testFormData.append('lastName', 'Test');
-        testFormData.append('email', 'alan.test@gmail.com');
-        testFormData.append('username', 'alantest');
-        testFormData.append('password', 'Admin123!');
-        testFormData.append('especialidad', 'Neurología');
-        testFormData.append('colegiatura', '54321');
-        testFormData.append('telefono', '123456789');
-        testFormData.append('cargo', 'Doctor Test');
-        
-        console.log('🔍 Enviando datos de test...');
-        
-        const response = await fetch(`${API_BASE_URL}/upload/register-with-photo`, {
-            method: 'POST',
-            body: testFormData
-        });
-        
-        const result = await response.json();
-        
-        console.log('📡 Respuesta test:', response.status, result);
-        
-        if (response.ok && result.success) {
-            Swal.fire({
-                icon: 'success',
-                title: '¡Test Exitoso!',
-                text: `Usuario ${result.data.nombre_completo} creado con ID ${result.data.id}`
-            });
-        } else {
-            throw new Error(result.message || 'Error en test');
-        }
-        
-    } catch (error) {
-        console.error('❌ Error en test:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error en Test',
-            text: error.message
-        });
-    }
-}
-
-// Exponer función de test globalmente
-window.testRegistrationDebug = testRegistrationDebug;
 
 // Submit registro
 async function submitRegistration() {
@@ -793,17 +743,32 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             localStorage.setItem('token', tokenData.access_token || '');
             localStorage.setItem('access_token', tokenData.access_token || '');
             localStorage.setItem('refresh_token', tokenData.refresh_token || '');
+
+            // 🖼️ Foto: considerar múltiples ubicaciones (incluye datos_profesional.foto_url)
+            const fotoUrlLogin = (
+                userData.foto_url ||
+                (userData.datos_profesional && userData.datos_profesional.foto_url) ||
+                userData.avatar_url ||
+                userData.photoUrl ||
+                ''
+            );
+
+            // Enriquecer userData para que otros módulos encuentren foto_url directamente
+            if (fotoUrlLogin && !userData.foto_url) {
+                try { userData.foto_url = fotoUrlLogin; } catch (_) {}
+            }
+
             localStorage.setItem('user', JSON.stringify(userData));
             
             // ✅ GUARDAR RAILWAY DATA PARA PROFILE Y DASHBOARD
             const railwayData = {
-                foto_url: userData.foto_url || '',
-                especialidad: userData.especialidad || '',
-                colegiatura: userData.colegiatura || '',
-                telefono: userData.telefono || '',
-                cargo: userData.cargo || '',
-                firstName: userData.first_name || '',
-                lastName: userData.last_name || ''
+                foto_url: fotoUrlLogin,
+                especialidad: userData.especialidad || (userData.datos_profesional && userData.datos_profesional.especialidad) || '',
+                colegiatura: userData.colegiatura || (userData.datos_profesional && userData.datos_profesional.colegiatura) || '',
+                telefono: userData.telefono || (userData.datos_profesional && userData.datos_profesional.telefono) || '',
+                cargo: userData.cargo || (userData.datos_profesional && userData.datos_profesional.cargo) || '',
+                firstName: userData.first_name || userData.firstName || '',
+                lastName: userData.last_name || userData.lastName || ''
             };
             localStorage.setItem('railway_user_data', JSON.stringify(railwayData));
             
