@@ -1,0 +1,616 @@
+/* ===============================================================================
+   🏥 MEDICAL ROUNDS - CSS ÉPICO MEJORADO
+   ===============================================================================
+   Basado en backup original con mejoras médicas profesionales
+   Versión: 2.1.0 - FINAL ELEGANTE
+   =============================================================================== */
+
+/* ===== COLORES ÉPICOS ORIGINALES RESTAURADOS ===== */
+:root {
+    /* Colores épicos del diseño original */
+    --medical-blue: #2c5aa0;
+    --medical-green: #10b981;
+    --medical-red: #e74c3c;
+    --medical-orange: #ff8c42;
+    --medical-purple: #9c27b0;
+    --medical-pink: #e91e63;
+    
+    /* Estados de camas EXACTOS del backup */
+    --bed-available: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+    --bed-male: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    --bed-female: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+    --bed-maintenance: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    --bed-cleaning: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+    
+    /* Estadísticas épicas */
+    --stat-total: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --stat-male: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    --stat-female: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+    --stat-available: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+    --stat-maintenance: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    --stat-cleaning: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+    
+    /* Sombras médicas */
+    --shadow-light: 0 2px 8px rgba(44, 90, 160, 0.1);
+    --shadow-medium: 0 4px 16px rgba(44, 90, 160, 0.15);
+    --shadow-strong: 0 8px 32px rgba(44, 90, 160, 0.2);
+    
+    /* Transiciones suaves */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ===== CONTENEDOR PRINCIPAL ===== */
+.rounds-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 0;
+    margin: 0;
+}
+
+/* ===== HEADER MÉDICO ELEGANTE ===== */
+.header {
+    background: var(--medical-blue);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: var(--shadow-strong);
+    position: relative;
+    overflow: hidden;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.3;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 1;
+}
+
+.header h1 i {
+    margin-right: 1rem;
+    font-size: 2.2rem;
+}
+
+.header p {
+    font-size: 1.1rem;
+    margin: 0;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+/* ===== BOTÓN DE REGRESO ELEGANTE ===== */
+.back-button-elegant {
+    background: linear-gradient(135deg, #6b7280 0%, #374151 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 12px 24px !important;
+    border-radius: 12px !important;
+    cursor: pointer !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    transition: var(--transition-smooth) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.back-button-elegant:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+}
+
+/* ===== NAVEGACIÓN POR PASOS ===== */
+.navigation-steps {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.step {
+    background: white;
+    border-radius: 20px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-medium);
+    overflow: hidden;
+    transition: var(--transition-smooth);
+    opacity: 0.7;
+    transform: scale(0.98);
+}
+
+.step.active {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: var(--shadow-strong);
+    border: 2px solid #2c5aa0;
+}
+
+.step-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 3px solid #2c5aa0;
+}
+
+.step-number {
+    background: var(--medical-blue);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    box-shadow: var(--shadow-medium);
+}
+
+.step-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+/* ===== SELECCIÓN DE PISOS ===== */
+.floor-selection {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+}
+
+.floor-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-light);
+    transition: var(--transition-bounce);
+    border: 2px solid transparent;
+    overflow: hidden;
+    position: relative;
+}
+
+.floor-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--medical-blue);
+}
+
+.floor-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-strong);
+    border-color: #2c5aa0;
+}
+
+.floor-info {
+    margin-bottom: 1.5rem;
+}
+
+.floor-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.floor-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1e293b;
+    margin-bottom: 0.3rem;
+}
+
+.floor-specialty {
+    font-size: 1.1rem;
+    color: #2c5aa0;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* ===== BOTONES DE ALAS ===== */
+.wing-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.wing-btn {
+    padding: 1.5rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-align: center;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+}
+
+.wing-btn.east {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+}
+
+.wing-btn.west {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.wing-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.wing-name {
+    display: block;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.wing-count {
+    display: block;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* ===== MAPA DE CAMAS ===== */
+.beds-map {
+    padding: 2rem;
+}
+
+/* ===== PANEL DE ESTADÍSTICAS ===== */
+.wing-stats-panel {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-medium);
+    border-left: 5px solid #2c5aa0;
+}
+
+.stats-header {
+    margin-bottom: 1.5rem;
+}
+
+.stats-header h4 {
+    color: #2c5aa0;
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: var(--transition-smooth);
+    border: 2px solid #e2e8f0;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.stat-card.total {
+    background: var(--stat-total);
+    color: white;
+    border: none;
+}
+
+.stat-card.male {
+    background: var(--stat-male);
+    color: white;
+    border: none;
+}
+
+.stat-card.female {
+    background: var(--stat-female);
+    color: white;
+    border: none;
+}
+
+.stat-card.available {
+    background: var(--stat-available);
+    color: white;
+    border: none;
+}
+
+.stat-card.maintenance {
+    background: var(--stat-maintenance);
+    color: white;
+    border: none;
+}
+
+.stat-card.cleaning {
+    background: var(--stat-cleaning);
+    color: white;
+    border: none;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    color: white;
+    opacity: 0.9;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: white;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+/* ===== GRID DE CAMAS ===== */
+.beds-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.bed-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-bounce);
+    border: 2px solid transparent;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: var(--shadow-light);
+}
+
+.bed-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: var(--shadow-strong);
+}
+
+/* Estados de camas ÉPICAS RESTAURADAS */
+.bed-card.available {
+    background: var(--bed-available);
+    color: white;
+    border: none;
+}
+
+.bed-card.occupied-male {
+    background: var(--bed-male);
+    color: white;
+    border: none;
+}
+
+.bed-card.occupied-female {
+    background: var(--bed-female);
+    color: white;
+    border: none;
+}
+
+.bed-card.maintenance {
+    background: var(--bed-maintenance);
+    color: white;
+    border: none;
+}
+
+.bed-card.cleaning {
+    background: var(--bed-cleaning);
+    color: white;
+    border: none;
+}
+
+.bed-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: white;
+    opacity: 0.9;
+}
+
+.bed-number {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: white;
+}
+
+/* ===== LEYENDA ===== */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-light);
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: none;
+}
+
+/* ===== BREADCRUMB ===== */
+.breadcrumb {
+    background: white;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-light);
+    font-weight: 500;
+    color: #64748b;
+}
+
+/* ===== ANIMACIONES MÉDICAS ===== */
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .header {
+        padding: 1.5rem 1rem;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .navigation-steps {
+        padding: 1rem;
+    }
+    
+    .floor-selection {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .beds-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .legend {
+        gap: 1rem;
+    }
+    
+    .back-button-elegant {
+        top: 10px !important;
+        right: 10px !important;
+        padding: 8px 16px !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+/* ===== EFECTOS ESPECIALES MÉDICOS ===== */
+.floor-card:hover .floor-icon {
+    animation: heartbeat 1s infinite;
+}
+
+.stat-card:hover .stat-icon {
+    animation: pulse 2s infinite;
+}
+
+.bed-card.occupied-male:hover,
+.bed-card.occupied-female:hover {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* ===== MODAL IMPROVEMENTS ===== */
+.patient-info-popup {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* ===== SCROLLBAR MÉDICO ===== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+}
+
+/* ===== LOADING STATES ===== */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(44, 90, 160, 0.2), transparent);
+    animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}

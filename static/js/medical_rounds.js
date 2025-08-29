@@ -904,7 +904,10 @@ function medicalRounds() {
                 this.selectedFloorData = null;
                 this.selectedWing = null;
             } else {
-                window.location.href = 'http://localhost:8000/dashboard';
+                // Detectar automáticamente si estamos en Railway o localhost
+                const isLocal = window.location.hostname === 'localhost';
+                const dashboardUrl = isLocal ? 'http://localhost:8000/dashboard' : '/dashboard';
+                window.location.href = dashboardUrl;
             }
         },
         

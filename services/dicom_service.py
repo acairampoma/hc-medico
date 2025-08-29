@@ -17,11 +17,7 @@ class DicomService:
     """
     
     def __init__(self):
-        # Usar ruta relativa para Railway/producción
-        self.DICOM_FOLDER = os.path.join(os.getcwd(), "data", "dicom")
-        
-        # Crear directorio si no existe
-        os.makedirs(self.DICOM_FOLDER, exist_ok=True)
+        self.DICOM_FOLDER = r"C:\Users\acairamp\Documents\proyecto\Curso\pythonn\front\hospital-app\data\dicom"
         
         logger.info(f"🩻 DicomService inicializado con carpeta: {self.DICOM_FOLDER}")
         
